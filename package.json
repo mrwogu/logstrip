@@ -1,0 +1,84 @@
+{
+  "name": "context-bonsai",
+  "version": "1.0.0",
+  "description": "Stream-based CLI that trims noisy server logs, build pipelines, vulnerability scanners, and container workloads down to the diagnostic context LLM agents actually need.",
+  "private": false,
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "dist/core/bonsai-parser.js",
+  "types": "dist/core/bonsai-parser.d.ts",
+  "bin": {
+    "bonsai": "dist/cli/index.js",
+    "context-bonsai": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/core/bonsai-parser.d.ts",
+      "require": "./dist/core/bonsai-parser.js",
+      "default": "./dist/core/bonsai-parser.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/index.d.ts",
+      "require": "./dist/cli/index.js",
+      "default": "./dist/cli/index.js"
+    },
+    "./action": {
+      "types": "./dist/action/index.d.ts",
+      "require": "./dist/action/index.js",
+      "default": "./dist/action/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "action.yml",
+    "dist/action",
+    "dist/cli",
+    "dist/core"
+  ],
+  "keywords": [
+    "cli",
+    "logs",
+    "ci",
+    "llm",
+    "context",
+    "compression",
+    "github-action"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrwogu/context-bonsai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mrwogu/context-bonsai/issues"
+  },
+  "homepage": "https://github.com/mrwogu/context-bonsai#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/bundle-action.js && node scripts/post-build.js",
+    "docs:build": "mkdocs build --strict",
+    "docs:serve": "mkdocs serve",
+    "prepack": "npm run build",
+    "test": "vitest run --coverage",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify": "npm run typecheck && npm run test:coverage && npm run build && npm audit && npm run docs:build"
+  },
+  "devDependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^9.1.1",
+    "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^4.1.6",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.6"
+  },
+  "overrides": {
+    "@actions/http-client": "^3.0.2",
+    "undici": "^6.25.0"
+  }
+}
