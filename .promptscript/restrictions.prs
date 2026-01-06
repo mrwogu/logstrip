@@ -1,0 +1,19 @@
+# ContextBonsai hard restrictions
+
+@restrictions {
+  - "Don't lower the coverage thresholds in vitest.config.ts - the 100% gate is the project's hardest contract"
+  - "Don't delete or skip tests to make CI green; fix the regression or open an issue"
+  - "Don't add runtime dependencies to src/cli or src/core - the CLI hot path is zero-dependency on purpose"
+  - "Don't import @actions/* outside src/action - those packages are scoped to the GHA wrapper"
+  - "Don't load the full log into memory - everything must flow through readline / Node streams (CLI, library and action all share processLogStream)"
+  - "Don't write to paths outside the resolved outputPath; do not touch process.cwd() implicitly"
+  - "Don't call the real GitHub API from tests - mock @actions/core and @actions/github"
+  - "Don't edit files under dist/, coverage/ or site/ - they are build outputs"
+  - "Don't edit files under tests/fixtures/__snapshots__/ by hand - regenerate with vitest -u and review the diff"
+  - "Don't log raw input bytes, secrets, tokens or full request bodies - the sanitizer must keep PII-like patterns masked"
+  - "Don't embed indented heredocs in .github/workflows/*.yml - leading whitespace breaks literal grep assertions"
+  - "Don't publish v1 with breaking changes to the CLI flag set or action.yml schema; bump major version explicitly"
+  - "Don't break the CLI Unix contract: missing INPUT means read stdin, missing --output means write stdout, stats always go to stderr"
+  - "Don't let a parser error escape as a raw stack trace from the CLI - convert to a bonsai: <message> stderr line with a numeric exit code"
+  - "Don't weaken regex strictness without adding a fixture-based smoke test that documents the new behavior"
+}

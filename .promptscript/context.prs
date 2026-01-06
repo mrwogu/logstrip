@@ -1,0 +1,23 @@
+# ContextBonsai project context
+
+@context {
+  project: "context-bonsai"
+  languages: [typescript]
+  runtime: "Node.js >= 20"
+  packageManager: "npm"
+
+  priority: [
+    "CLI (bonsai, context-bonsai) — canonical user-facing entry. Unix conventions: stdin/stdout by default, -o/--output, -a/--aggressiveness, --stats on stderr, --json on stdout (requires --output).",
+    "Library (import { processLogFile } from 'context-bonsai') — embed entry for custom Node tooling.",
+    "GitHub Action — optional thin wrapper for one-step CI integration. Prefer the CLI in run: steps when possible."
+  ]
+
+  architecture: """
+    - Prefer streaming, allocation-light code paths
+    - Preserve deterministic output (snapshot tests must remain stable)
+    - Never regress the 100% coverage gate
+    - Never add runtime dependencies to src/cli or src/core
+    - Never break the public surface exported from src/cli/index.ts, src/core/bonsai-parser.ts, or the GitHub Action wired in action.yml
+    - Match the existing style: small pure helpers, named exports, only node:* built-ins on the CLI/parser hot path. @actions/* packages stay scoped to src/action/.
+  """
+}

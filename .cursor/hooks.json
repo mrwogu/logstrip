@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "beforeFileEdit": [
+      {
+        "command": [
+          "bash",
+          "-c",
+          "prs hook pre-edit"
+        ],
+        "timeout_ms": 5000
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": [
+          "bash",
+          "-c",
+          "prs hook post-edit"
+        ],
+        "timeout_ms": 15000
+      }
+    ]
+  }
+}

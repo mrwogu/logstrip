@@ -1,0 +1,23 @@
+id: context-bonsai
+syntax: "1.2.0"
+description: "Zero-dependency Node.js CLI that trims noisy CI/build logs down to the diagnostic context an LLM needs."
+
+input:
+  entry: .promptscript/project.prs
+  include: ['.promptscript/**/*.prs']
+
+targets:
+  - github
+  - claude
+  - cursor
+  - factory
+  - codex
+  - opencode
+
+validation:
+  rules:
+    empty-block: warning
+
+formatting:
+  tabWidth: 2
+  proseWrap: preserve

@@ -1,0 +1,9 @@
+node_modules/
+coverage/
+site/
+dist/src/
+dist/tests/
+dist/**/*.d.ts
+.DS_Store
+assets/
+*.tgz
