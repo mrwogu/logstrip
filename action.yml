@@ -1,0 +1,19 @@
+name: ContextBonsai
+description: Compress large CI logs before sending them to LLM agents.
+inputs:
+  log-path:
+    description: Path to the raw log file.
+    required: true
+  aggressiveness:
+    description: "Compression level: low, medium, high, aggressive."
+    required: false
+    default: high
+outputs:
+  output-path:
+    description: Path to the compressed log file.
+branding:
+  icon: scissors
+  color: green
+runs:
+  using: node20
+  main: dist/action/index.js
