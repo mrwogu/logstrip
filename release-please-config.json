@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/cli/index.ts"
+        }
+      ],
+      "include-component-in-tag": false,
+      "package-name": "context-bonsai",
+      "release-type": "node"
+    }
+  }
+}
