@@ -1151,6 +1151,56 @@ html {
 }
 
 /* ------------------------------------------------------------------------- *
+ * SOURCES BANNER (pills with icons)
+ * ------------------------------------------------------------------------- */
+
+.bonsai-sources-banner {
+  margin: -0.5rem 0 1.5rem;
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border: 1px solid var(--bonsai-border);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(164, 255, 175, 0.08), transparent 18rem),
+    rgba(255, 255, 255, 0.02);
+}
+
+.bonsai-sources-banner h2 {
+  margin-top: 0.35rem;
+  margin-bottom: 0.65rem;
+  white-space: nowrap;
+}
+
+.bonsai-tool-pill img,
+.bonsai-tool-pill svg {
+  width: 1rem;
+  height: 1rem;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.bonsai-sources-banner__more {
+  margin: 0.85rem 0 0;
+  text-align: center;
+  font-size: 0.82rem;
+}
+
+.bonsai-sources-banner__more a {
+  color: var(--bonsai-green);
+  font-weight: 600;
+}
+
+[data-md-color-scheme='default'] .bonsai-sources-banner {
+  border-color: rgba(41, 43, 44, 0.14);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(31, 111, 56, 0.06), transparent 18rem),
+    rgba(0, 0, 0, 0.02);
+}
+
+[data-md-color-scheme='default'] .bonsai-sources-banner__more a {
+  color: #1f6f38;
+}
+
+/* ------------------------------------------------------------------------- *
  * ECOSYSTEM PILLS + ENGINE
  * ------------------------------------------------------------------------- */
 

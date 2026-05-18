@@ -6,7 +6,6 @@
 # smaller logs. cleaner agents.
 
 <p class="bonsai-lede">A zero-dependency CLI that turns chaotic server logs, build pipelines, vulnerability scanners, and container workloads into compact, high-signal context that AI agents can actually reason about.</p>
-<p class="bonsai-lede bonsai-lede--small">Toggle the demo to watch a noisy raw log become a compact, sanitized Bonsai artifact.</p>
 
 <p class="bonsai-actions">
   <a class="bonsai-button" href="getting-started/">install the cli</a>
@@ -31,11 +30,66 @@
 </div>
 </section>
 
-<div class="bonsai-ecosystem-strip" aria-label="Supported log ecosystems" data-bonsai-reveal>
-  <div class="bonsai-ecosystem-strip__track">
-    <span>GitHub Actions</span><span>GitLab CI</span><span>Jenkins</span><span>Docker</span><span>Kubernetes</span><span>Helm</span><span>Terraform</span><span>npm</span><span>pnpm</span><span>yarn</span><span>Vitest</span><span>Jest</span><span>Pytest</span><span>Maven</span><span>Gradle</span><span>Go test</span><span>Rust/Cargo</span><span>Webpack</span><span>Trivy</span><span>Snyk</span><span>Semgrep</span><span>nginx</span><span>PostgreSQL</span><span>Kafka</span><span>Redis</span><span>Cloud Run</span><span>AWS Lambda</span><span>Datadog</span><span>Sentry</span><span>OpenTelemetry</span>
-    <span>GitHub Actions</span><span>GitLab CI</span><span>Jenkins</span><span>Docker</span><span>Kubernetes</span><span>Helm</span><span>Terraform</span><span>npm</span><span>pnpm</span><span>yarn</span><span>Vitest</span><span>Jest</span><span>Pytest</span><span>Maven</span><span>Gradle</span><span>Go test</span><span>Rust/Cargo</span><span>Webpack</span><span>Trivy</span><span>Snyk</span><span>Semgrep</span><span>nginx</span><span>PostgreSQL</span><span>Kafka</span><span>Redis</span><span>Cloud Run</span><span>AWS Lambda</span><span>Datadog</span><span>Sentry</span><span>OpenTelemetry</span>
-  </div>
+<div class="bonsai-sources-banner" data-bonsai-reveal markdown="1">
+<span class="bonsai-kicker">705+ detected ecosystems</span>
+
+## your stack, covered
+
+<div class="bonsai-tool-pills" markdown="1">
+<span class="bonsai-tool-pill">:simple-githubactions: GitHub Actions</span>
+<span class="bonsai-tool-pill">:fontawesome-brands-gitlab: GitLab CI</span>
+<span class="bonsai-tool-pill">:fontawesome-brands-jenkins: Jenkins</span>
+<span class="bonsai-tool-pill">:simple-argo: Argo</span>
+<span class="bonsai-tool-pill">:simple-tekton: Tekton</span>
+<span class="bonsai-tool-pill">:simple-circleci: CircleCI</span>
+<span class="bonsai-tool-pill">:fontawesome-brands-docker: Docker</span>
+<span class="bonsai-tool-pill">:simple-kubernetes: Kubernetes</span>
+<span class="bonsai-tool-pill">:simple-helm: Helm</span>
+<span class="bonsai-tool-pill">:simple-terraform: Terraform</span>
+<span class="bonsai-tool-pill">:simple-gradle: Gradle</span>
+<span class="bonsai-tool-pill">:simple-apachemaven: Maven</span>
+<span class="bonsai-tool-pill">:simple-webpack: Webpack</span>
+<span class="bonsai-tool-pill">:simple-bazel: Bazel</span>
+<span class="bonsai-tool-pill">:fontawesome-brands-npm: npm</span>
+<span class="bonsai-tool-pill">:simple-pnpm: pnpm</span>
+<span class="bonsai-tool-pill">:fontawesome-brands-yarn: yarn</span>
+<span class="bonsai-tool-pill">:fontawesome-brands-rust: Cargo</span>
+<span class="bonsai-tool-pill">:simple-bun: Bun</span>
+<span class="bonsai-tool-pill">:simple-vitest: Vitest</span>
+<span class="bonsai-tool-pill">:simple-jest: Jest</span>
+<span class="bonsai-tool-pill">:simple-pytest: Pytest</span>
+<span class="bonsai-tool-pill">:simple-cypress: Cypress</span>
+<span class="bonsai-tool-pill">:material-test-tube: Playwright</span>
+<span class="bonsai-tool-pill">:fontawesome-brands-golang: Go test</span>
+<span class="bonsai-tool-pill">:simple-trivy: Trivy</span>
+<span class="bonsai-tool-pill">:simple-snyk: Snyk</span>
+<span class="bonsai-tool-pill">:material-shield-search: Semgrep</span>
+<span class="bonsai-tool-pill">:simple-express: Express</span>
+<span class="bonsai-tool-pill">:simple-fastify: Fastify</span>
+<span class="bonsai-tool-pill">:simple-nextdotjs: Next.js</span>
+<span class="bonsai-tool-pill">:simple-nestjs: NestJS</span>
+<span class="bonsai-tool-pill">:simple-django: Django</span>
+<span class="bonsai-tool-pill">:simple-springboot: Spring Boot</span>
+<span class="bonsai-tool-pill">:simple-nginx: nginx</span>
+<span class="bonsai-tool-pill">:simple-postgresql: PostgreSQL</span>
+<span class="bonsai-tool-pill">:simple-redis: Redis</span>
+<span class="bonsai-tool-pill">:simple-apachekafka: Kafka</span>
+<span class="bonsai-tool-pill">:simple-mongodb: MongoDB</span>
+<span class="bonsai-tool-pill">:simple-elasticsearch: Elasticsearch</span>
+<span class="bonsai-tool-pill">:simple-datadog: Datadog</span>
+<span class="bonsai-tool-pill">:simple-sentry: Sentry</span>
+<span class="bonsai-tool-pill">:simple-opentelemetry: OpenTelemetry</span>
+<span class="bonsai-tool-pill">:simple-prometheus: Prometheus</span>
+<span class="bonsai-tool-pill">:simple-grafana: Grafana</span>
+<span class="bonsai-tool-pill">:fontawesome-brands-aws: AWS Lambda</span>
+<span class="bonsai-tool-pill">:simple-cloudflare: Cloudflare</span>
+<span class="bonsai-tool-pill">:simple-vercel: Vercel</span>
+<span class="bonsai-tool-pill">:simple-react: React Native</span>
+<span class="bonsai-tool-pill">:simple-flutter: Flutter</span>
+<span class="bonsai-tool-pill">:simple-electron: Electron</span>
+</div>
+
+<p class="bonsai-sources-banner__more"><a href="reference/sources/">view all 705+ sources →</a></p>
 </div>
 
 <div class="bonsai-grid" markdown="1">
