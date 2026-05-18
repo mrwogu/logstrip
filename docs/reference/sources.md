@@ -8,13 +8,13 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 
 <div class="grid cards" markdown>
 
--   :simple-expressjs: __Express__
+-   :simple-express: __Express__
 -   :simple-fastify: __Fastify__
--   :simple-hapi: __Hapi__
--   :simple-koajs: __Koa__
+-   :simple-nodedotjs: __Hapi__
+-   :simple-koa: __Koa__
 -   :simple-nestjs: __NestJS__
 -   :simple-nextdotjs: __Next.js__
--   :simple-nuxtdotjs: __Nuxt__
+-   :simple-nuxt: __Nuxt__
 -   :simple-svelte: __SvelteKit__
 -   :simple-remix: __Remix__
 -   :simple-astro: __Astro__
@@ -22,7 +22,7 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 -   :material-web: __Hono__
 -   :simple-deno: __Deno__
 -   :material-web: __Elysia__
--   :simple-feathersdotjs: __Feathers__
+-   :material-feather: __Feathers__
 
 </div>
 
@@ -70,10 +70,10 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 -   :simple-ghost: __Ghost__
 -   :simple-contentful: __Contentful__
 -   :simple-sanity: __Sanity__
--   :material-content: __Payload__
+-   :material-content-copy: __Payload__
 -   :simple-directus: __Directus__
 -   :simple-shopify: __Shopify__
--   :simple-magento: __Magento__
+-   :fontawesome-brands-magento: __Magento__
 -   :simple-woocommerce: __WooCommerce__
 -   :simple-bigcommerce: __BigCommerce__
 -   :material-store: __Medusa__
@@ -85,7 +85,7 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 <div class="grid cards" markdown>
 
 -   :simple-meilisearch: __Meilisearch__
--   :simple-typesense: __Typesense__
+-   :material-magnify: __Typesense__
 -   :simple-apachesolr: __Solr__
 -   :simple-algolia: __Algolia__
 
@@ -103,7 +103,7 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 -   :simple-webpack: __Webpack__
 -   :simple-bazel: __Bazel__
 -   :simple-cmake: __CMake__
--   :material-speed: __Ninja__
+-   :material-speedometer: __Ninja__
 -   :simple-scala: __SBT__
 -   :simple-apache: __Ant__
 -   :simple-tekton: __Tekton__
@@ -111,16 +111,16 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 -   :simple-buildkite: __Buildkite__
 -   :simple-circleci: __CircleCI__
 -   :simple-travisci: __Travis CI__
--   :simple-azurepipelines: __Azure Pipelines__
+-   :material-backup-restore: __Azure Pipelines__
 -   :simple-teamcity: __TeamCity__
 -   :simple-spinnaker: __Spinnaker__
 -   :simple-drone: __Drone CI__
--   :simple-dagger: __Dagger__
+-   :material-cube-outline: __Dagger__
 -   :simple-bitrise: __Bitrise__
 -   :simple-fastlane: __Fastlane__
--   :material-smartphone: __Codemagic__
+-   :material-cellphone-link: __Codemagic__
 -   :material-cellphone: __App Center__
--   :material-pet: __Woodpecker CI__
+-   :material-paw: __Woodpecker CI__
 
 </div>
 
@@ -148,26 +148,26 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 -   :simple-vitest: __Vitest__
 -   :simple-jest: __Jest__
 -   :simple-mocha: __Mocha__
--   :material-science: __AVA__
--   :material-science: __TAP__
+-   :material-flask: __AVA__
+-   :material-flask: __TAP__
 -   :simple-cypress: __Cypress__
--   :simple-playwright: __Playwright__
+-   :material-test-tube: __Playwright__
 -   :simple-storybook: __Storybook__
--   :material-science: __Karma__
+-   :material-flask: __Karma__
 -   :simple-pytest: __Pytest__
 -   :fontawesome-brands-golang: __Go test__
 -   :simple-php: __PHPUnit__
 -   :simple-ruby: __RSpec__
 -   :fontawesome-brands-java: __JUnit__
--   :material-science: __xUnit__
--   :material-science: __NUnit__
+-   :material-flask: __xUnit__
+-   :material-flask: __NUnit__
 -   :simple-selenium: __Selenium__
 -   :simple-cucumber: __Cucumber__
 -   :material-robot: __Robot Framework__
--   :material-science: __TestCafe__
--   :material-science: __Nightwatch__
--   :material-science: __WebdriverIO__
--   :material-science: __Keploy__
+-   :material-flask: __TestCafe__
+-   :material-flask: __Nightwatch__
+-   :material-flask: __WebdriverIO__
+-   :material-flask: __Keploy__
 -   :simple-kubernetes: __TestKube__
 
 </div>
@@ -188,7 +188,7 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 -   :simple-kubernetes: __Kubelet__
 -   :simple-kubernetes: __Kustomize__
 -   :simple-kubernetes: __Skaffold__
--   :simple-openshift: __OpenShift__
+-   :simple-redhatopenshift: __OpenShift__
 -   :simple-nomad: __Nomad__
 -   :simple-argo: __ArgoCD__
 -   :simple-flux: __FluxCD__
@@ -232,7 +232,7 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 -   :material-shield: __Bandit__
 -   :material-shield: __Checkov__
 -   :material-shield: __OWASP ZAP__
--   :simple-sonarqube: __SonarQube__
+-   :simple-sonarqubeforide: __SonarQube__
 -   :material-shield: __OSV Scanner__
 -   :material-shield: __Falco__
 -   :material-shield: __Aqua Security__
@@ -252,14 +252,14 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 -   :simple-mysql: __MySQL__
 -   :simple-mariadb: __MariaDB__
 -   :simple-mongodb: __MongoDB__
--   :simple-cassandra: __Cassandra__
+-   :simple-apachecassandra: __Cassandra__
 -   :simple-clickhouse: __ClickHouse__
 -   :simple-elasticsearch: __Elasticsearch__
 -   :simple-opensearch: __OpenSearch__
 -   :simple-neo4j: __Neo4j__
 -   :simple-cockroachlabs: __CockroachDB__
 -   :simple-scylladb: __ScyllaDB__
--   :simple-amazondynamodb: __DynamoDB__
+-   :fontawesome-brands-aws: __DynamoDB__
 -   :fontawesome-solid-database: __TiDB__
 -   :simple-influxdb: __InfluxDB__
 -   :fontawesome-solid-database: __TimescaleDB__
@@ -318,7 +318,7 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 
 <div class="grid cards" markdown>
 
--   :simple-openai: __OpenAI API__
+-   :material-robot-outline: __OpenAI API__
 -   :simple-huggingface: __Hugging Face__
 -   :material-robot: __Ollama__
 -   :material-robot: __vLLM__
@@ -355,14 +355,14 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 <div class="grid cards" markdown>
 
 -   :simple-rabbitmq: __RabbitMQ__
--   :simple-nats: __NATS__
+-   :simple-natsdotio: __NATS__
 -   :simple-apache: __Apache Pulsar__
 -   :simple-apache: __ActiveMQ__
--   :material-swap-horiz: __Redpanda__
+-   :material-swap-horizontal: __Redpanda__
 -   :simple-socketdotio: __Socket.IO__
--   :material-swap-horiz: __Pusher__
--   :material-swap-horiz: __Ably__
--   :material-swap-horiz: __LiveKit__
+-   :material-swap-horizontal: __Pusher__
+-   :material-swap-horizontal: __Ably__
+-   :material-swap-horizontal: __LiveKit__
 -   :simple-redis: __BullMQ__
 
 </div>
@@ -393,7 +393,7 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 -   :simple-fastly: __Fastly__
 -   :material-lan: __Akamai__
 -   :material-lan: __Imperva__
--   :material-vpn-key: __WireGuard__
+-   :material-key: __WireGuard__
 -   :simple-tailscale: __Tailscale__
 -   :simple-ngrok: __ngrok__
 -   :simple-cloudflare: __Cloudflare Tunnel__
@@ -407,7 +407,7 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 
 <div class="grid cards" markdown>
 
--   :simple-dbt: __dbt__
+-   :material-database: __dbt__
 -   :material-pipe: __Dagster__
 -   :simple-airbyte: __Airbyte__
 -   :material-pipe: __Fivetran__
@@ -516,13 +516,13 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 
 <div class="grid cards" markdown>
 
--   :material-account-tree: __Temporal__
--   :material-account-tree: __Prefect__
--   :material-account-tree: __Camunda__
+-   :material-sitemap: __Temporal__
+-   :material-sitemap: __Prefect__
+-   :material-sitemap: __Camunda__
 -   :simple-n8n: __n8n__
--   :material-account-tree: __Kestra__
--   :material-account-tree: __Inngest__
--   :material-account-tree: __trigger.dev__
+-   :material-sitemap: __Kestra__
+-   :material-sitemap: __Inngest__
+-   :material-sitemap: __trigger.dev__
 
 </div>
 
@@ -531,8 +531,8 @@ The detection engine supports **700+ log ecosystems** across 30+ categories.
 <div class="grid cards" markdown>
 
 -   :simple-kubernetes: __Velero__
--   :material-backup: __Restic__
--   :material-backup: __Longhorn__
+-   :material-backup-restore: __Restic__
+-   :material-backup-restore: __Longhorn__
 
 </div>
 

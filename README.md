@@ -188,13 +188,13 @@ diagnosing them. The workflow is the same everywhere: run `bonsai`, analyze the
 | :--- | :--- |
 | Claude Code | marketplace plugin with command, skill, and agents |
 | Factory Droid | marketplace plugin with command, skill, and droids |
-| GitHub Copilot | repository instructions and reusable prompt |
-| Cursor | MDC rule scoped to log-like files |
-| Codex | `AGENTS.md` plus repo-local skill |
-| OpenCode | `AGENTS.md`, skill, and `/bonsai` command |
+| GitHub Copilot | marketplace plugin with command, skill, and agents |
+| Cursor | marketplace plugin with rule, skill, command, and agents |
+| Codex | marketplace plugin with progressive log-compression skill |
+| OpenCode | OpenCode-native skill and `/bonsai` command bundle |
 
 See the [Agent Plugin Installation guide](https://mrwogu.github.io/context-bonsai/guides/plugins/)
-for copy-paste setup steps.
+for install steps.
 
 ---
 

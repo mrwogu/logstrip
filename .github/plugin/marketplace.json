@@ -1,0 +1,31 @@
+{
+  "name": "context-bonsai",
+  "metadata": {
+    "description": "ContextBonsai plugin marketplace for GitHub Copilot.",
+    "version": "1.0.0"
+  },
+  "owner": {
+    "name": "mrwogu"
+  },
+  "plugins": [
+    {
+      "name": "context-bonsai",
+      "source": "./plugins/context-bonsai",
+      "description": "Compress noisy CI, build, runtime, scanner, and test logs before Copilot diagnoses them.",
+      "version": "1.0.0",
+      "repository": "https://github.com/mrwogu/context-bonsai",
+      "keywords": [
+        "logs",
+        "ci",
+        "llm",
+        "compression"
+      ],
+      "license": "MIT",
+      "skills": [
+        "./skills/context-bonsai"
+      ],
+      "commands": "./commands/",
+      "agents": "./agents/"
+    }
+  ]
+}

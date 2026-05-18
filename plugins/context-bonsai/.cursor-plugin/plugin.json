@@ -1,0 +1,28 @@
+{
+  "name": "context-bonsai",
+  "displayName": "ContextBonsai",
+  "version": "1.0.0",
+  "description": "Compress noisy CI, build, runtime, scanner, and test logs before Cursor diagnoses them.",
+  "author": {
+    "name": "mrwogu"
+  },
+  "homepage": "https://mrwogu.github.io/context-bonsai/",
+  "repository": "https://github.com/mrwogu/context-bonsai",
+  "license": "MIT",
+  "keywords": [
+    "logs",
+    "ci",
+    "llm",
+    "compression"
+  ],
+  "category": "developer-tools",
+  "tags": [
+    "logs",
+    "ci",
+    "agent-efficiency"
+  ],
+  "skills": "./skills/",
+  "rules": "./rules/",
+  "commands": "./commands/",
+  "agents": "./agents/"
+}
