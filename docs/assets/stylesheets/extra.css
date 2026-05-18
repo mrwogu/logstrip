@@ -1093,12 +1093,14 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.2rem;
-  height: 3.2rem;
-  border-radius: 0.8rem;
+  min-width: 4.2rem;
+  height: 4.2rem;
+  padding: 0 0.6rem;
+  border-radius: 0.9rem;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.3s ease;
+  text-decoration: none;
 }
 
 .bonsai-agent-logo:hover {
@@ -1109,8 +1111,8 @@ html {
 }
 
 .bonsai-agent-logo img {
-  width: 1.8rem;
-  height: 1.8rem;
+  max-height: 2.2rem;
+  width: auto;
   object-fit: contain;
   filter: grayscale(100%) opacity(0.6);
   transition: filter 0.3s ease;
@@ -1148,6 +1150,11 @@ html {
 
 [data-md-color-scheme='default'] .bonsai-agent-logo:hover img {
   filter: brightness(0) opacity(1);
+}
+
+[data-md-color-scheme='default'] .bonsai-agent-logo:focus-visible {
+  outline: 2px solid rgba(31, 111, 56, 0.5);
+  outline-offset: 3px;
 }
 
 /* ------------------------------------------------------------------------- *

@@ -195,12 +195,12 @@ ContextBonsai produces deterministic, AI-ready logs that are cheaper to analyze.
 <div class="bonsai-agents-strip" data-bonsai-reveal>
   <span class="bonsai-agents-strip__label">plugins for every listed agent</span>
   <div class="bonsai-agents-strip__logos">
-    <div class="bonsai-agent-logo" title="Claude Code"><img src="assets/images/logo-claude-code.svg" alt="Claude Code"></div>
-    <div class="bonsai-agent-logo" title="Droid"><img src="assets/images/logo-droid.png" alt="Droid"></div>
-    <div class="bonsai-agent-logo" title="Copilot"><img src="assets/images/logo-copilot.svg" alt="Copilot"></div>
-    <div class="bonsai-agent-logo" title="Cursor"><img src="assets/images/logo-cursor.svg" alt="Cursor"></div>
-    <div class="bonsai-agent-logo" title="Codex"><img src="assets/images/logo-codex.png" alt="Codex"></div>
-    <div class="bonsai-agent-logo" title="OpenCode"><img src="assets/images/logo-opencode.png" alt="OpenCode"></div>
+    <a class="bonsai-agent-logo" title="Claude Code" href="guides/plugins/#claude-code"><img src="assets/images/logo-claude-code.svg" alt="Claude Code"></a>
+    <a class="bonsai-agent-logo" title="Droid" href="guides/plugins/#factory-droid"><img src="assets/images/logo-droid.png" alt="Droid"></a>
+    <a class="bonsai-agent-logo" title="Copilot" href="guides/plugins/#github-copilot"><img src="assets/images/logo-copilot.svg" alt="Copilot"></a>
+    <a class="bonsai-agent-logo" title="Cursor" href="guides/plugins/#cursor"><img src="assets/images/logo-cursor.svg" alt="Cursor"></a>
+    <a class="bonsai-agent-logo" title="Codex" href="guides/plugins/#codex"><img src="assets/images/logo-codex.png" alt="Codex"></a>
+    <a class="bonsai-agent-logo" title="OpenCode" href="guides/plugins/#opencode"><img src="assets/images/logo-opencode.png" alt="OpenCode"></a>
   </div>
   <a class="bonsai-button" href="guides/plugins/">install for your agent</a>
 </div>
