@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/mrwogu/context-bonsai/main/docs/assets/images/banner-1200.webp" alt="ContextBonsai compresses noisy raw logs into compact AI-ready diagnostic context" width="900">
+<img src="https://raw.githubusercontent.com/mrwogu/context-bonsai/main/docs/assets/images/banner-800.webp" alt="ContextBonsai compresses noisy raw logs into compact AI-ready diagnostic context" width="600">
 
 # ContextBonsai
 
@@ -45,13 +45,13 @@ bonsai raw.log -o clean.log --stats
 Or, without installing:
 
 ```bash
-cat raw.log | npx context-bonsai > clean.log
+cat raw.log | npx -y context-bonsai > clean.log
 ```
 
 PowerShell:
 
 ```powershell
-Get-Content raw.log | npx context-bonsai > clean.log
+Get-Content raw.log | npx -y context-bonsai > clean.log
 ```
 
 ---

@@ -8,7 +8,7 @@ GitHub Step Summary for free.
 If you can call shell from your workflow, prefer the CLI directly:
 
 ```yaml
-- run: npx context-bonsai raw_logs.txt -o clean.log --stats
+- run: npx -y context-bonsai raw_logs.txt -o clean.log --stats
 ```
 
 ## Usage
