@@ -71,7 +71,7 @@
     "verify": "npm run typecheck && npm run test:coverage && npm run build && npm audit && npm run docs:build"
   },
   "devDependencies": {
-    "@actions/core": "^1.11.1",
+    "@actions/core": "^3.0.1",
     "@actions/github": "^9.1.1",
     "@types/node": "^22.10.0",
     "@vitest/coverage-v8": "^4.1.6",
