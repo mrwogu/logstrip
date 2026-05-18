@@ -10,6 +10,7 @@
         }
       ],
       "include-component-in-tag": false,
+      "initial-version": "1.0.0",
       "package-name": "context-bonsai",
       "release-type": "node"
     }
