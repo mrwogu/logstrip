@@ -58,7 +58,7 @@ plugins:
         Guides:
           - guides/compression-flow.md: Compression Flow
           - guides/configuration.md: Configuration
-          - guides/plugins.md: Plugin Installation
+          - guides/plugins.md: Agent Plugins
   - minify:
       minify_html: true
 
@@ -115,7 +115,7 @@ nav:
   - Guides:
       - Compression Flow: guides/compression-flow.md
       - Configuration: guides/configuration.md
-      - Plugin Installation: guides/plugins.md
+      - Agent Plugins: guides/plugins.md
       - Security: guides/security.md
       - Troubleshooting: guides/troubleshooting.md
   - Examples:

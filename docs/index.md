@@ -6,13 +6,31 @@
 # smaller logs. cleaner agents.
 
 <p class="bonsai-lede">A zero-dependency CLI that turns chaotic server logs, build pipelines, vulnerability scanners, and container workloads into compact, high-signal context that AI agents can actually reason about.</p>
+<p class="bonsai-lede bonsai-lede--small">Toggle the demo to watch a noisy raw log become a compact, sanitized Bonsai artifact.</p>
 
 <p class="bonsai-actions">
   <a class="bonsai-button" href="getting-started/">install the cli</a>
+  <a class="bonsai-button bonsai-button--ghost" href="#live-demo">watch the demo</a>
+  <a class="bonsai-button bonsai-button--ghost" href="guides/plugins/">agent plugins</a>
 </p>
 </div>
 
-<div class="bonsai-demo bonsai-demo--toggle" data-bonsai-compare aria-label="Interactive raw-to-Bonsai terminal comparison"></div>
+<div class="bonsai-demo bonsai-demo--toggle" data-bonsai-compare aria-label="Interactive raw-to-Bonsai terminal comparison">
+  <div class="bonsai-demo__bar">
+    <span class="bonsai-demo__dot"></span>
+    <span class="bonsai-demo__dot"></span>
+    <span class="bonsai-demo__dot"></span>
+    <span class="bonsai-demo__title">raw.log → bonsai.log</span>
+  </div>
+  <div class="bonsai-demo__fallback">
+    <strong>Demo fallback</strong>
+    <pre>[INFO] boot ok
+[ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed
+[ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed</pre>
+    <pre>[x2] [ERROR] request [ID] failed</pre>
+    <span>JavaScript adds the interactive raw/Bonsai toggle here.</span>
+  </div>
+</div>
 </div>
 </section>
 
@@ -134,6 +152,27 @@ ContextBonsai produces deterministic, AI-ready logs that are cheaper to analyze.
   </div>
   <a class="bonsai-button" href="guides/plugins/">install for your agent</a>
 </div>
+
+## live demo
+
+The hero terminal is interactive: switch from `raw.log` to `bonsai` to see the
+browser-side demo compress repeated errors, mask volatile identifiers, collapse
+framework stack frames, and show the agent-ready summary.
+
+If your browser blocks JavaScript, the same transformation looks like this:
+
+```text
+[INFO] boot ok
+[DEBUG] retry cache warming
+[ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed
+[ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed
+    at lib (/repo/node_modules/pkg/index.js:1:1)
+```
+
+```text
+[x2] [ERROR] request [ID] failed
+[... hidden internal stack frames ...]
+```
 
 ## cli in one line
 

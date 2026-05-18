@@ -1,4 +1,4 @@
-# Plugin Installation
+# Agent Plugins
 
 ContextBonsai is CLI-first, but the repository ships plugin/config bundles for
 every agent shown on the documentation homepage: Claude Code, Factory Droid,
@@ -21,56 +21,32 @@ That gives the agent a smaller, higher-signal file plus measurable savings from
 If `--stats` reports `inputTokens=18000` and `outputTokens=4500`, the agent
 receives 75% less log context while still preserving diagnostic lines.
 
-## Repository layout
+## Choose your agent
 
-```text
-.claude-plugin/
-  marketplace.json
-.factory-plugin/
-  marketplace.json
-plugins/
-  context-bonsai/
-    .claude-plugin/
-      plugin.json
-    .factory-plugin/
-      plugin.json
-    copilot/
-      .github/
-        copilot-instructions.md
-        instructions/
-          context-bonsai.instructions.md
-        prompts/
-          bonsai.prompt.md
-    cursor/
-      .cursor/
-        rules/
-          context-bonsai.mdc
-    codex/
-      AGENTS.md
-      .codex/
-        skills/
-          context-bonsai/
-            SKILL.md
-    opencode/
-      AGENTS.md
-      .opencode/
-        commands/
-          bonsai.md
-        skills/
-          context-bonsai/
-            SKILL.md
-    commands/
-      bonsai.md
-    skills/
-      context-bonsai/
-        SKILL.md
-    agents/
-      bonsai-reviewer.md
-      bonsai-fixture-author.md
-    droids/
-      bonsai-reviewer.md
-      bonsai-fixture-author.md
+Start with the agent your team already uses. All paths below install the same
+compression-first workflow; they only differ in how each agent discovers
+commands, rules, skills, or repo instructions.
+
+| Agent | Install surface | What you get | Start here |
+| :--- | :--- | :--- | :--- |
+| Claude Code | Git-backed plugin marketplace | `/bonsai`, `context-bonsai` skill, reviewer/fixture agents | [Claude Code](#claude-code) |
+| Factory Droid | Droid plugin marketplace | `/bonsai`, `context-bonsai` skill, reviewer/fixture droids | [Factory Droid](#factory-droid) |
+| GitHub Copilot | `.github` instructions and prompts | repo-wide log handling plus reusable Bonsai prompt | [GitHub Copilot](#github-copilot) |
+| Cursor | `.cursor/rules/*.mdc` | agent-requested log compression rule | [Cursor](#cursor) |
+| Codex | `AGENTS.md` and `.codex/skills` | progressive log-compression skill | [Codex](#codex) |
+| OpenCode | `AGENTS.md`, `.opencode/skills`, `.opencode/commands` | skill plus `/bonsai` command | [OpenCode](#opencode) |
+
+## Install the CLI first
+
+Every plugin delegates the actual compression to the same zero-dependency CLI:
+
+```bash
+npm i -g context-bonsai
+bonsai <input-log> -o <output-log> --stats
 ```
+
+If global installs are not allowed, use `npx -y context-bonsai` in the command
+or prompt template for your agent.
 
 ## Claude Code
 
@@ -212,14 +188,61 @@ If the target project already has `AGENTS.md`, merge the ContextBonsai section
 instead of replacing the file. OpenCode can then invoke the skill on demand or
 use the `/bonsai` command to compress a named log and summarize token savings.
 
-## CLI prerequisite
+## Bundle contents
 
-Every plugin delegates the actual compression to the same CLI:
+Most users only need the install steps above. If you are packaging or auditing
+the plugin bundle, these are the shipped integration files:
 
-```bash
-npm i -g context-bonsai
-bonsai <input-log> -o <output-log> --stats
-```
+??? info "Repository layout"
+
+    ```text
+    .claude-plugin/
+      marketplace.json
+    .factory-plugin/
+      marketplace.json
+    plugins/
+      context-bonsai/
+        .claude-plugin/
+          plugin.json
+        .factory-plugin/
+          plugin.json
+        copilot/
+          .github/
+            copilot-instructions.md
+            instructions/
+              context-bonsai.instructions.md
+            prompts/
+              bonsai.prompt.md
+        cursor/
+          .cursor/
+            rules/
+              context-bonsai.mdc
+        codex/
+          AGENTS.md
+          .codex/
+            skills/
+              context-bonsai/
+                SKILL.md
+        opencode/
+          AGENTS.md
+          .opencode/
+            commands/
+              bonsai.md
+            skills/
+              context-bonsai/
+                SKILL.md
+        commands/
+          bonsai.md
+        skills/
+          context-bonsai/
+            SKILL.md
+        agents/
+          bonsai-reviewer.md
+          bonsai-fixture-author.md
+        droids/
+          bonsai-reviewer.md
+          bonsai-fixture-author.md
+    ```
 
 ## Aggressiveness reference
 
