@@ -1,0 +1,7 @@
+[INFO] rancher container started: image checkout-api:latest
+[DEBUG] rancher health check passed on port 8080
+[DEBUG] rancher Normal Pulled container checkout-api in pod checkout-api-7b8759d7b9-mk2dq
+[ERROR] rancher CrashLoopBackOff: back-off restarting failed container checkout-api in pod checkout-api-7b8759d7b9-mk2dq
+[ERROR] rancher ImagePullBackOff: failed to pull image checkout-api:latest - rpc error: code = Unknown desc = failed to resolve reference
+[ERROR] rancher OOMKilled: container checkout-api exceeded memory limit for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] rancher container runtime error: runc create failed commit=abcdef1234567890abcdef1234567890abcdef12

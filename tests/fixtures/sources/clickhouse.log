@@ -1,0 +1,7 @@
+[INFO] clickhouse server started on port 5432
+[DEBUG] clickhouse connection pool: 42 active connections
+[DEBUG] clickhouse checkpoint completed in 12ms
+[ERROR] clickhouse FATAL: password authentication failed for user "admin" from 10.42.7.18:54321
+[ERROR] clickhouse connection refused to 10.90.12.43:5432
+[ERROR] clickhouse deadlock detected for transaction 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] clickhouse out of disk space - cannot extend relation commit=abcdef1234567890abcdef1234567890abcdef12

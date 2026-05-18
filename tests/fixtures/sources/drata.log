@@ -1,0 +1,7 @@
+[INFO] drata scan started: 42 files
+[DEBUG] drata scanning directory /repo/src
+[DEBUG] drata scanning directory /repo/tests
+[ERROR] drata CVE-2026-12345 found in openssl: CRITICAL severity
+[ERROR] drata GHSA-ab12-cd34-ef56 found in lodash: HIGH severity
+[ERROR] drata High severity vulnerability found in package request-018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] drata 12 critical vulnerabilities detected - policy violation commit=abcdef1234567890abcdef1234567890abcdef12

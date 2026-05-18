@@ -1,0 +1,7 @@
+[INFO] mlflow model loaded successfully
+[DEBUG] mlflow inference: 42 tokens/s on GPU 0
+[DEBUG] mlflow batch processing: 8 requests
+[ERROR] mlflow Error: CUDA out of memory - tried to allocate 2.00 GiB
+[ERROR] mlflow rate limit exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[ERROR] mlflow model file corrupted - header checksum mismatch
+[FATAL] mlflow NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

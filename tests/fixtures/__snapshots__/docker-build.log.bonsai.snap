@@ -1,0 +1,5 @@
+[WARN] npm warn deprecated har-validator@5.1.5: this library is no longer supported
+[x3] [ERROR] src/services/payment-service.ts(42,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+[x2] [ERROR] src/repositories/user-repository.ts(118,23): error TS18048: 'user.email' is possibly 'undefined'.
+[FATAL] BUILD FAILURE: 2 distinct type errors detected
+[ERROR] failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1

@@ -1,0 +1,36 @@
+[INFO] 2026-05-15T07:00:00Z pytest 8.0.0 starting workerId=4f1e3d2c-9b8a-7e6d-5c4b-3a2f1e0d9c8b
+[DEBUG] 2026-05-15T07:00:00Z platform linux -- Python 3.12.1, pluggy-1.4.0
+[DEBUG] 2026-05-15T07:00:00Z rootdir: /repo
+[DEBUG] 2026-05-15T07:00:00Z plugins: cov-4.1.0, anyio-4.2.0
+[INFO] 2026-05-15T07:00:00Z collecting 124 items
+[INFO] 2026-05-15T07:00:00Z collected 124 items
+[INFO] tests/test_health.py .. [  1%]
+[INFO] tests/test_users.py .. [  3%]
+[INFO] tests/test_orders.py FFF [  5%]
+[ERROR] tests/test_orders.py::test_create_order TypeError: Object of type Decimal is not JSON serializable
+    File "/repo/.venv/lib/python3.12/site-packages/pytest/_pytest/runner.py", line 341, in from_call
+    File "/repo/.venv/lib/python3.12/site-packages/_pytest/python.py", line 1798, in runtest
+    File "/repo/.venv/lib/python3.12/site-packages/_pytest/python.py", line 195, in pytest_pyfunc_call
+    File "/repo/tests/test_orders.py", line 42, in test_create_order
+        client.post("/orders", json=payload)
+    File "/repo/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1129, in post
+    File "/repo/.venv/lib/python3.12/site-packages/httpx/_client.py", line 814, in request
+[ERROR] tests/test_orders.py::test_update_order TypeError: Object of type Decimal is not JSON serializable
+    File "/repo/.venv/lib/python3.12/site-packages/pytest/_pytest/runner.py", line 341, in from_call
+    File "/repo/.venv/lib/python3.12/site-packages/_pytest/python.py", line 1798, in runtest
+    File "/repo/.venv/lib/python3.12/site-packages/_pytest/python.py", line 195, in pytest_pyfunc_call
+    File "/repo/tests/test_orders.py", line 58, in test_update_order
+        client.put(f"/orders/{order_id}", json=payload)
+    File "/repo/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1234, in put
+    File "/repo/.venv/lib/python3.12/site-packages/httpx/_client.py", line 814, in request
+[ERROR] tests/test_orders.py::test_delete_order AssertionError: assert 500 == 204
+    File "/repo/tests/test_orders.py", line 73, in test_delete_order
+        assert response.status_code == 204
+[INFO] tests/test_payments.py .. [ 95%]
+[INFO] tests/test_webhooks.py . [100%]
+[INFO] ============================ short test summary info ============================
+[ERROR] FAILED tests/test_orders.py::test_create_order - TypeError: Object of type Decimal is not JSON serializable
+[ERROR] FAILED tests/test_orders.py::test_update_order - TypeError: Object of type Decimal is not JSON serializable
+[ERROR] FAILED tests/test_orders.py::test_delete_order - AssertionError: assert 500 == 204
+[INFO] 3 failed, 121 passed in 12.74s
+[DEBUG] 2026-05-15T07:00:13Z teardown sessionId=8c2a4d6f-1b3e-5d7a-9f1c-2e4g6h8i0j2k

@@ -1,0 +1,6 @@
+[INFO] kafka connect broker started on port 9092
+[DEBUG] kafka connect topic orders: 42 partitions active
+[DEBUG] kafka connect consumer group checkout-api: lag=0
+[ERROR] kafka connect connection refused to broker 10.90.12.43:9092
+[ERROR] kafka connect message delivery failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] kafka connect cluster unreachable - quorum lost commit=abcdef1234567890abcdef1234567890abcdef12

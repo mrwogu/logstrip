@@ -1,0 +1,4 @@
+[INFO] artifactory image pushed successfully
+[DEBUG] artifactory 42 layers uploaded
+[ERROR] artifactory push failed: repository policy denies access for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] artifactory signature verification failed commit=abcdef1234567890abcdef1234567890abcdef12

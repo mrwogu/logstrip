@@ -1,0 +1,20 @@
+[WARN] WARNING in ./src/components/Dashboard.tsx 42:18-32
+[WARN] export 'unstable_useTransition' (imported as 'unstable_useTransition') was not found in 'react'
+[WARN] WARNING in ./src/components/Dashboard.tsx 42:18-32
+[WARN] export 'unstable_useTransition' (imported as 'unstable_useTransition') was not found in 'react'
+[WARN] WARNING in ./node_modules/dayjs/esm/locale/en.js
+[WARN] Module not found: Can't resolve './uk' in '/repo/node_modules/dayjs/esm/locale'
+[ERROR] ERROR in ./src/api/client.ts 18:22-35
+[ERROR] Module not found: Error: Can't resolve '@company/sdk' in '/repo/src/api'
+[ERROR] resolve '@company/sdk' in '/repo/src/api'
+[ERROR]   Parsed request is a module
+[ERROR]   using description file: /repo/package.json (relative path: ./src/api)
+[ERROR]     Field 'browser' doesn't contain a valid alias configuration
+[ERROR]     resolve as module
+[ERROR]       /repo/src/api/node_modules doesn't exist or is not a directory
+[ERROR]       /repo/src/node_modules doesn't exist or is not a directory
+[ERROR]       /repo/node_modules
+[ERROR]         Field 'browser' doesn't contain a valid alias configuration
+[... hidden internal library frames ...]
+[ERROR] webpack 5.94.0 compiled with 5 errors and 3 warnings in 12348 ms
+[FATAL] BUILD FAILED: bundle size 2.07 MiB exceeds budget 2.00 MiB

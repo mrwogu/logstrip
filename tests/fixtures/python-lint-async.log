@@ -1,0 +1,50 @@
+[INFO] ruff check: 42 files scanned
+[DEBUG] ruff format: 18 files reformatted
+[INFO] mypy: Success: 120 files checked, 0 errors
+[DEBUG] mypy: warning: unused ignore comment
+[INFO] pyright - 42 source files checked
+[DEBUG] pyright: 0 errors, 3 warnings
+[INFO] pylint: 42 modules analyzed
+[DEBUG] pylint --: score 8.5/10
+[INFO] isort: 42 files checked, 0 changes
+[DEBUG] isort --: skip .tox
+[INFO] aiohttp.server started on 0.0.0.0:8080
+[DEBUG] aiohttp: 42 active connections
+[INFO] sanic server started on port 8000
+[DEBUG] sanic: workers=4
+[INFO] tornado.web: app listening on port 8888
+[DEBUG] tornado: ioloop started
+[INFO] twisted.internet: reactor running
+[DEBUG] twisted: 42 protocols active
+[INFO] scrapy crawl: spider started
+[DEBUG] scrapy.spider: 420 items scraped
+[ERROR] ruff check F401: `app.utils.helpers` imported but unused
+[ERROR] ruff check E501: line too long (142 > 120 characters)
+[ERROR] ruff check F401: `app.services.payments` imported but unused
+[ERROR] mypy: error: Argument 1 to "process_order" has incompatible type "str"; expected "int"
+[ERROR] mypy: error: Incompatible return type "None" vs "Order"
+[ERROR] pyright - error: Type of "order.total" is "unknown" and not assignable to "float"
+[ERROR] pyright - error: Cannot access attribute "items" on type "None"
+[ERROR] pylint E0602: Undefined variable 'checkout_id'
+[ERROR] pylint W0612: Unused variable 'response'
+[ERROR] aiohttp.server Error: RuntimeError: Session is closed when processing request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+    at aiohttp/client.py:42 in _request
+    at aiohttp/connector.py:88 in connect
+[ERROR] aiohttp.server Error: RuntimeError: Session is closed when processing request 018f23ab-7c1d-7f44-8bfe-0acddaf33457
+    at aiohttp/client.py:42 in _request
+    at aiohttp/connector.py:88 in connect
+[ERROR] sanic server Error: SanicException: Request timeout on POST /api/checkout
+    at sanic/app.py:42 in handle_request
+    at sanic/router.py:88 in resolve
+[FATAL] tornado.web Error: RuntimeError: IOLoop.current is closing
+    at tornado/ioloop.py:42 in _run_callback
+    at tornado/stack_context.py:88 in run
+[ERROR] twisted.internet Error: ReactorNotRunning: Cannot stop reactor that is not running
+    at twisted/internet/base.py:42 in stop
+    at twisted/internet/defer.py:88 in callback
+[ERROR] scrapy crawl Error: SpiderError: Cannot parse response from 10.90.12.41
+    at scrapy/spider.py:42 in parse
+    at scrapy/middleware.py:88 in process_spider_output
+[ERROR] 2026-05-15T10:20:30.123Z aiohttp Error: timeout for request 018f23ab-7c1d-7f44-8bfe-0acddaf33458 on /api/checkout from 10.42.7.18:54321
+[ERROR] 2026-05-15T10:20:30.124Z aiohttp Error: timeout for request 018f23ab-7c1d-7f44-8bfe-0acddaf33459 on /api/checkout from 10.42.7.18:54322
+[FATAL] 2026-05-15T10:20:35.000Z sanic server crash: Out of memory commit=abcdef1234567890abcdef1234567890abcdef12

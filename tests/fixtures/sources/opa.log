@@ -1,0 +1,4 @@
+[INFO] open policy agent evaluation started
+[DEBUG] open policy agent 42 policies evaluated
+[ERROR] open policy agent policy violation: privileged container in deployment checkout-api for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] open policy agent admission webhook denied commit=abcdef1234567890abcdef1234567890abcdef12

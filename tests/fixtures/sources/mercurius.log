@@ -1,0 +1,4 @@
+[INFO] mercurius server started on port 3000
+[DEBUG] mercurius 42 clients connected
+[ERROR] mercurius transport closed unexpectedly for client 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] mercurius schema validation failed commit=abcdef1234567890abcdef1234567890abcdef12

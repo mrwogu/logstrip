@@ -1,0 +1,11 @@
+{"time":"2026-05-15T10:20:30.123Z","level":"info","msg":"http server started","service":"checkout","instance":"api-7f6f5d4c"}
+{"time":"2026-05-15T10:20:32.001Z","level":"debug","msg":"health probe ok","requestId":"018f23ab-7c1d-7f44-8bfe-0acddaf33456"}
+{"time":"2026-05-15T10:21:02.990Z","level":"error","msg":"database timeout","requestId":"018f23ab-7c1d-7f44-8bfe-0acddaf33456","clientIp":"10.42.7.18:54321","traceId":"ab12cd34ef56ab78cd90ef12ab34cd56"}
+{"time":"2026-05-15T10:21:03.010Z","level":"error","msg":"database timeout","requestId":"018f23ab-7c1d-7f44-8bfe-0acddaf33457","clientIp":"10.42.7.18:54321","traceId":"cd34ef56ab78cd90ef12ab34cd56ef78"}
+Caused by: Error: connect ECONNREFUSED 10.42.7.18:5432
+    at query (/srv/app/src/db.ts:84:17)
+    at performCheckout (/srv/app/src/checkout.ts:144:13)
+    at Pool.query (/srv/app/node_modules/pg/lib/pool.js:45:11)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+{"time":"2026-05-15T10:21:03.245Z","severity":"critical","msg":"checkout failed permanently","requestId":"018f23ab-7c1d-7f44-8bfe-0acddaf33458","status":503}
+[31m{"time":"2026-05-15T10:21:03.999Z","level":"error","msg":"database timeout","requestId":"018f23ab-7c1d-7f44-8bfe-0acddaf33459","clientIp":"10.42.7.18:54321"}[0m

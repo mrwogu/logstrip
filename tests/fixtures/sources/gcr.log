@@ -1,0 +1,4 @@
+[INFO] gcr.io image pushed successfully
+[DEBUG] gcr.io 42 layers uploaded
+[ERROR] gcr.io push failed: repository policy denies access for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] gcr.io signature verification failed commit=abcdef1234567890abcdef1234567890abcdef12

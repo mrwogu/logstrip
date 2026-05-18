@@ -1,0 +1,7 @@
+[INFO] elastic apm server started on port 5432
+[DEBUG] elastic apm connection pool: 42 active connections
+[DEBUG] elastic apm checkpoint completed in 12ms
+[ERROR] elastic apm FATAL: password authentication failed for user "admin" from 10.42.7.18:54321
+[ERROR] elastic apm connection refused to 10.90.12.43:5432
+[ERROR] elastic apm deadlock detected for transaction 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] elastic apm out of disk space - cannot extend relation commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,7 @@
+[INFO] sidekiq server started on :8080
+[DEBUG] sidekiq 8 routes registered
+[ERROR] sidekiq Error: context deadline exceeded on POST /api/checkout
+    at sidekiq/handler.go:42 in serve
+    at sidekiq/router.go:88 in resolve
+[ERROR] sidekiq request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] sidekiq server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

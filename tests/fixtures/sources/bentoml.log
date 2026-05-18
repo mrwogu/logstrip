@@ -1,0 +1,7 @@
+[INFO] bentoml model loaded successfully
+[DEBUG] bentoml inference: 42 tokens/s on GPU 0
+[DEBUG] bentoml batch processing: 8 requests
+[ERROR] bentoml Error: CUDA out of memory - tried to allocate 2.00 GiB
+[ERROR] bentoml rate limit exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[ERROR] bentoml model file corrupted - header checksum mismatch
+[FATAL] bentoml NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

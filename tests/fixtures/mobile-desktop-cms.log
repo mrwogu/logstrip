@@ -1,0 +1,96 @@
+[INFO] react-native bundling started
+[DEBUG] react-native metro server on port 8081
+[INFO] flutter build apk --release started
+[DEBUG] flutter test: running integration tests
+[INFO] expo start: development server on port 19000
+[DEBUG] expo-cli: fetching manifest from 10.90.12.41
+[INFO] electron app started: version 2.0.1
+[DEBUG] electron-builder packaging for mac
+[INFO] tauri app started on port 1420
+[DEBUG] tauri build: compiling rust backend
+[INFO] capacitor run android started
+[DEBUG] @capacitor/core: plugin initialized
+[INFO] ionic framework serve on port 8100
+[DEBUG] ionic cap sync android completed
+[INFO] wordpress 6.5 site health check passed
+[DEBUG] wp-content/plugins/woocommerce/active
+[INFO] drupal 10.2 cache rebuild complete
+[DEBUG] drupal.org module update check
+[INFO] strapi start on port 1337
+[DEBUG] strapi content-type builder loaded
+[INFO] ghost cms running on port 2368
+[DEBUG] ghost-cli migration check
+[INFO] contentful sync: 42 entries updated
+[DEBUG] contentful webhook delivered
+[INFO] sanity.io studio started
+[DEBUG] sanity start: schema compiled
+[INFO] shopify theme serve on port 9292
+[DEBUG] shopify-cli: push theme to 10.90.12.41
+[INFO] magento2 cache flush completed
+[DEBUG] magento deployment: 12 modules
+[INFO] woocommerce payment gateway configured
+[DEBUG] woocommerce order sync completed
+[INFO] meilisearch index created: products
+[DEBUG] meili search: 42000 documents indexed
+[INFO] typesense server listening on port 8108
+[DEBUG] typesense: collection created
+[INFO] apache solr core loaded: products
+[DEBUG] solrconfig: auto-commit enabled
+[INFO] algolia index: 42000 records synced
+[ERROR] react-native Error: bundling failed: Error: Unable to resolve module `@company/auth` from `/app/src/App.tsx`
+    at ModuleResolver.resolveDependency (/app/node_modules/metro/src/node-haste/DependencyGraph/ModuleResolution.js:42:18)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] flutter Error: FormatException: Invalid UTF-8 in response body
+    at _parseBody (/app/.pub-cache/hosted/pub.dev/http-1.2.0/lib/src/response.dart:42:15)
+    at dart:async/zone.dart:88 in _rootRun
+[ERROR] expo start Error: TypeError: Cannot read properties of undefined (reading 'apiKey')
+    at configureFirebase (/app/node_modules/expo-cli/build/config.js:42:18)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] electron-builder Error: Cannot find module 'electron'
+    at resolveModule (/app/node_modules/electron-builder/out/util.js:42:15)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] tauri build Error: cargo build failed: cannot find function `main` in crate `app`
+    at rustc/error.rs:42 in emit
+    at cargo/build.rs:88 in compile
+[ERROR] tauri app Error: PermissionDenied: window creation failed
+    at tauri/app/src/window.rs:42 in new
+    at tauri/app/src/main.rs:88 in run
+[ERROR] capacitor run Error: Android SDK not found at ANDROID_HOME
+    at @capacitor/core/platform.js:42 in detectSDK
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] ionic framework Error: ENOENT: no such file 'ionic.config.json'
+    at resolveConfig (/app/node_modules/ionic/dist/config.js:42:18)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] wordpress PHP Fatal error: Uncaught TypeError: Cannot access offset of type string in /var/www/wp-content/plugins/checkout/processor.php on line 42
+    at /var/www/wp-content/plugins/checkout/processor.php:42
+    at /var/www/wp-includes/class-wp-hook.php:88
+[ERROR] drupal Error: PluginNotFoundException: plugin "field_group" not found
+    at drupal/core/lib/Drupal/Component/Plugin/Exception/PluginNotFoundException.php:42
+    at drupal/core/modules/field/field.module:88
+[ERROR] strapi start Error: Error: Connection refused to database 10.90.12.43:5432
+    at strapi/packages/strapi/lib/services/connect.js:42 in connect
+    at strapi/packages/strapi/lib/app.js:88 in start
+[ERROR] ghost cms Error: ENOENT: theme template not found 'index.hbs'
+    at ghost-cli/lib/commands/start.js:42 in validate
+    at ghost-cli/lib/bootstrap.js:88 in run
+[ERROR] shopify Error: ShopifyAPIError: 422 Unprocessable Entity - variant already exists
+    at shopify-cli/lib/api/client.js:42 in request
+    at shopify-cli/lib/commands/push.js:88 in execute
+[ERROR] magento2 Error: Magento\Framework\DB\Adapter\DatabaseException: SQLSTATE[HY000]: General error: 1205 Lock wait timeout
+    at magento2/lib/internal/Magento/Framework/DB/Adapter/Pdo/Mysql.php:42 in query
+    at magento2/lib/internal/Magento/Framework/DB/Adapter/Pdo/Mysql.php:88 in connect
+[ERROR] meilisearch index Error: MeilisearchCommunicationError: connection refused to 10.90.12.44:7700
+    at meilisearch/lib/src/index.rs:42 in update
+    at meilisearch/lib/src/runner.rs:88 in execute
+[ERROR] typesense server Error: TypesenseError: Out of memory during indexing
+    at typesense/server/src/indices_manager.rs:42 in index_batch
+    at typesense/server/src/main.rs:88 in run
+[ERROR] apache solr Error: SolrException: Error opening new searcher - too many open files
+    at solrconfig/solr/core/src/java/org/apache/solr/core/SolrCore.java:42 in openSearcher
+    at solrconfig/solr/core/src/java/org/apache/solr/update/DirectUpdateHandler2.java:88 in commit
+[ERROR] algolia index Error: AlgoliaAPIError: 429 Too many requests - quota exceeded
+    at algolia/lib/src/index.py:42 in save_objects
+    at algolia/lib/src/client.py:88 in request
+[ERROR] 2026-05-15T10:20:30.123Z react-native Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed on POST /api/checkout from 10.42.7.18:54321
+[ERROR] 2026-05-15T10:20:30.124Z react-native Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33457 failed on POST /api/checkout from 10.42.7.18:54322
+[FATAL] 2026-05-15T10:20:35.000Z electron-builder process killed by SIGTERM commit=abcdef1234567890abcdef1234567890abcdef12

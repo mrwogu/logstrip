@@ -1,0 +1,7 @@
+[INFO] deepset haystack model loaded successfully
+[DEBUG] deepset haystack inference: 42 tokens/s on GPU 0
+[DEBUG] deepset haystack batch processing: 8 requests
+[ERROR] deepset haystack Error: CUDA out of memory - tried to allocate 2.00 GiB
+[ERROR] deepset haystack rate limit exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[ERROR] deepset haystack model file corrupted - header checksum mismatch
+[FATAL] deepset haystack NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

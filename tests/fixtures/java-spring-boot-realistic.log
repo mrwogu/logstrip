@@ -1,0 +1,25 @@
+2026-05-16T10:18:01.102Z  INFO 181 --- [checkout-api] [           main] c.e.checkout.CheckoutApplication         : Starting CheckoutApplication v2.6.1 using Java 21.0.4 with PID 181 (/app/checkout.jar started by app in /app)
+2026-05-16T10:18:01.425Z  INFO 181 --- [checkout-api] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-16T10:18:02.012Z DEBUG 181 --- [checkout-api] [           main] o.s.c.e.PropertySourcesPropertyResolver  : Found key 'spring.datasource.url' in PropertySource 'applicationConfig: [classpath:/application-prod.yml]'
+2026-05-16T10:18:02.381Z  INFO 181 --- [checkout-api] [           main] com.zaxxer.hikari.HikariDataSource       : checkout-pool - Starting...
+2026-05-16T10:18:02.892Z  INFO 181 --- [checkout-api] [           main] com.zaxxer.hikari.HikariDataSource       : checkout-pool - Start completed.
+2026-05-16T10:18:05.944Z  INFO 181 --- [checkout-api] [nio-8080-exec-1] c.e.checkout.web.HealthController        : readiness probe succeeded instance=checkout-api-7d9f8c7d4f-r8z2p
+2026-05-16T10:18:07.118Z  INFO 181 --- [checkout-api] [nio-8080-exec-3] c.e.checkout.web.CheckoutController      : POST /checkout orderId=ord-88421 requestId=0e366c93-9a83-4a0a-8f29-32ddda128801 customer=demo-customer-42
+2026-05-16T10:18:07.129Z DEBUG 181 --- [checkout-api] [nio-8080-exec-3] org.hibernate.SQL                        : select i1_0.sku,i1_0.available from inventory i1_0 where i1_0.sku=?
+2026-05-16T10:18:07.141Z  WARN 181 --- [checkout-api] [nio-8080-exec-3] c.e.checkout.inventory.InventoryClient   : retrying reservation sku=SKU-422 attempt=2 after timeout requestId=0e366c93-9a83-4a0a-8f29-32ddda128801
+2026-05-16T10:18:07.296Z ERROR 181 --- [checkout-api] [nio-8080-exec-3] c.e.checkout.web.CheckoutController      : Checkout request failed orderId=ord-88421 requestId=0e366c93-9a83-4a0a-8f29-32ddda128801
+java.lang.IllegalStateException: Inventory reservation failed for order 0e366c93-9a83-4a0a-8f29-32ddda128801
+java.lang.IllegalStateException: Inventory reservation failed for order 76488d69-1b78-443b-a0c4-632fd8630f5f
+    at com.example.checkout.inventory.InventoryClient.reserve(InventoryClient.java:74)
+    at com.example.checkout.service.CheckoutService.placeOrder(CheckoutService.java:132)
+    at com.example.checkout.web.CheckoutController.checkout(CheckoutController.java:58)
+    at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+    at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+    at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)
+Caused by: java.net.SocketTimeoutException: Read timed out
+    at java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)
+    at java.base/sun.nio.ch.NioSocketImpl.implRead(NioSocketImpl.java:304)
+2026-05-16T10:18:07.305Z ERROR 181 --- [checkout-api] [nio-8080-exec-3] o.s.b.a.w.s.e.BasicErrorController       : Resolved [java.lang.IllegalStateException: Inventory reservation failed]
+2026-05-16T10:18:08.001Z  INFO 181 --- [checkout-api] [nio-8080-exec-5] c.e.checkout.web.HealthController        : liveness probe succeeded instance=checkout-api-7d9f8c7d4f-r8z2p
+2026-05-16T10:18:09.184Z DEBUG 181 --- [checkout-api] [scheduling-1] c.e.checkout.jobs.CartExpiryJob          : scanned 128 expired carts
+2026-05-16T10:18:10.433Z  INFO 181 --- [checkout-api] [nio-8080-exec-8] c.e.checkout.web.CartController          : GET /cart/ord-88422 returned 200 requestId=975fdf13-c11f-4306-9ec4-5bc2fb848f05

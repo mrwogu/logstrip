@@ -1,0 +1,7 @@
+[INFO] kserve model loaded successfully
+[DEBUG] kserve inference: 42 tokens/s on GPU 0
+[DEBUG] kserve batch processing: 8 requests
+[ERROR] kserve Error: CUDA out of memory - tried to allocate 2.00 GiB
+[ERROR] kserve rate limit exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[ERROR] kserve model file corrupted - header checksum mismatch
+[FATAL] kserve NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

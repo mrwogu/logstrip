@@ -1,0 +1,7 @@
+[INFO] go-micro server started on :8080
+[DEBUG] go-micro 8 routes registered
+[ERROR] go-micro Error: context deadline exceeded on POST /api/checkout
+    at go-micro/handler.go:42 in serve
+    at go-micro/router.go:88 in resolve
+[ERROR] go-micro request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] go-micro server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

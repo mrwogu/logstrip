@@ -1,0 +1,7 @@
+[INFO] weights & biases model loaded successfully
+[DEBUG] weights & biases inference: 42 tokens/s on GPU 0
+[DEBUG] weights & biases batch processing: 8 requests
+[ERROR] weights & biases Error: CUDA out of memory - tried to allocate 2.00 GiB
+[ERROR] weights & biases rate limit exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[ERROR] weights & biases model file corrupted - header checksum mismatch
+[FATAL] weights & biases NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

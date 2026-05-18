@@ -1,0 +1,38 @@
+[ERROR] instana sensor Error: AgentDisconnectedError: lost connection to Instana backend at [IP]
+    at instana/sensor.go:42 in maintainConnection
+    at instana/agent.go:88 in report
+[ERROR] signalfx ingest Error: IngestError: datapoint buffer overflow - 420000 points dropped
+    at signal fx/ingest/server.go:42 in batch
+    at signal fx/ingest/processor.go:88 in process
+[ERROR] lightstep tracer Error: SpanDroppedError: satellite connection lost at [IP]:[PORT]
+    at lightstep/tracer/transport.go:42 in send
+    at lightstep/tracer/reporter.go:88 in flush
+[ERROR] thanos query Error: StoreTimeoutError: store node [IP] did not respond within 30s
+    at thanos.io/query/querier.go:42 in query
+    at thanos.io/store/store.go:88 in series
+[ERROR] cortexmetrics Error: CortexRulerError: evaluation failed for rule "API5xxRate" - context deadline exceeded
+    at cortex metrics/ruler/ruler.go:42 in evaluate
+    at cortex metrics/ruler/manager.go:88 in run
+[ERROR] victoriametrics Error: VmStorageError: cannot create indexdb - disk space low at [IP]
+    at victoria metrics/vmstorage/storage.go:42 in init
+    at victoria metrics/vminsert/insert.go:88 in process
+[ERROR] grafana tempo Error: TempoDistributorError: trace push failed - ingester not ready
+    at tempo query/distributor/distributor.go:42 in push
+    at tempo-distributor/ingester.go:88 in ingest
+[ERROR] posthog capture Error: QueueFullError: event buffer overflow - 12000 events dropped
+    at posthog/lib/posthog.py:42 in capture
+    at posthog/lib/consumer.py:88 in send
+[ERROR] amplitude Error: InvalidAPIKeyError: key abc123 not recognized
+    at amplitude/lib/client.py:42 in identify
+    at amplitude/lib/transport.py:88 in request
+[ERROR] mixpanel track Error: MixpanelServerError: 503 Service Unavailable
+    at mixpanel/lib/mixpanel.py:42 in track
+    at mixpanel/lib/consumer.py:88 in send
+[ERROR] heap analytics Error: heap.io connection timeout after 30s to [IP]
+    at heap.io/tracker.js:42 in flush
+    at heap.io/batch.js:88 in send
+[ERROR] plausible analytics Error: PlausibleDBError: ClickHouse connection refused at [IP]:[PORT]
+    at plausible/analytics/repo.ex:42 in query
+    at plausible/analytics/ex_aws.ex:88 in execute
+[x2] [ERROR] [TIME] instana Error: agent [ID] disconnected from [IP]:[PORT]
+[FATAL] [TIME] signalfx ingest FATAL: buffer exhausted - data loss commit=[HASH]

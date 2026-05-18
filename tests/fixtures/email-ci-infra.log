@@ -1,0 +1,89 @@
+[INFO] amazon ses: 420 emails sent today
+[DEBUG] aws ses: daily quota 50000
+[INFO] mailchimp: campaign abc123 sent to 4200 subscribers
+[DEBUG] mailchimp: template rendered successfully
+[INFO] brevo: transactional email sent
+[DEBUG] sendinblue: webhook delivered to 10.90.12.41
+[INFO] postmark: 42 emails queued
+[DEBUG] postmarkapp: bounce rate 0.2%
+[INFO] resend.com: email delivered
+[DEBUG] resend: template abc123 rendered
+[INFO] sparkpost: 42000 emails relayed
+[DEBUG] sparkpost mail: inbound webhook processed
+[INFO] dagger do: build pipeline started
+[DEBUG] dagger.io: 8 containers in pipeline
+[INFO] fastlane lane: match completed
+[DEBUG] fastlane: 4 certificates synced
+[INFO] bitrise build: step checkout completed
+[DEBUG] bitrise.io: workflow deploy started
+[INFO] codemagic-cli: build started for iOS
+[DEBUG] codemagic: pod install completed
+[INFO] app center: build 42 queued
+[DEBUG] appcenter.ms: 8 devices registered
+[INFO] woodpecker-ci pipeline: step 3 running
+[DEBUG] woodpecker: 8 plugins loaded
+[INFO] aws cdk: synth completed
+[DEBUG] cdk deploy: stack CheckoutStack has 42 resources
+[INFO] cdk diff: 3 resources changed
+[DEBUG] aws cdk: bootstrap completed
+[INFO] cdktf: synth completed for TypeScript
+[DEBUG] cdk for terraform: 8 resources in cdktf.out
+[INFO] minikube start: node started
+[DEBUG] minikube: dashboard available at 10.90.12.42
+[INFO] kind create: cluster test created
+[DEBUG] sigs.k8s.io/kind: 3 nodes ready
+[INFO] k3s server: started on :6443
+[DEBUG] k3s agent: registered with server
+[INFO] k3d cluster: 2 servers created
+[DEBUG] k3d: registry endpoint available
+[ERROR] amazon ses Error: ThrottlingException: Daily message quota exceeded for account 10.90.12.43
+    at email.amazonaws.com/SendEmail:42 in invoke
+    at aws ses/lib/client.js:88 in send
+[ERROR] amazon ses Error: ThrottlingException: Daily message quota exceeded for account 10.90.12.43
+    at email.amazonaws.com/SendEmail:42 in invoke
+    at aws ses/lib/client.js:88 in send
+[ERROR] mailchimp Error: CampaignError: template rendering failed - merge tag *|FNAME|* not found
+    at mailchimp/lib/campaigns.js:42 in render
+    at mailchimp/lib/templates.js:88 in parse
+[ERROR] brevo Error: SendinblueAPIError: 403 Forbidden - sender address not verified
+    at sendinblue/lib/api.js:42 in sendTransacEmail
+    at sendinblue/lib/client.js:88 in request
+[ERROR] postmark Error: PostmarkError: InactiveRecipient - bounce detected for user@example.com
+    at postmarkapp/lib/client.js:42 in send
+    at postmarkapp/lib/bounce.js:88 in handle
+[ERROR] resend Error: ResendAPIError: 422 Invalid email address format
+    at resend.com/lib/email.js:42 in send
+    at resend/lib/client.js:88 in request
+[ERROR] sparkpost mail Error: SparkpostDeliveryError: 550 5.7.1 message content rejected - spam detected
+    at sparkpost/lib/transmissions.js:42 in send
+    at sparkpost/lib/client.js:88 in request
+[ERROR] dagger do Error: DaggerBuildError: build pipeline failed - container compilation error
+    at dagger.io/pipeline/build.go:42 in compile
+    at dagger.io/pipeline/runner.go:88 in execute
+[ERROR] fastlane lane Error: FastlaneError: match certificate expired for com.example.app
+    at fastlane/lib/match/runner.rb:42 in run
+    at fastlane/lib/fastlane.rb:88 in execute
+[ERROR] bitrise build Error: BitriseStepError: step "xcode-test" failed with exit code 65
+    at bitrise.io/steps/step.go:42 in execute
+    at bitrise.io/workflow/runner.go:88 in run
+[ERROR] codemagic-cli Error: CodemagicBuildError: Xcode build failed - archive export error
+    at codemagic/build/xcode.go:42 in archive
+    at codemagic/build/runner.go:88 in execute
+[ERROR] app center Error: AppCenterBuildError: gradle build failed - compilation error in CheckoutActivity.java
+    at appcenter/lib/build.go:42 in compile
+    at appcenter.ms/lib/agent.go:88 in run
+[ERROR] woodpecker-ci pipeline Error: StepError: plugin "docker" returned exit code 1
+    at woodpecker/pipeline/step.go:42 in exec
+    at woodpecker/agent/runner.go:88 in run
+[ERROR] aws cdk Error: CdkSynthError: Cannot find resource "CheckoutLambda" in stack
+    at cdk deploy/lib/synth.ts:42 in synthesize
+    at aws cdk/lib/app.ts:88 in run
+[ERROR] minikube start Error: DriverError: cannot start docker driver - docker not running
+    at minikube/start/driver.go:42 in start
+    at minikube/node/start.go:88 in boot
+[ERROR] kind create Error: NodeCreateError: failed to create node - container runtime not available
+    at sigs.k8s.io/kind/cmd/create.go:42 in createNode
+    at sigs.k8s.io/kind/cmd/cluster.go:88 in create
+[ERROR] 2026-05-15T10:20:30.123Z aws ses Error: email 018f23ab-7c1d-7f44-8bfe-0acddaf33456 quota exceeded from 10.42.7.18:54321
+[ERROR] 2026-05-15T10:20:30.124Z aws ses Error: email 018f23ab-7c1d-7f44-8bfe-0acddaf33457 quota exceeded from 10.42.7.18:54322
+[FATAL] 2026-05-15T10:20:35.000Z bitrise FATAL: build timeout after 60 minutes commit=abcdef1234567890abcdef1234567890abcdef12

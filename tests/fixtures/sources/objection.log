@@ -1,0 +1,5 @@
+[INFO] objection.js migration completed: 12 applied
+[DEBUG] objection.js schema validation passed
+[ERROR] objection.js Error: migration failed - column "total" cannot be null
+[ERROR] objection.js connection refused to 10.90.12.43:5432 for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] objection.js schema lock deadlock - cannot proceed commit=abcdef1234567890abcdef1234567890abcdef12

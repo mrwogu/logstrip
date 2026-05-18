@@ -1,0 +1,7 @@
+[INFO] npm audit scan started: 42 files
+[DEBUG] npm audit scanning directory /repo/src
+[DEBUG] npm audit scanning directory /repo/tests
+[ERROR] npm audit CVE-2026-12345 found in openssl: CRITICAL severity
+[ERROR] npm audit GHSA-ab12-cd34-ef56 found in lodash: HIGH severity
+[ERROR] npm audit High severity vulnerability found in package request-018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] npm audit 12 critical vulnerabilities detected - policy violation commit=abcdef1234567890abcdef1234567890abcdef12
