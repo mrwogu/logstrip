@@ -53,7 +53,7 @@ or prompt template for your agent.
 Add the Git-backed marketplace, then install the plugin:
 
 ```text
-/plugin marketplace add https://github.com/mrwogu/context-bonsai.git
+/plugin marketplace add https://github.com/mrwogu/context-bonsai
 /plugin install context-bonsai@context-bonsai
 ```
 
@@ -76,7 +76,7 @@ npm i -g context-bonsai
 Add the Droid marketplace, then install the plugin:
 
 ```bash
-droid plugin marketplace add https://github.com/mrwogu/context-bonsai.git
+droid plugin marketplace add https://github.com/mrwogu/context-bonsai
 droid plugin install context-bonsai@context-bonsai
 ```
 
@@ -97,7 +97,7 @@ GitHub Copilot supports Git-backed plugins. Add the ContextBonsai marketplace,
 then install the plugin:
 
 ```bash
-copilot plugin marketplace add https://github.com/mrwogu/context-bonsai.git
+copilot plugin marketplace add https://github.com/mrwogu/context-bonsai
 copilot plugin install context-bonsai@context-bonsai
 ```
 
@@ -144,7 +144,7 @@ Codex supports repo and personal plugin marketplaces. Add the ContextBonsai
 marketplace, then open the plugin browser and install `context-bonsai`:
 
 ```bash
-codex plugin marketplace add https://github.com/mrwogu/context-bonsai.git
+codex plugin marketplace add https://github.com/mrwogu/context-bonsai
 codex
 /plugins
 ```
