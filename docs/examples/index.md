@@ -10,7 +10,7 @@ run shell. The GitHub Action wrapper is shown last for completeness.
   run: npm test > raw_logs.txt 2>&1 || true
 
 - name: Compress logs with ContextBonsai
-  run: npx context-bonsai raw_logs.txt -o clean.log --stats
+  run: npx -y context-bonsai raw_logs.txt -o clean.log --stats
 
 - name: Analyze
   run: your-ai-agent analyze --file clean.log
@@ -22,7 +22,7 @@ run shell. The GitHub Action wrapper is shown last for completeness.
 - name: Run tests and compress on the fly
   shell: bash
   run: |
-    npm test 2>&1 | npx context-bonsai > clean.log || true
+    npm test 2>&1 | npx -y context-bonsai > clean.log || true
     cat clean.log
 ```
 
@@ -35,7 +35,7 @@ run shell. The GitHub Action wrapper is shown last for completeness.
 
 - name: Compress logs with ContextBonsai
   shell: pwsh
-  run: npx context-bonsai raw_logs.txt -o clean.log --stats
+  run: npx -y context-bonsai raw_logs.txt -o clean.log --stats
 ```
 
 ## Use with matrix jobs (CLI)
@@ -58,7 +58,7 @@ steps:
 
   - name: Compress logs
     run: |
-      npx context-bonsai "raw-node-${{ matrix.node-version }}.log" \
+      npx -y context-bonsai "raw-node-${{ matrix.node-version }}.log" \
         -o "clean-node-${{ matrix.node-version }}.log" \
         --stats
 ```
@@ -70,7 +70,7 @@ steps:
   run: npm test > raw_logs.txt 2>&1 || true
 
 - name: Compress logs
-  run: npx context-bonsai raw_logs.txt -o clean.log --json > stats.json
+  run: npx -y context-bonsai raw_logs.txt -o clean.log --json > stats.json
 
 - name: Upload compact logs and report
   uses: actions/upload-artifact@v4

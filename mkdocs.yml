@@ -11,7 +11,7 @@ theme:
   custom_dir: docs/overrides
   language: en
   favicon: assets/images/favicon.ico
-  logo: assets/images/logo.svg
+  logo: assets/images/logo-256.webp
   palette:
     - scheme: slate
       primary: black
