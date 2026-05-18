@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="https://raw.githubusercontent.com/mrwogu/context-bonsai/main/docs/assets/images/banner-1200.webp" alt="ContextBonsai compresses noisy raw logs into compact AI-ready diagnostic context" width="900">
+
 # ContextBonsai
 
 **compress noisy logs before they poison your LLM context**
@@ -9,10 +11,10 @@ _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub
 [![CI](https://github.com/mrwogu/context-bonsai/actions/workflows/ci.yml/badge.svg)](https://github.com/mrwogu/context-bonsai/actions/workflows/ci.yml)
 [![Docs](https://github.com/mrwogu/context-bonsai/actions/workflows/docs.yml/badge.svg)](https://github.com/mrwogu/context-bonsai/actions/workflows/docs.yml)
 [![npm version](https://img.shields.io/npm/v/context-bonsai?color=white)](https://www.npmjs.com/package/context-bonsai)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-white)](vitest.config.ts)
+[![Coverage](https://img.shields.io/badge/coverage-100%25-white)](https://github.com/mrwogu/context-bonsai/blob/main/vitest.config.ts)
 [![License: MIT](https://img.shields.io/badge/license-MIT-white.svg)](https://opensource.org/licenses/MIT)
 
-[**Quick Start**](#quick-start) · [**CLI**](#cli) · [**Library**](#library) · [**GitHub Action**](#github-action) · [**Agent Plugins**](docs/guides/plugins.md) · [**Documentation**](https://mrwogu.github.io/context-bonsai/)
+[**Quick Start**](#quick-start) · [**Demo**](#demo) · [**CLI**](#cli) · [**Library**](#library) · [**GitHub Action**](#github-action) · [**Agent Plugins**](#agent-plugins) · [**Documentation**](https://mrwogu.github.io/context-bonsai/)
 
 </div>
 
@@ -51,6 +53,29 @@ PowerShell:
 ```powershell
 Get-Content raw.log | npx context-bonsai > clean.log
 ```
+
+---
+
+## Demo
+
+ContextBonsai turns raw diagnostic noise into a compact artifact an agent can
+read without wasting context on timestamps, UUIDs, repeated frames, and health
+checks.
+
+```text
+[INFO] boot ok
+[ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed
+[ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed
+    at lib (/repo/node_modules/pkg/index.js:1:1)
+```
+
+```text
+[x2] [ERROR] request [ID] failed
+[... hidden internal library frames ...]
+```
+
+Try the interactive browser demo on the
+[documentation homepage](https://mrwogu.github.io/context-bonsai/#live-demo).
 
 ---
 
@@ -148,8 +173,28 @@ CLI is the primary distribution channel.
   run: your-agent analyze --file "${{ steps.bonsai.outputs.output-path }}"
 ```
 
-See [docs/reference/action.md](docs/reference/action.md) for inputs, outputs,
-and the Step Summary contract.
+See the [GitHub Action reference](https://mrwogu.github.io/context-bonsai/reference/action/)
+for inputs, outputs, and the Step Summary contract.
+
+---
+
+## Agent Plugins
+
+ContextBonsai also ships agent plugin bundles so assistants compress logs before
+diagnosing them. The workflow is the same everywhere: run `bonsai`, analyze the
+`.bonsai.log`, then report token savings from `--stats`.
+
+| Agent | Integration surface |
+| :--- | :--- |
+| Claude Code | marketplace plugin with command, skill, and agents |
+| Factory Droid | marketplace plugin with command, skill, and droids |
+| GitHub Copilot | repository instructions and reusable prompt |
+| Cursor | MDC rule scoped to log-like files |
+| Codex | `AGENTS.md` plus repo-local skill |
+| OpenCode | `AGENTS.md`, skill, and `/bonsai` command |
+
+See the [Agent Plugin Installation guide](https://mrwogu.github.io/context-bonsai/guides/plugins/)
+for copy-paste setup steps.
 
 ---
 
@@ -209,12 +254,13 @@ npm run docs:build
 
 | Resource | Description |
 | :--- | :--- |
-| [Getting Started](docs/getting-started.md) | Install the CLI and trim your first log. |
-| [CLI Reference](docs/reference/cli.md) | Flags, exit codes, recipes, and stdin/stdout contracts. |
-| [Core API](docs/reference/core.md) | TypeScript parser API for library use. |
-| [GitHub Action](docs/reference/action.md) | Optional CI wrapper around the CLI core. |
-| [Examples](docs/examples/index.md) | CI recipes for common pipelines. |
-| [Security](docs/guides/security.md) | Sanitization and safe log handling notes. |
+| [Getting Started](https://mrwogu.github.io/context-bonsai/getting-started/) | Install the CLI and trim your first log. |
+| [CLI Reference](https://mrwogu.github.io/context-bonsai/reference/cli/) | Flags, exit codes, recipes, and stdin/stdout contracts. |
+| [Core API](https://mrwogu.github.io/context-bonsai/reference/core/) | TypeScript parser API for library use. |
+| [GitHub Action](https://mrwogu.github.io/context-bonsai/reference/action/) | Optional CI wrapper around the CLI core. |
+| [Agent Plugins](https://mrwogu.github.io/context-bonsai/guides/plugins/) | Claude Code, Droid, Copilot, Cursor, Codex, and OpenCode bundles. |
+| [Examples](https://mrwogu.github.io/context-bonsai/examples/) | CI recipes for common pipelines. |
+| [Security](https://mrwogu.github.io/context-bonsai/guides/security/) | Sanitization and safe log handling notes. |
 
 ---
 
