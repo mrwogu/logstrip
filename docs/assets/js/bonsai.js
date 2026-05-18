@@ -649,7 +649,51 @@
     '[INFO] Build finished with errors',
   ].join('\n');
 
+  function setupSourceMarquee() {
+    var container = document.querySelector('.bonsai-ecosystem-marquee');
+    if (!container) return;
+    var pool = container.querySelector('.bonsai-ecosystem-marquee__pool');
+    var rowsTarget = container.querySelector('[data-bonsai-marquee-rows]');
+    if (!pool || !rowsTarget) return;
+
+    var pills = Array.from(pool.querySelectorAll('.bonsai-tool-pill'));
+    if (pills.length === 0) return;
+
+    // Distribute pills into 3 rows, reverse the middle row for visual contrast
+    var perRow = Math.ceil(pills.length / 3);
+    var rowDefs = [
+      { pills: pills.slice(0, perRow), reverse: false, speed: 50 },
+      { pills: pills.slice(perRow, perRow * 2), reverse: true, speed: 58 },
+      { pills: pills.slice(perRow * 2), reverse: false, speed: 46 },
+    ];
+
+    rowDefs.forEach(function (def) {
+      if (def.pills.length === 0) return;
+      var row = document.createElement('div');
+      row.className = 'bonsai-ecosystem-marquee__row' + (def.reverse ? ' bonsai-ecosystem-marquee__row--reverse' : '');
+      row.setAttribute('aria-hidden', 'true');
+
+      var track = document.createElement('div');
+      track.className = 'bonsai-ecosystem-marquee__track';
+      track.style.animationDuration = def.speed + 's';
+
+      // Duplicate pills twice for seamless loop
+      for (var dup = 0; dup < 2; dup++) {
+        def.pills.forEach(function (pill) {
+          track.appendChild(pill.cloneNode(true));
+        });
+      }
+
+      row.appendChild(track);
+      rowsTarget.appendChild(row);
+    });
+
+    // Remove pool from DOM after building rows
+    pool.remove();
+  }
+
   function bootstrap() {
+    setupSourceMarquee();
     setupCompareDemo();
   }
 

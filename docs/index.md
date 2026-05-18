@@ -30,12 +30,12 @@
 </div>
 </section>
 
-<div class="bonsai-sources-banner" data-bonsai-reveal markdown="1">
+<div class="bonsai-ecosystem-marquee" data-bonsai-reveal markdown="1">
 <span class="bonsai-kicker">705+ detected ecosystems</span>
 
 ## your stack, covered
 
-<div class="bonsai-tool-pills" markdown="1">
+<div class="bonsai-ecosystem-marquee__pool" markdown="1">
 <span class="bonsai-tool-pill">:simple-trivy: Trivy</span>
 <span class="bonsai-tool-pill">:simple-snyk: Snyk</span>
 <span class="bonsai-tool-pill">:material-shield-search: Semgrep</span>
@@ -87,6 +87,8 @@
 <span class="bonsai-tool-pill">:simple-tekton: Tekton</span>
 <span class="bonsai-tool-pill">:fontawesome-brands-yarn: yarn</span>
 </div>
+
+<div class="bonsai-ecosystem-marquee__rows" data-bonsai-marquee-rows></div>
 
 <p class="bonsai-sources-banner__more"><a href="reference/sources/">view all 705+ sources →</a></p>
 </div>

@@ -1151,23 +1151,63 @@ html {
 }
 
 /* ------------------------------------------------------------------------- *
- * SOURCES BANNER (pills with icons)
+ * SOURCES MARQUEE (3-row scrolling pills)
  * ------------------------------------------------------------------------- */
 
-.bonsai-sources-banner {
+.bonsai-ecosystem-marquee {
   margin: -0.5rem 0 1.5rem;
-  padding: clamp(1rem, 2vw, 1.4rem);
+  padding: clamp(1rem, 2vw, 1.4rem) 0 clamp(1rem, 2vw, 1.2rem);
   border: 1px solid var(--bonsai-border);
   border-radius: 1rem;
   background:
     radial-gradient(circle at 50% 0%, rgba(164, 255, 175, 0.08), transparent 18rem),
     rgba(255, 255, 255, 0.02);
+  overflow: hidden;
 }
 
-.bonsai-sources-banner h2 {
+.bonsai-ecosystem-marquee > .bonsai-kicker,
+.bonsai-ecosystem-marquee > h2 {
+  padding: 0 clamp(1.2rem, 3vw, 2.4rem);
+}
+
+.bonsai-ecosystem-marquee h2 {
   margin-top: 0.35rem;
   margin-bottom: 0.65rem;
   white-space: nowrap;
+}
+
+.bonsai-ecosystem-marquee__pool {
+  display: none;
+}
+
+.bonsai-ecosystem-marquee__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.bonsai-ecosystem-marquee__row {
+  width: 100%;
+  overflow: hidden;
+}
+
+.bonsai-ecosystem-marquee__track {
+  display: flex;
+  width: max-content;
+  gap: 0.45rem;
+  animation: bonsai-marquee 50s linear infinite;
+}
+
+.bonsai-ecosystem-marquee__row--reverse .bonsai-ecosystem-marquee__track {
+  animation: bonsai-marquee-reverse 55s linear infinite;
+}
+
+.bonsai-ecosystem-marquee__row:hover .bonsai-ecosystem-marquee__track {
+  animation-play-state: paused;
+}
+
+.bonsai-ecosystem-marquee__track .bonsai-tool-pill {
+  flex-shrink: 0;
 }
 
 .bonsai-tool-pill img,
@@ -1182,6 +1222,7 @@ html {
   margin: 0.85rem 0 0;
   text-align: center;
   font-size: 0.82rem;
+  padding: 0 clamp(1.2rem, 3vw, 2.4rem);
 }
 
 .bonsai-sources-banner__more a {
@@ -1189,7 +1230,7 @@ html {
   font-weight: 600;
 }
 
-[data-md-color-scheme='default'] .bonsai-sources-banner {
+[data-md-color-scheme='default'] .bonsai-ecosystem-marquee {
   border-color: rgba(41, 43, 44, 0.14);
   background:
     radial-gradient(circle at 50% 0%, rgba(31, 111, 56, 0.06), transparent 18rem),
@@ -1198,6 +1239,11 @@ html {
 
 [data-md-color-scheme='default'] .bonsai-sources-banner__more a {
   color: #1f6f38;
+}
+
+@keyframes bonsai-marquee-reverse {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
 }
 
 /* ------------------------------------------------------------------------- *
@@ -1254,7 +1300,8 @@ html {
 .bonsai-engine h2 {
   max-width: none;
   margin-top: 0.6rem;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .bonsai-engine > p:not(.bonsai-kicker) {
