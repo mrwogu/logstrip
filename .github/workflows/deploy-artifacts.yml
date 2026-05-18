@@ -1,0 +1,60 @@
+name: Deploy Artifacts
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-artifacts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate
+        run: |
+          npm run typecheck
+          npm run test:coverage
+          npm run build
+          npm audit
+
+      - name: Package artifacts
+        id: package
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          mkdir -p artifacts
+          npm pack --pack-destination artifacts
+          tar -czf "artifacts/context-bonsai-action-v${VERSION}.tar.gz" \
+            action.yml package.json package-lock.json dist/action dist/cli dist/core
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: context-bonsai-v${{ steps.package.outputs.version }}
+          path: artifacts/*
+          retention-days: 30
+
+      - name: Publish GitHub Release artifacts
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
