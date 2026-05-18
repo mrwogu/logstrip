@@ -16,7 +16,7 @@ That gives the agent a smaller, higher-signal file plus measurable savings from
 | Less repetition        | Collapses duplicates and internal stack frames                          | The model spends attention on unique failure evidence  |
 | Safer sharing          | Keeps full raw logs out of chat unless explicitly requested             | Lower risk of copying noisy or sensitive log material  |
 | Measurable ROI         | Reports input/output token estimates and `savingsPercent`               | Teams can see how much context budget was recovered    |
-| Repeatable workflow    | Provides commands, rules, skills, or `AGENTS.md` instructions per agent | Every agent follows the same compression-first pattern |
+| Repeatable workflow    | Provides marketplace manifests, commands, rules, skills, or `AGENTS.md` instructions per agent | Every agent follows the same compression-first pattern |
 
 If `--stats` reports `inputTokens=18000` and `outputTokens=4500`, the agent
 receives 75% less log context while still preserving diagnostic lines.
@@ -25,16 +25,16 @@ receives 75% less log context while still preserving diagnostic lines.
 
 Start with the agent your team already uses. All paths below install the same
 compression-first workflow; they only differ in how each agent discovers
-commands, rules, skills, or repo instructions.
+plugin manifests, commands, rules, skills, or repo instructions.
 
 | Agent | Install surface | What you get | Start here |
 | :--- | :--- | :--- | :--- |
 | Claude Code | Git-backed plugin marketplace | `/bonsai`, `context-bonsai` skill, reviewer/fixture agents | [Claude Code](#claude-code) |
 | Factory Droid | Droid plugin marketplace | `/bonsai`, `context-bonsai` skill, reviewer/fixture droids | [Factory Droid](#factory-droid) |
-| GitHub Copilot | `.github` instructions and prompts | repo-wide log handling plus reusable Bonsai prompt | [GitHub Copilot](#github-copilot) |
-| Cursor | `.cursor/rules/*.mdc` | agent-requested log compression rule | [Cursor](#cursor) |
-| Codex | `AGENTS.md` and `.codex/skills` | progressive log-compression skill | [Codex](#codex) |
-| OpenCode | `AGENTS.md`, `.opencode/skills`, `.opencode/commands` | skill plus `/bonsai` command | [OpenCode](#opencode) |
+| GitHub Copilot | Git-backed Copilot plugin marketplace | `/bonsai`, `context-bonsai` skill, reviewer/fixture agents | [GitHub Copilot](#github-copilot) |
+| Cursor | Cursor plugin marketplace | log rule, `context-bonsai` skill, `/bonsai` command, agents | [Cursor](#cursor) |
+| Codex | Codex plugin marketplace | progressive log-compression skill | [Codex](#codex) |
+| OpenCode | OpenCode-native skill and command bundle | skill plus `/bonsai` command | [OpenCode](#opencode) |
 
 ## Install the CLI first
 
@@ -93,80 +93,81 @@ The Droid plugin contributes the same `bonsai` command and
 
 ## GitHub Copilot
 
-GitHub Copilot uses repository custom instructions and reusable prompt files.
-From a clone of this repository, copy the bundled `.github` tree into the
-target repository:
+GitHub Copilot supports Git-backed plugins. Add the ContextBonsai marketplace,
+then install the plugin:
 
 ```bash
-TARGET=/path/to/your/repo
-mkdir -p "$TARGET/.github"
-cp -R plugins/context-bonsai/copilot/.github/. "$TARGET/.github/"
+copilot plugin marketplace add https://github.com/mrwogu/context-bonsai.git
+copilot plugin install context-bonsai@context-bonsai
 ```
 
-```powershell
-$Target = "C:\path\to\your\repo"
-New-Item -ItemType Directory -Force "$Target\.github" | Out-Null
-Copy-Item -Recurse -Force "plugins\context-bonsai\copilot\.github\*" "$Target\.github\"
+For local development from a clone of this repository:
+
+```bash
+copilot plugin marketplace add .
+copilot plugin install context-bonsai@context-bonsai
 ```
 
 The Copilot bundle contributes:
 
-- `.github/copilot-instructions.md` for repository-wide log-handling guidance.
-- `.github/instructions/context-bonsai.instructions.md` scoped to log-like
-  files.
-- `.github/prompts/bonsai.prompt.md`, a reusable `/bonsai` prompt for
-  compressing a log and reporting savings.
+- `commands/bonsai.md` as a reusable `/bonsai` workflow.
+- `skills/context-bonsai/SKILL.md` for progressive log-compression guidance.
+- `agents/*` for ContextBonsai-focused review and fixture tasks.
+
+The repository still includes `.github` instruction and prompt templates under
+`plugins/context-bonsai/copilot/` for teams that intentionally want committed
+repo instructions, but normal Copilot plugin installation does not require
+copying those files.
 
 ## Cursor
 
-Cursor uses MDC rule files under `.cursor/rules`. Copy the ContextBonsai rule
-into the target repository:
+Cursor supports plugin manifests. ContextBonsai includes
+`.cursor-plugin/marketplace.json` at the repository root and
+`.cursor-plugin/plugin.json` inside the plugin bundle, so teams can import this
+GitHub repository through Cursor's plugin marketplace flow.
+
+For local testing from a clone:
 
 ```bash
-TARGET=/path/to/your/repo
-mkdir -p "$TARGET/.cursor/rules"
-cp plugins/context-bonsai/cursor/.cursor/rules/context-bonsai.mdc "$TARGET/.cursor/rules/"
+mkdir -p ~/.cursor/plugins/local
+ln -s /absolute/path/to/context-bonsai/plugins/context-bonsai ~/.cursor/plugins/local/context-bonsai
 ```
 
-```powershell
-$Target = "C:\path\to\your\repo"
-New-Item -ItemType Directory -Force "$Target\.cursor\rules" | Out-Null
-Copy-Item -Force "plugins\context-bonsai\cursor\.cursor\rules\context-bonsai.mdc" "$Target\.cursor\rules\"
-```
-
-The rule is agent-requested and scoped to `*.log`, `*.out`, and `*.txt` files.
-When Cursor sees a log-analysis task, it is instructed to compress first,
-diagnose from the `.bonsai.log` output, and report the savings metrics.
+The Cursor plugin contributes a log-scoped MDC rule, the shared
+`context-bonsai` skill, `/bonsai` command, and helper agents. The legacy
+`.cursor/rules/context-bonsai.mdc` bundle remains available only for teams that
+prefer committing a single rule file to a repository.
 
 ## Codex
 
-Codex reads project instructions from `AGENTS.md` and discovers repo-local
-skills from `.codex/skills/*/SKILL.md`.
+Codex supports repo and personal plugin marketplaces. Add the ContextBonsai
+marketplace, then open the plugin browser and install `context-bonsai`:
 
 ```bash
-TARGET=/path/to/your/repo
-mkdir -p "$TARGET/.codex/skills"
-cp -R plugins/context-bonsai/codex/.codex/skills/context-bonsai "$TARGET/.codex/skills/"
-test -f "$TARGET/AGENTS.md" || cp plugins/context-bonsai/codex/AGENTS.md "$TARGET/AGENTS.md"
+codex plugin marketplace add https://github.com/mrwogu/context-bonsai.git
+codex
+/plugins
 ```
 
-```powershell
-$Target = "C:\path\to\your\repo"
-New-Item -ItemType Directory -Force "$Target\.codex\skills" | Out-Null
-Copy-Item -Recurse -Force "plugins\context-bonsai\codex\.codex\skills\context-bonsai" "$Target\.codex\skills\"
-if (-not (Test-Path "$Target\AGENTS.md")) { Copy-Item "plugins\context-bonsai\codex\AGENTS.md" "$Target\AGENTS.md" }
+For local development from a clone:
+
+```bash
+codex plugin marketplace add /absolute/path/to/context-bonsai
+codex
+/plugins
 ```
 
-If the target project already has `AGENTS.md`, merge the ContextBonsai section
-instead of replacing the file. The `context-bonsai` skill uses progressive
-disclosure: Codex sees the skill name and description first, then loads the
-full compression workflow only when the task involves logs.
+The Codex plugin uses `.agents/plugins/marketplace.json` plus
+`.codex-plugin/plugin.json`. It exposes the `context-bonsai` skill with
+progressive disclosure: Codex sees the skill name and description first, then
+loads the full compression workflow only when the task involves logs.
 
 ## OpenCode
 
-OpenCode reads project rules from `AGENTS.md`, discovers skills from
-`.opencode/skills/*/SKILL.md`, and supports markdown custom commands under
-`.opencode/commands`.
+OpenCode's plugin system is for JavaScript/TypeScript hook modules loaded from
+`.opencode/plugins/` or from npm via `opencode.json`. ContextBonsai's OpenCode
+integration is intentionally a native skill and command bundle because the
+workflow is "compress this log before analysis", not a lifecycle hook.
 
 ```bash
 TARGET=/path/to/your/repo
@@ -196,16 +197,33 @@ the plugin bundle, these are the shipped integration files:
 ??? info "Repository layout"
 
     ```text
+    .agents/
+      plugins/
+        marketplace.json
     .claude-plugin/
+      marketplace.json
+    .cursor-plugin/
       marketplace.json
     .factory-plugin/
       marketplace.json
+    .github/
+      plugin/
+        marketplace.json
     plugins/
       context-bonsai/
         .claude-plugin/
           plugin.json
+        .codex-plugin/
+          plugin.json
+        .cursor-plugin/
+          plugin.json
         .factory-plugin/
           plugin.json
+        .github/
+          plugin/
+            plugin.json
+        rules/
+          context-bonsai.mdc
         copilot/
           .github/
             copilot-instructions.md
@@ -260,9 +278,10 @@ All plugin prompts defer to the same aggressiveness levels as the CLI:
 **Command not found** - Make sure `bonsai` or `context-bonsai` is on your
 PATH after `npm i -g context-bonsai`. Verify with `bonsai --version`.
 
-**Relative plugin path fails** - Add this repository as a Git-backed
-marketplace. URL-only marketplace files do not download sibling plugin
-directories referenced by relative paths.
+**Plugin does not appear after install** - Restart the agent and confirm it is
+reading the marketplace file for that ecosystem: `.github/plugin/marketplace.json`
+for Copilot, `.cursor-plugin/marketplace.json` for Cursor, or
+`.agents/plugins/marketplace.json` for Codex.
 
 **No savings reported** - The log may already be compact, or the
 aggressiveness level may be too low. Try `aggressive` for maximum compression.

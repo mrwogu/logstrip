@@ -1,0 +1,18 @@
+---
+description: Compress noisy logs with ContextBonsai before investigating failures.
+globs: **/*.log,**/*.out,**/*.txt
+alwaysApply: false
+---
+
+# ContextBonsai log compression
+
+Use this rule when the user asks Cursor to inspect CI, build, test, runtime, scanner, or deployment logs.
+
+1. Identify the raw log path and output path. Use `<input>.bonsai.log` if the user does not provide one.
+2. Check whether `bonsai` or `context-bonsai` is installed.
+3. If missing, tell the user to install it with `npm i -g context-bonsai`; do not install automatically.
+4. Run `bonsai <input> -o <output> --stats`, adding `--aggressiveness <level>` only when requested.
+5. Read the compressed output before diagnosing the failure.
+6. Report the ContextBonsai efficiency stats: token savings, dropped lines, duplicate lines, and hidden internal stack lines.
+
+Never paste full raw logs back into the conversation.

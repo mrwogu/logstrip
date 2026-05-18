@@ -1,0 +1,35 @@
+{
+  "name": "context-bonsai",
+  "version": "1.0.0",
+  "description": "Compress noisy CI, build, runtime, scanner, and test logs before Codex diagnoses them.",
+  "author": {
+    "name": "mrwogu"
+  },
+  "homepage": "https://mrwogu.github.io/context-bonsai/",
+  "repository": "https://github.com/mrwogu/context-bonsai",
+  "license": "MIT",
+  "keywords": [
+    "logs",
+    "ci",
+    "llm",
+    "compression"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ContextBonsai",
+    "shortDescription": "Compress logs before Codex diagnoses failures.",
+    "longDescription": "Use the ContextBonsai CLI to turn noisy CI, build, runtime, scanner, and test logs into compact diagnostic context before Codex spends tokens on them.",
+    "developerName": "mrwogu",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://mrwogu.github.io/context-bonsai/",
+    "defaultPrompt": [
+      "Compress this log with ContextBonsai, then diagnose the failure.",
+      "Use ContextBonsai to prepare the referenced CI log before analysis."
+    ],
+    "brandColor": "#2f8f46"
+  }
+}

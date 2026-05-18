@@ -1,0 +1,19 @@
+{
+  "name": "context-bonsai",
+  "owner": {
+    "name": "mrwogu"
+  },
+  "metadata": {
+    "description": "ContextBonsai plugin marketplace for Cursor.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "context-bonsai",
+      "source": "./plugins/context-bonsai",
+      "description": "Compress noisy CI, build, runtime, scanner, and test logs before Cursor diagnoses them.",
+      "version": "1.0.0",
+      "category": "developer-tools"
+    }
+  ]
+}
