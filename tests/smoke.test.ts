@@ -24,6 +24,7 @@ interface SmokeCase {
   expectInternalStackHidden: boolean;
   mustContain: readonly string[];
   mustNotContain: readonly string[];
+  mustDetectSources: readonly string[];
 }
 
 const cases: readonly SmokeCase[] = [
@@ -38,6 +39,7 @@ const cases: readonly SmokeCase[] = [
       '[FATAL] worker crashed with exit code 1',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '[TRACE]', '[VERBOSE]'],
+    mustDetectSources: ["vitest"],
   },
   {
     fixture: 'jest-noisy.log',
@@ -50,6 +52,7 @@ const cases: readonly SmokeCase[] = [
       INTERNAL_STACK_MARKER,
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', 'jest-circus/build'],
+    mustDetectSources: ["jest"],
   },
   {
     fixture: 'docker-build.log',
@@ -62,6 +65,7 @@ const cases: readonly SmokeCase[] = [
       '[FATAL] BUILD FAILURE: 2 distinct type errors detected',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', 'sha256:'],
+    mustDetectSources: ["docker","buildkit","typescript"],
   },
   {
     fixture: 'maven-failure.log',
@@ -73,6 +77,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin',
     ],
     mustNotContain: ['[INFO] Scanning for projects', '[INFO] Building checkout-service'],
+    mustDetectSources: ["maven"],
   },
   {
     fixture: 'pytest-failure.log',
@@ -87,18 +92,19 @@ const cases: readonly SmokeCase[] = [
       INTERNAL_STACK_MARKER,
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', 'site-packages/pytest'],
+    mustDetectSources: ["pytest"],
   },
   {
     fixture: 'webpack-bundle.log',
     minSavingsPercent: 20,
     expectDeduplication: false,
-    expectInternalStackHidden: true,
+    expectInternalStackHidden: false,
     mustContain: [
       "[ERROR] Module not found: Error: Can't resolve '@company/sdk'",
       '[FATAL] BUILD FAILED: bundle size 2.07 MiB exceeds budget 2.00 MiB',
-      INTERNAL_STACK_MARKER,
     ],
     mustNotContain: ['[INFO]', '[DEBUG]'],
+    mustDetectSources: ["webpack"],
   },
   {
     fixture: 'server-json.log',
@@ -111,6 +117,7 @@ const cases: readonly SmokeCase[] = [
       INTERNAL_STACK_MARKER,
     ],
     mustNotContain: ['"level":"info"', '"level":"debug"', '10.42.7.18'],
+    mustDetectSources: [],
   },
   {
     fixture: 'scanner-vulnerability.log',
@@ -124,6 +131,7 @@ const cases: readonly SmokeCase[] = [
       'Fixed Version: 3.0.15-r2',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]'],
+    mustDetectSources: ["trivy"],
   },
   {
     fixture: 'kubernetes-crashloop.log',
@@ -139,6 +147,7 @@ const cases: readonly SmokeCase[] = [
       'Normal Pulled',
     ],
     mustNotContain: ['[INFO]', 'Normal Scheduled', 'Normal Pulling'],
+    mustDetectSources: ["kubernetes","kubelet"],
   },
   {
     fixture: 'nginx-access-noisy.log',
@@ -152,6 +161,7 @@ const cases: readonly SmokeCase[] = [
       '[x2] [TIME] [error] 142#142: *935 recv() failed (104: Connection reset by peer)',
     ],
     mustNotContain: ['10.40.1.13', '10.44.2.19', '9f7d8a0e-3f0a-4c9b-8b3e-8f6b6f0fd004'],
+    mustDetectSources: ["prometheus"],
   },
   {
     fixture: 'java-spring-boot-realistic.log',
@@ -170,6 +180,7 @@ const cases: readonly SmokeCase[] = [
       'spring.datasource.url',
       '0e366c93-9a83-4a0a-8f29-32ddda128801',
     ],
+    mustDetectSources: ["spring-boot"],
   },
   {
     fixture: 'node-crash-realistic.log',
@@ -185,6 +196,7 @@ const cases: readonly SmokeCase[] = [
       INTERNAL_STACK_MARKER,
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '7e7f9d1d-6a2b-4c19-b33d-2d08b953d003'],
+    mustDetectSources: ["express"],
   },
   {
     fixture: 'ecosystem-signals-realistic.log',
@@ -202,6 +214,7 @@ const cases: readonly SmokeCase[] = [
       INTERNAL_STACK_MARKER,
     ],
     mustNotContain: ['runner[checkout-prod] INFO', '10.90.12.41', '9f4b8b55-3756-4a15-8a8a-5da6bf44c923'],
+    mustDetectSources: ["npm","kubernetes","typescript","datadog","docker","terraform","trivy","github-actions"],
   },
   {
     fixture: 'ci-pkg-managers.log',
@@ -215,6 +228,7 @@ const cases: readonly SmokeCase[] = [
       '[pipeline] [ERROR] Step failed',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]'],
+    mustDetectSources: ["npm","jenkins","docker","yarn","gitlab-ci"],
   },
   {
     fixture: 'build-test-systems.log',
@@ -229,6 +243,7 @@ const cases: readonly SmokeCase[] = [
       INTERNAL_STACK_MARKER,
     ],
     mustNotContain: ['[INFO]', '[DEBUG]'],
+    mustDetectSources: ["gradle","cargo","go-build","go-test","rustc"],
   },
   {
     fixture: 'infra-cloud.log',
@@ -241,6 +256,7 @@ const cases: readonly SmokeCase[] = [
       'ERROR Invoke Error {"errorType":"TimeoutError","errorMessage":"Task timed out after 5.01 seconds"}',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '12:05:00.123Z'],
+    mustDetectSources: ["gcp-cloud-run","aws-lambda","helm"],
   },
   {
     fixture: 'data-telemetry-scanners.log',
@@ -257,6 +273,7 @@ const cases: readonly SmokeCase[] = [
       'High severity vulnerability found in lodash',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e'],
+    mustDetectSources: ["kafka","redis","postgresql","sentry","snyk","trivy"],
   },
   {
     fixture: 'web-frameworks-node.log',
@@ -273,6 +290,7 @@ const cases: readonly SmokeCase[] = [
       INTERNAL_STACK_MARKER,
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["express","fastify","nestjs","nextjs","pino"],
   },
   {
     fixture: 'java-enterprise.log',
@@ -290,6 +308,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] org.slf4j LoggerFactory failed to initialize',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["tomcat","jetty","wildfly","spring-boot","log4j","slf4j"],
   },
   {
     fixture: 'ai-ml-ecosystem.log',
@@ -308,6 +327,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] llamaindex Error: ValueError: Embedding dimension mismatch',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["openai-api","huggingface","ollama","vllm","langchain","llamaindex"],
   },
   {
     fixture: 'mobile-desktop-cms.log',
@@ -328,6 +348,7 @@ const cases: readonly SmokeCase[] = [
       INTERNAL_STACK_MARKER,
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["react-native","electron","tauri","wordpress","drupal","strapi","shopify"],
   },
   {
     fixture: 'data-search-analytics.log',
@@ -349,6 +370,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] authelia portal Error: AuthenticationFailed',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["posthog","amplitude","meilisearch","algolia","arangodb"],
   },
   {
     fixture: 'python-lint-async.log',
@@ -365,6 +387,7 @@ const cases: readonly SmokeCase[] = [
       '[FATAL] tornado.web Error: RuntimeError: IOLoop.current is closing',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["ruff","mypy","pyright","aiohttp","sanic"],
   },
   {
     fixture: 'go-rust-ruby-frameworks.log',
@@ -383,6 +406,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] unicorn worker timeout Error',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["echo-framework","fiber","axum","rocket","sinatra","puma"],
   },
   {
     fixture: 'orm-db-migrations.log',
@@ -403,6 +427,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] mikro-orm migrate Error: MigrationError',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["prisma","drizzle-orm","typeorm","sequelize","flyway","liquibase","mongoose"],
   },
   {
     fixture: 'auth-secrets-config.log',
@@ -421,6 +446,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] aws ssm parameter Error: ParameterStoreError',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["clerk","authelia","aws-kms","aws-secrets-manager","aws-ssm","doppler","infisical"],
   },
   {
     fixture: 'networking-edge-serverless.log',
@@ -437,6 +463,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] serverless deploy Error: ServerlessError',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["wireguard","tailscale","ngrok","cloudflare-tunnel","cloudflare-workers","deno-deploy"],
   },
   {
     fixture: 'realtime-graphql.log',
@@ -454,6 +481,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] dgraph query Error: DgraphError',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["socketio","pusher","apollo-server","graphql-yoga","dgraph"],
   },
   {
     fixture: 'observability-analytics.log',
@@ -473,6 +501,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] heap analytics Error: heap.io connection timeout',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["instana","signalfx","lightstep","thanos","posthog","amplitude"],
   },
   {
     fixture: 'iot-game-embedded.log',
@@ -491,6 +520,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] bevy engine Error: PanicError',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["home-assistant","platformio","esphome","unity","unreal-engine","godot"],
   },
   {
     fixture: 'email-ci-infra.log',
@@ -511,6 +541,7 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] minikube start Error: DriverError',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["aws-ses","mailchimp","brevo","postmark","dagger","fastlane","aws-cdk","minikube"],
   },
   {
     fixture: 'backup-docs-messaging.log',
@@ -530,6 +561,91 @@ const cases: readonly SmokeCase[] = [
       '[ERROR] cosign sign Error: CosignError',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '0acddaf33456'],
+    mustDetectSources: ["velero","restic","docusaurus","sphinx","bullmq","cosign"],
+  },
+  {
+    fixture: 'ci-platforms.log',
+    minSavingsPercent: 40,
+    expectDeduplication: true,
+    expectInternalStackHidden: false,
+    mustContain: [
+      '::error file=.github/workflows/deploy.yml,line=42::deployment failed after rollback exhausted',
+      '::error file=src/api/checkout.ts,line=88::TypeError: Cannot read properties of undefined',
+      'Running with gitlab-runner',
+      '[x2] [TIME] [ERROR] ERROR: Job failed: exit code 1',
+      '[Pipeline] [ERROR] Stage "Deploy" failed',
+      'Spin Cancelled',
+      '[TIME] [ERROR] job was not approved',
+    ],
+    mustNotContain: ['[INFO]', '[DEBUG]', 'checkout-prod-ubuntu', 'Determining projects'],
+    mustDetectSources: ["github-actions","gitlab-ci","jenkins","circleci"],
+  },
+  {
+    fixture: 'build-toolchains.log',
+    minSavingsPercent: 30,
+    expectDeduplication: true,
+    expectInternalStackHidden: true,
+    mustContain: [
+      'Execution failed for task',
+      '> What went wrong:',
+      'BUILD FAILED',
+      'error[E0425]: cannot assign twice to immutable variable',
+      '--- FAIL: TestCheckout',
+      'make: *** [build] Error 2',
+      'error MSB3073:',
+      INTERNAL_STACK_MARKER,
+    ],
+    mustNotContain: ['[INFO]', '[DEBUG]', 'node_modules/flaky'],
+    mustDetectSources: ["gradle","bazel","cargo","go-test","cmake","msbuild","dotnet"],
+  },
+  {
+    fixture: 'security-scanners.log',
+    minSavingsPercent: 20,
+    expectDeduplication: true,
+    expectInternalStackHidden: false,
+    mustContain: [
+      'CVE-2026-12345',
+      'GHSA-ab12-cd34-ef56',
+      'npm audit report',
+      'semgrep finding:',
+      'gitleaks: secret detected',
+      'grype: CRITICAL CVE-2026-12345',
+      'Security gate failed',
+    ],
+    mustNotContain: ['[INFO]', '[DEBUG]'],
+    mustDetectSources: ["trivy","snyk","npm-audit","semgrep","gitleaks","grype"],
+  },
+  {
+    fixture: 'terraform-ansible-systemd.log',
+    minSavingsPercent: 40,
+    expectDeduplication: true,
+    expectInternalStackHidden: false,
+    mustContain: [
+      'Error: UPGRADE FAILED: cannot patch',
+      'Error: waiting for ECS Service (checkout-api) stable: timeout',
+      'fatal: [checkout-prod-01]: FAILED!',
+      'Failed to start checkout-api.service',
+      'FATAL: password authentication failed for user',
+      'terraform apply failed',
+    ],
+    mustNotContain: ['[INFO]', '[DEBUG]', '0.0.0.0:8080'],
+    mustDetectSources: ["terraform","ansible","journald"],
+  },
+  {
+    fixture: 'cloud-serverless.log',
+    minSavingsPercent: 45,
+    expectDeduplication: true,
+    expectInternalStackHidden: false,
+    mustContain: [
+      'ERROR Invoke Error',
+      'Task timed out',
+      '"level":"error","msg":"database timeout"',
+      'Container failed to start',
+      'Cloud Run deployment failed',
+      'System.TimeoutException',
+    ],
+    mustNotContain: ['[INFO]', '[DEBUG]', '10.42.7.18', '9f4b8b55'],
+    mustDetectSources: ["aws-lambda","cloudwatch","gcp-cloud-run","azure-functions"],
   },
   {
     fixture: 'all-sources-detection.log',
@@ -547,6 +663,7 @@ const cases: readonly SmokeCase[] = [
       '[x2] [ERROR] prisma Error: operation failed for request [ID] from [IP]:[PORT]',
     ],
     mustNotContain: ['[INFO]', '0acddaf33456', '10.42.7.18'],
+    mustDetectSources: ["docker","docker-compose","terraform","buildkit","consul","grafana"],
   },
 ];
 
@@ -619,6 +736,16 @@ describe('smoke: realistic CI log fixtures', () => {
           expect(outputContent).not.toContain(needle);
         }
       });
+
+      if (testCase.mustDetectSources.length > 0) {
+        it('detects expected log sources', async () => {
+          const { result } = await compress(testCase.fixture);
+
+          for (const source of testCase.mustDetectSources) {
+            expect(result.detectedSources).toContain(source);
+          }
+        });
+      }
 
       if (testCase.expectDeduplication) {
         it('folds repeated diagnostic lines via [xN] markers', async () => {

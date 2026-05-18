@@ -677,6 +677,29 @@ describe('bonsai parser', () => {
     expect(isInternalStackTraceLine('    at app (/repo/src/app.ts:10:5)')).toBe(
       false,
     );
+    // [ERROR]/[FATAL] lines are never treated as internal stack frames
+    expect(
+      isInternalStackTraceLine(
+        '[ERROR] ERROR Invoke Error {"errorType":"TimeoutError","stackTrace":["at Timeout._onTimeout (/var/task/node_modules/pg/client.js:42:18)"]}',
+      ),
+    ).toBe(false);
+    expect(
+      isInternalStackTraceLine(
+        '[FATAL] FATAL: node_modules internal crash at lib.js:1:1',
+      ),
+    ).toBe(false);
+    // New diagnostic patterns
+    expect(looksLikeDiagnosticLine('::error file=src/app.ts,line=42::TypeError')).toBe(true);
+    expect(looksLikeDiagnosticLine('::warning file=src/app.ts,line=10::unused variable')).toBe(true);
+    expect(looksLikeDiagnosticLine('Execution failed for task :app:compileJava')).toBe(true);
+    expect(looksLikeDiagnosticLine('> What went wrong:')).toBe(true);
+    expect(looksLikeDiagnosticLine('--- FAIL: TestCheckout (0.12s)')).toBe(true);
+    expect(looksLikeDiagnosticLine('make: *** [build] Error 2')).toBe(true);
+    expect(looksLikeDiagnosticLine('Failed to start checkout-api.service')).toBe(true);
+    expect(looksLikeDiagnosticLine('Spin Cancelled')).toBe(true);
+    expect(looksLikeDiagnosticLine('[Pipeline] [ERROR] Stage "Deploy" failed')).toBe(true);
+    expect(looksLikeDiagnosticLine('##vso[task.LogIssue type=error;]build failed')).toBe(true);
+    expect(looksLikeDiagnosticLine('##teamcity[buildProblem description=compile error')).toBe(true);
     expect(estimateTokens(3)).toBe(4);
   });
 
@@ -825,7 +848,21 @@ describe('bonsai parser', () => {
 
     // Low aggressiveness: NOTICE/STATUS lines get bonus
     expect(scoreLineRelevance('[NOTICE] queue warming', 'low')).toBeGreaterThan(0);
-    expect(scoreLineRelevance('[NOTICE] queue warming', 'high')).toBe(0); // no bonus on high
+    expect(scoreLineRelevance('[WARN] cache warming', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD); // WARN is important tag
+    // New scoring patterns
+    expect(scoreLineRelevance('::error file=deploy.yml,line=42::deploy failed', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('Execution failed for task :app:compileJava', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('--- FAIL: TestCheckout', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('make: *** [build] Error 2', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('Failed to start checkout-api.service', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('Spin Cancelled', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('Failed to start checkout-api.service', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('[Pipeline] [ERROR] Stage "Deploy" failed', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('##vso[task.LogIssue type=error;]build failed', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('##teamcity[buildProblem description=compile error', 'high')).toBeGreaterThanOrEqual(SCORE_KEEP_THRESHOLD);
+    // Ensure new patterns do NOT match benign lines (branch coverage)
+    expect(scoreLineRelevance('systemd[1]: Started session', 'high')).toBeLessThan(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('##vso[build.issue] unrelated', 'high')).toBeLessThan(SCORE_KEEP_THRESHOLD);
   });
 
   it('context window promotes soft lines near errors', async () => {

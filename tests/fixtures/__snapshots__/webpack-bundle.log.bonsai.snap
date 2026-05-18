@@ -15,6 +15,6 @@
 [ERROR]       /repo/src/node_modules doesn't exist or is not a directory
 [ERROR]       /repo/node_modules
 [ERROR]         Field 'browser' doesn't contain a valid alias configuration
-[... hidden internal library frames ...]
+[ERROR]         /repo/node_modules/@company/sdk doesn't exist
 [ERROR] webpack 5.94.0 compiled with 5 errors and 3 warnings in 12348 ms
 [FATAL] BUILD FAILED: bundle size 2.07 MiB exceeds budget 2.00 MiB

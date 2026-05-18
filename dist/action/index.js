@@ -25542,6 +25542,15 @@ var GO_FILE_FRAME_PATTERN = /^\s*(?:\/[^\s]+|[A-Za-z]:[\\/][^\s]+):\d+(?:\s+\+\S
 var GO_GOROUTINE_PATTERN = /^\s*goroutine\s+\d+\s+\[.+\]:$/i;
 var PYTHON_TRACEBACK_PATTERN = /^Traceback \(most recent call last\):$/;
 var STACK_MORE_PATTERN = /^\s*\.\.\. \d+ more$/;
+var GITHUB_ACTIONS_ANNOTATION_PATTERN = /^::(?:error|warning|notice)\b/u;
+var GRADLE_FAILURE_PATTERN = /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/i;
+var MAKE_ERROR_PATTERN = /^make[:\s*]+/u;
+var GO_TEST_FAIL_PATTERN = /---\s*FAIL:/u;
+var SYSTEMD_STATUS_PATTERN = /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/i;
+var CIRCLECI_STEP_PATTERN = /\b(?:Spin Cancelled|Step failed|job was not approved)\b/i;
+var JENKINS_MARKER_PATTERN = /\[(?:Pipeline|Checks|FCMaker)\]/u;
+var AZURE_PIPELINE_PATTERN = /^##vso\[task\.(?:LogIssue|Complete)\b/u;
+var TEAMCITY_MARKER_PATTERN = /^##teamcity\[(?:buildProblem|compilationFinished|message)\b/u;
 var DIAGNOSTIC_PATTERN = /\b(?:Error|Exception|AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|NullPointerException|Unhandled|failed|failure|fatal|panic|refused|timeout|timed\s+out|unreachable|unavailable|disconnected|killed|aborted|crashed|terminated|unauthorized)\b/i;
 var JSON_SEVERITY_PATTERN = /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/i;
 var NPM_ERROR_PATTERN = /\b(?:npm|pnpm)\s+ERR!/i;
@@ -25559,6 +25568,8 @@ var IPV4_WITH_PORT_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2
 var IPV4_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}\b/g;
 var HEX_HASH_PATTERN = /\b(?=[a-f0-9]*\d)(?=[a-f0-9]*[a-f])[a-f0-9]{16,}\b/gi;
 var ALPHANUMERIC_HASH_PATTERN = /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-Za-z0-9]{24,}\b/g;
+var AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/g;
+var AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z]+:[a-z0-9-]+:(\d{12})/g;
 var LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/i;
 var AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/i;
 var AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
@@ -26359,7 +26370,10 @@ function parseAggressiveness(value) {
   );
 }
 function sanitizeLine(line) {
-  return line.replace(ANSI_ESCAPE_PATTERN, "").replace(UUID_PATTERN, "[ID]").replace(UTC_TIME_PATTERN, "[TIME]").replace(COMMON_LOG_TIME_PATTERN, "[TIME]").replace(NGINX_ERROR_TIME_PATTERN, "[TIME]").replace(ISO_TIME_PATTERN, "[TIME]").replace(IPV4_WITH_PORT_PATTERN, "[IP]:[PORT]").replace(IPV4_PATTERN, "[IP]").replace(HEX_HASH_PATTERN, "[HASH]").replace(ALPHANUMERIC_HASH_PATTERN, "[HASH]").replace(/[ \t]+$/u, "");
+  return line.replace(ANSI_ESCAPE_PATTERN, "").replace(UUID_PATTERN, "[ID]").replace(UTC_TIME_PATTERN, "[TIME]").replace(COMMON_LOG_TIME_PATTERN, "[TIME]").replace(NGINX_ERROR_TIME_PATTERN, "[TIME]").replace(ISO_TIME_PATTERN, "[TIME]").replace(IPV4_WITH_PORT_PATTERN, "[IP]:[PORT]").replace(IPV4_PATTERN, "[IP]").replace(HEX_HASH_PATTERN, "[HASH]").replace(ALPHANUMERIC_HASH_PATTERN, "[HASH]").replace(AWS_ACCESS_KEY_PATTERN, "[REDACTED]").replace(
+    AWS_ARN_ACCOUNT_PATTERN,
+    (match, accountId) => match.replace(accountId, "[ACCOUNT]")
+  ).replace(/[ \t]+$/u, "");
 }
 function createRepeatSignature(line) {
   return tokenizeRepeatLine(line).map((token) => {
@@ -26428,9 +26442,10 @@ function renderRepeatGroup(group) {
   return tokens.join(" ");
 }
 function looksLikeDiagnosticLine(line) {
-  return STACK_FRAME_PATTERN.test(line) || JAVA_STACK_FRAME_PATTERN.test(line) || PYTHON_STACK_FRAME_PATTERN.test(line) || GO_STACK_FRAME_PATTERN.test(line) || GO_FILE_FRAME_PATTERN.test(line) || GO_GOROUTINE_PATTERN.test(line) || PYTHON_TRACEBACK_PATTERN.test(line) || STACK_MORE_PATTERN.test(line) || DIAGNOSTIC_PATTERN.test(line) || JSON_SEVERITY_PATTERN.test(line) || NPM_ERROR_PATTERN.test(line) || YARN_ERROR_PATTERN.test(line) || SCANNER_FINDING_PATTERN.test(line) || CONTAINER_FAILURE_PATTERN.test(line);
+  return STACK_FRAME_PATTERN.test(line) || JAVA_STACK_FRAME_PATTERN.test(line) || PYTHON_STACK_FRAME_PATTERN.test(line) || GO_STACK_FRAME_PATTERN.test(line) || GO_FILE_FRAME_PATTERN.test(line) || GO_GOROUTINE_PATTERN.test(line) || PYTHON_TRACEBACK_PATTERN.test(line) || STACK_MORE_PATTERN.test(line) || DIAGNOSTIC_PATTERN.test(line) || JSON_SEVERITY_PATTERN.test(line) || NPM_ERROR_PATTERN.test(line) || YARN_ERROR_PATTERN.test(line) || SCANNER_FINDING_PATTERN.test(line) || CONTAINER_FAILURE_PATTERN.test(line) || GITHUB_ACTIONS_ANNOTATION_PATTERN.test(line) || GRADLE_FAILURE_PATTERN.test(line) || MAKE_ERROR_PATTERN.test(line) || GO_TEST_FAIL_PATTERN.test(line) || SYSTEMD_STATUS_PATTERN.test(line) || CIRCLECI_STEP_PATTERN.test(line) || JENKINS_MARKER_PATTERN.test(line) || AZURE_PIPELINE_PATTERN.test(line) || TEAMCITY_MARKER_PATTERN.test(line);
 }
 function isInternalStackTraceLine(line) {
+  if (IMPORTANT_LOG_TAG_PATTERN.test(line)) return false;
   return looksLikeDiagnosticLine(line) && INTERNAL_STACK_PATTERN.test(line);
 }
 function estimateTokens(wordCount) {
@@ -26444,8 +26459,17 @@ function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
   if (JSON_SEVERITY_PATTERN.test(line)) score += 80;
   if (SCANNER_FINDING_PATTERN.test(line)) score += 70;
   if (CONTAINER_FAILURE_PATTERN.test(line)) score += 70;
+  if (GITHUB_ACTIONS_ANNOTATION_PATTERN.test(line)) score += 70;
+  if (GRADLE_FAILURE_PATTERN.test(line)) score += 60;
   if (NPM_ERROR_PATTERN.test(line) || YARN_ERROR_PATTERN.test(line)) score += 60;
   if (DIAGNOSTIC_PATTERN.test(line)) score += 50;
+  if (GO_TEST_FAIL_PATTERN.test(line)) score += 50;
+  if (MAKE_ERROR_PATTERN.test(line)) score += 50;
+  if (SYSTEMD_STATUS_PATTERN.test(line)) score += 50;
+  if (CIRCLECI_STEP_PATTERN.test(line)) score += 50;
+  if (JENKINS_MARKER_PATTERN.test(line)) score += 40;
+  if (AZURE_PIPELINE_PATTERN.test(line)) score += 40;
+  if (TEAMCITY_MARKER_PATTERN.test(line)) score += 40;
   if (STACK_FRAME_PATTERN.test(line) || JAVA_STACK_FRAME_PATTERN.test(line) || PYTHON_STACK_FRAME_PATTERN.test(line) || GO_GOROUTINE_PATTERN.test(line) || PYTHON_TRACEBACK_PATTERN.test(line) || STACK_MORE_PATTERN.test(line)) {
     score += 40;
   }

@@ -1,0 +1,39 @@
+> Task :checkout-service:compileJava FAILED
+[x2] [TIME] [ERROR] Execution failed for task ':checkout-service:compileJava'.
+> What went wrong:
+[TIME] [ERROR] Execution failed for task ':checkout-service:compileJava'.
+[TIME] [ERROR] compiler error: cannot find symbol class PaymentGateway
+  symbol:   class PaymentGateway
+  location: package com.example.checkout.payment
+  /repo/src/main/java/com/example/checkout/payment/PaymentService.java:[42,9] cannot find symbol
+[TIME] [ERROR] /repo/src/main/java/com/example/checkout/payment/PaymentService.java:[42,9] cannot find symbol
+BUILD FAILED
+[x2] [TIME] [ERROR] ERROR: /repo/src/main/BUILD.bazel:42:10: compilation failed for //checkout/service:checkout-api
+[TIME] [ERROR] checkout/service/PaymentService.java:42: error: cannot find symbol
+[TIME] [FATAL] Build did not complete successfully: 1 action failed
+[TIME] [ERROR] error[E0425]: cannot assign twice to immutable variable `x`
+   --> src/checkout/payment.rs:42:9
+    |
+42  |     x = total_amount;
+    |     ^ cannot assign twice to immutable variable
+    = help: consider making this binding mutable by adding `mut`
+[TIME] [ERROR] error: could not compile `checkout-service` due to previous error
+[TIME] [FATAL] cargo build failed with exit code 101
+--- FAIL: TestCheckout (0.12s)
+[x2] [TIME] [ERROR] checkout_test.go:42: unexpected payment status "declined", expected "approved"
+[TIME] [ERROR] panic: runtime error: invalid memory address or nil pointer dereference
+[TIME] [ERROR] goroutine 42 [running]:
+  github.com/example/checkout.(*Service).Process(0xc0004a2000)
+[... hidden internal library frames ...]
+  /repo/internal/checkout/service.go:42 +0x2a
+[TIME] [FATAL] FAIL  github.com/example/checkout  0.234s
+[TIME] [ERROR] CMake Error at CMakeLists.txt:42 (add_library):
+  Cannot find source file: src/payment_gateway.cpp
+[TIME] [ERROR] CMake Error at CMakeLists.txt:42 (add_library):
+  Cannot find source file: src/payment_gateway.cpp
+[TIME] [FATAL] CMake Generate step failed.  Build files cannot be regenerated correctly.
+make: *** [build] Error 2
+[x2] [TIME] [ERROR] error MSB3073: The command "dotnet publish --configuration Release" exited with code 1
+[TIME] [ERROR] Controllers/PaymentController.cs(42,9): error CS1061: 'PaymentService' does not contain a definition for 'ProcessRefund'
+[TIME] [FATAL] Build FAILED. 2 Error(s)
+[TIME] [WARN] NuGet cache may be corrupted — run dotnet nuget locals --clear all

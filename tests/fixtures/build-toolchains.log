@@ -1,0 +1,70 @@
+2026-05-19T10:00:01.234Z [INFO] Gradle build started for checkout-service
+2026-05-19T10:00:02.456Z [DEBUG] Configuring project :checkout-service
+2026-05-19T10:00:03.789Z [INFO] > Task :checkout-service:processResources
+2026-05-19T10:00:04.012Z [INFO] > Task :checkout-service:compileJava
+> Task :checkout-service:compileJava FAILED
+2026-05-19T10:00:06.345Z [ERROR] Execution failed for task ':checkout-service:compileJava'.
+2026-05-19T10:00:06.456Z [ERROR] Execution failed for task ':checkout-service:compileJava'.
+> What went wrong:
+2026-05-19T10:00:06.567Z [ERROR] Execution failed for task ':checkout-service:compileJava'.
+2026-05-19T10:00:06.678Z [ERROR] compiler error: cannot find symbol class PaymentGateway
+  symbol:   class PaymentGateway
+  location: package com.example.checkout.payment
+  /repo/src/main/java/com/example/checkout/payment/PaymentService.java:[42,9] cannot find symbol
+2026-05-19T10:00:07.890Z [ERROR] /repo/src/main/java/com/example/checkout/payment/PaymentService.java:[42,9] cannot find symbol
+BUILD FAILED
+2026-05-19T10:00:08.012Z [INFO] 23 actionable tasks: 3 executed, 20 up-to-date
+2026-05-19T10:00:08.234Z [DEBUG] Build time: 7.2s
+2026-05-19T10:01:01.234Z [INFO] Bazel build started for checkout-service
+2026-05-19T10:01:02.456Z [DEBUG] Loading package: //checkout/service
+2026-05-19T10:01:03.789Z [INFO] Analyzing //checkout/service:checkout-api
+2026-05-19T10:01:05.012Z [INFO] Building //checkout/service:checkout-api
+2026-05-19T10:01:06.234Z [ERROR] ERROR: /repo/src/main/BUILD.bazel:42:10: compilation failed for //checkout/service:checkout-api
+2026-05-19T10:01:06.345Z [ERROR] ERROR: /repo/src/main/BUILD.bazel:42:10: compilation failed for //checkout/service:checkout-api
+2026-05-19T10:01:07.456Z [ERROR] checkout/service/PaymentService.java:42: error: cannot find symbol
+2026-05-19T10:01:08.567Z [FATAL] Build did not complete successfully: 1 action failed
+2026-05-19T10:01:09.678Z [INFO] Elapsed time: 8.4s, Critical Path: 6.2s
+2026-05-19T10:02:01.234Z [INFO] Compiling checkout-service v0.1.0
+2026-05-19T10:02:02.456Z [DEBUG] Downloading crates from registry
+2026-05-19T10:02:05.789Z [INFO] Compiling tokio v1.35.1
+2026-05-19T10:02:10.012Z [INFO] Compiling serde v1.0.195
+2026-05-19T10:02:15.234Z [ERROR] error[E0425]: cannot assign twice to immutable variable `x`
+   --> src/checkout/payment.rs:42:9
+    |
+42  |     x = total_amount;
+    |     ^ cannot assign twice to immutable variable
+    = help: consider making this binding mutable by adding `mut`
+2026-05-19T10:02:16.345Z [ERROR] error: could not compile `checkout-service` due to previous error
+2026-05-19T10:02:17.456Z [FATAL] cargo build failed with exit code 101
+2026-05-19T10:02:18.567Z [DEBUG] Build artifacts cleaned up
+2026-05-19T10:03:01.234Z [INFO] go test ./... — running checkout-service tests
+2026-05-19T10:03:02.456Z [DEBUG] Building test binaries
+2026-05-19T10:03:05.789Z [INFO] === RUN   TestCheckout
+--- FAIL: TestCheckout (0.12s)
+2026-05-19T10:03:06.012Z [ERROR] checkout_test.go:42: unexpected payment status "declined", expected "approved"
+2026-05-19T10:03:06.123Z [ERROR] checkout_test.go:42: unexpected payment status "declined", expected "approved"
+2026-05-19T10:03:07.234Z [ERROR] panic: runtime error: invalid memory address or nil pointer dereference
+2026-05-19T10:03:08.345Z [ERROR] goroutine 42 [running]:
+  github.com/example/checkout.(*Service).Process(0xc0004a2000)
+  /usr/local/go/src/runtime/panic.go:884 +0x1b
+  /repo/internal/checkout/service.go:42 +0x2a
+2026-05-19T10:03:09.456Z [FATAL] FAIL  github.com/example/checkout  0.234s
+2026-05-19T10:03:10.567Z [INFO] go test completed with exit code 1
+2026-05-19T10:04:01.234Z [INFO] CMake build for checkout-native
+2026-05-19T10:04:02.456Z [DEBUG] CMake configuration phase
+2026-05-19T10:04:03.789Z [ERROR] CMake Error at CMakeLists.txt:42 (add_library):
+  Cannot find source file: src/payment_gateway.cpp
+2026-05-19T10:04:04.012Z [ERROR] CMake Error at CMakeLists.txt:42 (add_library):
+  Cannot find source file: src/payment_gateway.cpp
+2026-05-19T10:04:05.123Z [FATAL] CMake Generate step failed.  Build files cannot be regenerated correctly.
+make: *** [build] Error 2
+2026-05-19T10:04:06.234Z [DEBUG] Cleaning build directory
+2026-05-19T10:05:01.234Z [INFO] dotnet build CheckoutService.csproj
+2026-05-19T10:05:02.456Z [DEBUG] Determining projects to restore
+2026-05-19T10:05:03.789Z [INFO] Restoring NuGet packages for CheckoutService.csproj
+2026-05-19T10:05:05.012Z [ERROR] error MSB3073: The command "dotnet publish --configuration Release" exited with code 1
+2026-05-19T10:05:06.123Z [ERROR] error MSB3073: The command "dotnet publish --configuration Release" exited with code 1
+2026-05-19T10:05:07.234Z [ERROR] Controllers/PaymentController.cs(42,9): error CS1061: 'PaymentService' does not contain a definition for 'ProcessRefund'
+2026-05-19T10:05:08.345Z [FATAL] Build FAILED. 2 Error(s)
+2026-05-19T10:05:09.456Z [WARN] NuGet cache may be corrupted — run dotnet nuget locals --clear all
+2026-05-19T10:05:10.567Z [INFO] Build completed with exit code 1

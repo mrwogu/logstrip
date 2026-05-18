@@ -39,6 +39,15 @@ const GO_FILE_FRAME_PATTERN = /^\s*(?:\/[^\s]+|[A-Za-z]:[\\/][^\s]+):\d+(?:\s+\+
 const GO_GOROUTINE_PATTERN = /^\s*goroutine\s+\d+\s+\[.+\]:$/i;
 const PYTHON_TRACEBACK_PATTERN = /^Traceback \(most recent call last\):$/;
 const STACK_MORE_PATTERN = /^\s*\.\.\. \d+ more$/;
+const GITHUB_ACTIONS_ANNOTATION_PATTERN = /^::(?:error|warning|notice)\b/u;
+const GRADLE_FAILURE_PATTERN = /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/i;
+const MAKE_ERROR_PATTERN = /^make[:\s*]+/u;
+const GO_TEST_FAIL_PATTERN = /---\s*FAIL:/u;
+const SYSTEMD_STATUS_PATTERN = /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/i;
+const CIRCLECI_STEP_PATTERN = /\b(?:Spin Cancelled|Step failed|job was not approved)\b/i;
+const JENKINS_MARKER_PATTERN = /\[(?:Pipeline|Checks|FCMaker)\]/u;
+const AZURE_PIPELINE_PATTERN = /^##vso\[task\.(?:LogIssue|Complete)\b/u;
+const TEAMCITY_MARKER_PATTERN = /^##teamcity\[(?:buildProblem|compilationFinished|message)\b/u;
 const DIAGNOSTIC_PATTERN = /\b(?:Error|Exception|AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|NullPointerException|Unhandled|failed|failure|fatal|panic|refused|timeout|timed\s+out|unreachable|unavailable|disconnected|killed|aborted|crashed|terminated|unauthorized)\b/i;
 const JSON_SEVERITY_PATTERN = /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/i;
 const NPM_ERROR_PATTERN = /\b(?:npm|pnpm)\s+ERR!/i;
@@ -56,6 +65,10 @@ const IPV4_WITH_PORT_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]
 const IPV4_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}\b/g;
 const HEX_HASH_PATTERN = /\b(?=[a-f0-9]*\d)(?=[a-f0-9]*[a-f])[a-f0-9]{16,}\b/gi;
 const ALPHANUMERIC_HASH_PATTERN = /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-Za-z0-9]{24,}\b/g;
+const AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/g;
+const AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z]+:[a-z0-9-]+:(\d{12})/g;
+// In sanitizeLine, replace AWS ARN account IDs
+// Applied inline below via replace callback
 const LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/i;
 const AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/i;
 const AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
@@ -875,6 +888,8 @@ function sanitizeLine(line) {
         .replace(IPV4_PATTERN, '[IP]')
         .replace(HEX_HASH_PATTERN, '[HASH]')
         .replace(ALPHANUMERIC_HASH_PATTERN, '[HASH]')
+        .replace(AWS_ACCESS_KEY_PATTERN, '[REDACTED]')
+        .replace(AWS_ARN_ACCOUNT_PATTERN, (match, accountId) => match.replace(accountId, '[ACCOUNT]'))
         .replace(/[ \t]+$/u, '');
 }
 function createRepeatSignature(line) {
@@ -982,9 +997,20 @@ function looksLikeDiagnosticLine(line) {
         NPM_ERROR_PATTERN.test(line) ||
         YARN_ERROR_PATTERN.test(line) ||
         SCANNER_FINDING_PATTERN.test(line) ||
-        CONTAINER_FAILURE_PATTERN.test(line));
+        CONTAINER_FAILURE_PATTERN.test(line) ||
+        GITHUB_ACTIONS_ANNOTATION_PATTERN.test(line) ||
+        GRADLE_FAILURE_PATTERN.test(line) ||
+        MAKE_ERROR_PATTERN.test(line) ||
+        GO_TEST_FAIL_PATTERN.test(line) ||
+        SYSTEMD_STATUS_PATTERN.test(line) ||
+        CIRCLECI_STEP_PATTERN.test(line) ||
+        JENKINS_MARKER_PATTERN.test(line) ||
+        AZURE_PIPELINE_PATTERN.test(line) ||
+        TEAMCITY_MARKER_PATTERN.test(line));
 }
 function isInternalStackTraceLine(line) {
+    if (IMPORTANT_LOG_TAG_PATTERN.test(line))
+        return false;
     return looksLikeDiagnosticLine(line) && INTERNAL_STACK_PATTERN.test(line);
 }
 function estimateTokens(wordCount) {
@@ -1012,10 +1038,28 @@ function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
         score += 70;
     if (CONTAINER_FAILURE_PATTERN.test(line))
         score += 70;
+    if (GITHUB_ACTIONS_ANNOTATION_PATTERN.test(line))
+        score += 70;
+    if (GRADLE_FAILURE_PATTERN.test(line))
+        score += 60;
     if (NPM_ERROR_PATTERN.test(line) || YARN_ERROR_PATTERN.test(line))
         score += 60;
     if (DIAGNOSTIC_PATTERN.test(line))
         score += 50;
+    if (GO_TEST_FAIL_PATTERN.test(line))
+        score += 50;
+    if (MAKE_ERROR_PATTERN.test(line))
+        score += 50;
+    if (SYSTEMD_STATUS_PATTERN.test(line))
+        score += 50;
+    if (CIRCLECI_STEP_PATTERN.test(line))
+        score += 50;
+    if (JENKINS_MARKER_PATTERN.test(line))
+        score += 40;
+    if (AZURE_PIPELINE_PATTERN.test(line))
+        score += 40;
+    if (TEAMCITY_MARKER_PATTERN.test(line))
+        score += 40;
     // Stack-frame signals
     if (STACK_FRAME_PATTERN.test(line) ||
         JAVA_STACK_FRAME_PATTERN.test(line) ||

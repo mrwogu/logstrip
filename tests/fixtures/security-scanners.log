@@ -1,0 +1,88 @@
+2026-05-19T11:00:01Z [INFO] Running Trivy vulnerability scanner on checkout-api:latest
+2026-05-19T11:00:02Z [DEBUG] Pulling image checkout-api:latest
+2026-05-19T11:00:05Z [INFO] Scanning image for vulnerabilities...
+2026-05-19T11:00:10Z [INFO] Detected OS: alpine 3.19.1
+CVE-2026-12345  openssl  CRITICAL  Fixed Version: 3.0.15-r2
+CVE-2026-67890  libcurl  HIGH  Fixed Version: 8.5.0-r3
+CVE-2026-11111  glibc  MEDIUM  Fixed Version: 2.38-r6
+CVE-2026-22222  nodejs  HIGH  Fixed Version: 20.11.1-r0
+GHSA-ab12-cd34-ef56  express  CRITICAL  Fixed Version: 4.18.3
+GHSA-xy12-zw34-vu56  lodash  HIGH  Fixed Version: 4.17.21
+CVE-2026-12345  openssl  CRITICAL  Fixed Version: 3.0.15-r2
+2026-05-19T11:00:15Z [INFO] Trivy scan completed: 6 vulnerabilities found
+2026-05-19T11:01:01Z [INFO] Running Snyk security scan
+2026-05-19T11:01:02Z [DEBUG] Loading Snyk policy from .snyk
+2026-05-19T11:01:05Z [INFO] Testing checkout-service...
+[ERROR] ✗ Medium severity vulnerability found in express
+  introduced via checkout-service@1.0.0 > express@4.18.2
+  CVE-2026-33333: HTTP Request Smuggling
+  Fixed in: express@4.18.3
+[ERROR] ✗ High severity vulnerability found in lodash
+  introduced via checkout-service@1.0.0 > lodash@4.17.20
+  CVE-2026-44444: Prototype Pollution
+  Fixed in: lodash@4.17.21
+[ERROR] ✗ High severity vulnerability found in lodash
+  introduced via checkout-service@1.0.0 > lodash@4.17.20
+  CVE-2026-44444: Prototype Pollution
+  Fixed in: lodash@4.17.21
+[ERROR] ✗ Critical severity vulnerability found in follow-redirects
+  introduced via checkout-service@1.0.0 > follow-redirects@1.15.4
+  CVE-2026-55555: Server-Side Request Forgery
+  Fixed in: follow-redirects@1.15.5
+2026-05-19T11:01:10Z [INFO] Snyk scan completed: 4 issues found
+2026-05-19T11:02:01Z [INFO] Running npm audit security check
+2026-05-19T11:02:02Z [DEBUG] Auditing 247 packages
+npm audit report
+[ERROR] npm audit found 3 vulnerabilities (1 critical, 1 high, 1 moderate)
+[ERROR] npm audit found 3 vulnerabilities (1 critical, 1 high, 1 moderate)
+[ERROR] Critical: Prototype Pollution in lodash < 4.17.21
+  Package: lodash
+  Dependency of: checkout-service
+  Path: checkout-service > lodash
+  More info: https://github.com/advisories/GHSA-xy12-zw34-vu56
+[ERROR] High: HTTP Request Smuggling in express < 4.18.3
+  Package: express
+  Dependency of: checkout-service
+  Path: checkout-service > express
+[ERROR] Moderate: ReDoS in debug < 4.3.4
+  Package: debug
+  Dependency of: checkout-service > express > debug
+2026-05-19T11:02:05Z [INFO] npm audit completed
+2026-05-19T11:03:01Z [INFO] Running Semgrep static analysis
+2026-05-19T11:03:02Z [DEBUG] Loading rules from semgrep.yml
+2026-05-19T11:03:05Z [INFO] Scanning 142 files with 89 rules
+[ERROR] semgrep finding: aws.s3-logging-disabled
+  File: src/checkout/storage.py line 42
+  S3 bucket does not have server access logging enabled
+  Severity: WARNING
+[ERROR] semgrep finding: javascript.react.security.audit.eval-detected
+  File: src/api/discount.ts line 88
+  User-controlled data in eval() can lead to code injection
+  Severity: ERROR
+[ERROR] semgrep finding: javascript.react.security.audit.eval-detected
+  File: src/api/discount.ts line 88
+  User-controlled data in eval() can lead to code injection
+  Severity: ERROR
+2026-05-19T11:03:10Z [INFO] Semgrep scan completed: 2 findings
+2026-05-19T11:04:01Z [INFO] Running Gitleaks secret detection
+2026-05-19T11:04:02Z [DEBUG] Loading custom rules from .gitleaks.toml
+2026-05-19T11:04:05Z [INFO] Scanning repository for secrets...
+[ERROR] gitleaks: secret detected in .env line 42
+  Rule: AWS Access Key ID
+  Secret: AKIA5f8a3b2c1d0e9f7a
+  File: .env
+  Line: 42
+[ERROR] High severity: Detected a hardcoded secret 'password123'. Use environment variables instead.
+  File: config/database.yml line 18
+[ERROR] High severity: Detected a hardcoded secret 'password123'. Use environment variables instead.
+  File: config/database.yml line 18
+2026-05-19T11:04:10Z [INFO] Gitleaks scan completed: 2 findings
+2026-05-19T11:05:01Z [INFO] Running Grype vulnerability scanner
+2026-05-19T11:05:02Z [DEBUG] Loading vulnerability database
+2026-05-19T11:05:05Z [INFO] Scanning image checkout-api:latest
+[ERROR] grype: CRITICAL CVE-2026-12345 openssl (installed: 3.0.14-r0, fixed: 3.0.15-r2)
+[ERROR] grype: HIGH CVE-2026-67890 libcurl (installed: 8.5.0-r2, fixed: 8.5.0-r3)
+[ERROR] grype: CRITICAL CVE-2026-12345 openssl (installed: 3.0.14-r0, fixed: 3.0.15-r2)
+[ERROR] High severity vulnerability found in lodash 4.17.20
+[ERROR] High severity vulnerability found in lodash 4.17.20
+2026-05-19T11:05:10Z [FATAL] Security gate failed: 2 critical vulnerabilities must be resolved before deployment
