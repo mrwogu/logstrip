@@ -4,6 +4,8 @@
 
 # ContextBonsai
 
+[![Coverage](https://codecov.io/gh/mrwogu/context-bonsai/branch/main/graph/badge.svg)](https://codecov.io/gh/mrwogu/context-bonsai)
+
 **compress noisy logs before they poison your LLM context**
 
 _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub Action) that turns large server logs, build pipelines, vulnerability scanners, and container workloads into dense, sanitized failure context._
