@@ -1,0 +1,122 @@
+site_name: ContextBonsai
+site_url: https://mrwogu.github.io/context-bonsai/
+site_description: Stream-first CLI that compresses noisy logs into high-signal AI context with automatic source detection across 700+ log ecosystems.
+site_author: mrwogu
+repo_url: https://github.com/mrwogu/context-bonsai
+
+copyright: Copyright &copy; 2026 mrwogu
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  language: en
+  favicon: assets/images/favicon.ico
+  logo: assets/images/logo.svg
+  palette:
+    - scheme: slate
+      primary: black
+      accent: white
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+    - scheme: default
+      primary: black
+      accent: black
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.select
+    - content.tabs.link
+
+plugins:
+  - search
+  - llmstxt:
+      sections:
+        Reference:
+          - reference/cli.md: CLI Reference
+          - reference/core.md: Core API
+          - reference/action.md: GitHub Action
+          - reference/sources.md: Supported Sources
+        Guides:
+          - guides/compression-flow.md: Compression Flow
+          - guides/configuration.md: Configuration
+          - guides/plugins.md: Plugin Installation
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/mrwogu/context-bonsai
+    - icon: fontawesome/brands/npm
+      link: https://www.npmjs.com/package/context-bonsai
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra_javascript:
+  - assets/js/bonsai.js
+
+nav:
+  - ContextBonsai: index.md
+  - Getting Started: getting-started.md
+  - Supported Sources: reference/sources.md
+  - Reference:
+      - CLI: reference/cli.md
+      - Core API: reference/core.md
+      - GitHub Action: reference/action.md
+  - Guides:
+      - Compression Flow: guides/compression-flow.md
+      - Configuration: guides/configuration.md
+      - Plugin Installation: guides/plugins.md
+      - Security: guides/security.md
+      - Troubleshooting: guides/troubleshooting.md
+  - Examples:
+      - examples/index.md
