@@ -1,0 +1,11 @@
+[INFO] selenium test suite started: 42 tests
+[DEBUG] selenium test file: tests/integration/checkout.test.ts
+[DEBUG] selenium test file: tests/unit/payments.test.ts
+[ERROR] selenium FAILED tests/test_orders.py::test_create_order
+    AssertionError: assert 500 == 204
+    File "/repo/tests/test_orders.py", line 42, in test_create_order
+    File "/repo/.venv/lib/python3.12/site-packages/selenium/_client.py", line 814, in request
+[ERROR] selenium TypeError: Cannot read properties of undefined (reading 'amount')
+    at /repo/src/payments.ts:42:18
+    at /repo/node_modules/selenium/lib/runner.js:88:11
+[FATAL] selenium worker crashed with exit code 1

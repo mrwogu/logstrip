@@ -1,0 +1,4 @@
+[INFO] pusher server started on port 3000
+[DEBUG] pusher 42 clients connected
+[ERROR] pusher transport closed unexpectedly for client 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] pusher schema validation failed commit=abcdef1234567890abcdef1234567890abcdef12

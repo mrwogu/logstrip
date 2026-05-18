@@ -1,0 +1,4 @@
+[INFO] incident.io alert triggered: API5xxRate > 5%
+[DEBUG] incident.io incident #42 created
+[ERROR] incident.io escalation failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] incident.io API key expired - cannot acknowledge incidents commit=abcdef1234567890abcdef1234567890abcdef12

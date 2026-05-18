@@ -1,0 +1,7 @@
+[INFO] warp filter server started on :8080
+[DEBUG] warp filter 8 routes registered
+[ERROR] warp filter Error: context deadline exceeded on POST /api/checkout
+    at warp-framework/handler.go:42 in serve
+    at warp-framework/router.go:88 in resolve
+[ERROR] warp filter request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] warp filter server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,4 @@
+[INFO] borg backup backup started: 42 volumes
+[DEBUG] borg backup snapshot completed for volume PVC-checkout-data
+[ERROR] borg backup backup failed: timeout waiting for snapshot creation for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] borg backup repository corrupted - index missing commit=abcdef1234567890abcdef1234567890abcdef12

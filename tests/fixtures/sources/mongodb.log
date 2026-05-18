@@ -1,0 +1,7 @@
+[INFO] mongodb server started on port 5432
+[DEBUG] mongodb connection pool: 42 active connections
+[DEBUG] mongodb checkpoint completed in 12ms
+[ERROR] mongodb FATAL: password authentication failed for user "admin" from 10.42.7.18:54321
+[ERROR] mongodb connection refused to 10.90.12.43:5432
+[ERROR] mongodb deadlock detected for transaction 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] mongodb out of disk space - cannot extend relation commit=abcdef1234567890abcdef1234567890abcdef12

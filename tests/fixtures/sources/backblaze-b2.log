@@ -1,0 +1,6 @@
+[INFO] backblaze b2 initialized successfully
+[DEBUG] backblaze b2 configuration loaded
+[DEBUG] backblaze b2 processing event on worker-1
+[ERROR] backblaze b2 Error: operation failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[ERROR] backblaze b2 Error: operation failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33457 from 10.42.7.18:54322
+[FATAL] backblaze b2 FATAL: unrecoverable error - aborting commit=abcdef1234567890abcdef1234567890abcdef12

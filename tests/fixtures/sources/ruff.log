@@ -1,0 +1,4 @@
+[INFO] ruff: 42 files checked
+[DEBUG] ruff: 0 errors, 3 warnings
+[ERROR] ruff: error: incompatible type "str"; expected "int" in /repo/src/checkout.py:42
+[FATAL] ruff: type checking failed with 12 errors commit=abcdef1234567890abcdef1234567890abcdef12

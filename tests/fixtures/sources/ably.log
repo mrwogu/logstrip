@@ -1,0 +1,4 @@
+[INFO] ably server started on port 3000
+[DEBUG] ably 42 clients connected
+[ERROR] ably transport closed unexpectedly for client 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] ably schema validation failed commit=abcdef1234567890abcdef1234567890abcdef12

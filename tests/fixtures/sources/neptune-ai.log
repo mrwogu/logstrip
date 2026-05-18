@@ -1,0 +1,7 @@
+[INFO] neptune.ai model loaded successfully
+[DEBUG] neptune.ai inference: 42 tokens/s on GPU 0
+[DEBUG] neptune.ai batch processing: 8 requests
+[ERROR] neptune.ai Error: CUDA out of memory - tried to allocate 2.00 GiB
+[ERROR] neptune.ai rate limit exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[ERROR] neptune.ai model file corrupted - header checksum mismatch
+[FATAL] neptune.ai NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

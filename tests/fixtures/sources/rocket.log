@@ -1,0 +1,7 @@
+[INFO] rocket.rs server started on :8080
+[DEBUG] rocket.rs 8 routes registered
+[ERROR] rocket.rs Error: context deadline exceeded on POST /api/checkout
+    at rocket/handler.go:42 in serve
+    at rocket/router.go:88 in resolve
+[ERROR] rocket.rs request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] rocket.rs server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,71 @@
+[INFO] instana sensor: agent connected to backend
+[DEBUG] instana: 42 host agents reporting
+[INFO] signalfx ingest: 42000 datapoints/minute
+[DEBUG] signal fx: 8 detectors active
+[INFO] lightstep tracer: 4200 spans/second
+[DEBUG] lightstep: satellite connected
+[INFO] thanos query: 3 store nodes reachable
+[DEBUG] thanos.io: compaction completed
+[INFO] cortexmetrics ruler: 42 alerting rules evaluated
+[DEBUG] cortex metrics: ingester flush completed
+[INFO] victoriametrics vminsert: 42000 rows/second
+[DEBUG] victoria metrics: vmstorage sync in progress
+[INFO] grafana tempo: distributor receiving traces
+[DEBUG] tempo query: trace lookup in 42ms
+[INFO] posthog capture: 4200 events buffered
+[DEBUG] posthog: snapshot captured for user admin
+[INFO] amplitude identify: 420 users synced
+[DEBUG] amplitude: event tracking initialized
+[INFO] mixpanel track: 842 events queued
+[DEBUG] mixpanel: import job completed
+[INFO] heap analytics: 2100 sessions tracked
+[DEBUG] heap.io: autocapture enabled
+[INFO] plausible analytics: dashboard ready
+[DEBUG] plausible: script loaded on 42 domains
+[INFO] matomo: tracking 42000 pageviews
+[DEBUG] piwik: archive cron completed
+[INFO] countly: 1200 app sessions active
+[DEBUG] countly server: retention report generated
+[INFO] parca: profiling agent connected
+[DEBUG] parca: 8 targets scraped
+[INFO] pixie: vizier healthy
+[DEBUG] pixie: 42 scripts executing
+[ERROR] instana sensor Error: AgentDisconnectedError: lost connection to Instana backend at 10.90.12.41
+    at instana/sensor.go:42 in maintainConnection
+    at instana/agent.go:88 in report
+[ERROR] signalfx ingest Error: IngestError: datapoint buffer overflow - 420000 points dropped
+    at signal fx/ingest/server.go:42 in batch
+    at signal fx/ingest/processor.go:88 in process
+[ERROR] lightstep tracer Error: SpanDroppedError: satellite connection lost at 10.90.12.42:8360
+    at lightstep/tracer/transport.go:42 in send
+    at lightstep/tracer/reporter.go:88 in flush
+[ERROR] thanos query Error: StoreTimeoutError: store node 10.90.12.43 did not respond within 30s
+    at thanos.io/query/querier.go:42 in query
+    at thanos.io/store/store.go:88 in series
+[ERROR] cortexmetrics Error: CortexRulerError: evaluation failed for rule "API5xxRate" - context deadline exceeded
+    at cortex metrics/ruler/ruler.go:42 in evaluate
+    at cortex metrics/ruler/manager.go:88 in run
+[ERROR] victoriametrics Error: VmStorageError: cannot create indexdb - disk space low at 10.90.12.44
+    at victoria metrics/vmstorage/storage.go:42 in init
+    at victoria metrics/vminsert/insert.go:88 in process
+[ERROR] grafana tempo Error: TempoDistributorError: trace push failed - ingester not ready
+    at tempo query/distributor/distributor.go:42 in push
+    at tempo-distributor/ingester.go:88 in ingest
+[ERROR] posthog capture Error: QueueFullError: event buffer overflow - 12000 events dropped
+    at posthog/lib/posthog.py:42 in capture
+    at posthog/lib/consumer.py:88 in send
+[ERROR] amplitude Error: InvalidAPIKeyError: key abc123 not recognized
+    at amplitude/lib/client.py:42 in identify
+    at amplitude/lib/transport.py:88 in request
+[ERROR] mixpanel track Error: MixpanelServerError: 503 Service Unavailable
+    at mixpanel/lib/mixpanel.py:42 in track
+    at mixpanel/lib/consumer.py:88 in send
+[ERROR] heap analytics Error: heap.io connection timeout after 30s to 10.90.12.45
+    at heap.io/tracker.js:42 in flush
+    at heap.io/batch.js:88 in send
+[ERROR] plausible analytics Error: PlausibleDBError: ClickHouse connection refused at 10.90.12.46:8123
+    at plausible/analytics/repo.ex:42 in query
+    at plausible/analytics/ex_aws.ex:88 in execute
+[ERROR] 2026-05-15T10:20:30.123Z instana Error: agent 018f23ab-7c1d-7f44-8bfe-0acddaf33456 disconnected from 10.42.7.18:54321
+[ERROR] 2026-05-15T10:20:30.124Z instana Error: agent 018f23ab-7c1d-7f44-8bfe-0acddaf33457 disconnected from 10.42.7.18:54322
+[FATAL] 2026-05-15T10:20:35.000Z signalfx ingest FATAL: buffer exhausted - data loss commit=abcdef1234567890abcdef1234567890abcdef12

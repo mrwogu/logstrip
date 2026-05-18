@@ -1,0 +1,38 @@
+[ERROR] echo lab Error: echo v4 handler panic: invalid route parameter
+    at labstack/echo/router.go:42 in handle
+    at labstack/echo/echo.go:88 in ServeHTTP
+[ERROR] gofiber fiber v2 Error: fiber.RequestTimeoutError: request body too large
+    at gofiber/app.go:42 in handler
+    at gofiber/router.go:88 in resolve
+[ERROR] go-chi chi.router Error: chi.middleware: context deadline exceeded
+    at go-chi/middleware.go:42 in timeout
+    at go-chi/router.go:88 in route
+[ERROR] gobuffalo buffalo dev Error: pop.ConnectionError: cannot connect to PostgreSQL at [IP]:[PORT]
+    at buffalo/pop/connection.go:42 in open
+    at buffalo/app.go:88 in initialize
+[ERROR] rocket rust Error: io::Error: Permission denied when binding to port 8080
+    at rocket.rs/src/server.rs:42 in bind
+    at rocket.rs/src/rocket.rs:88 in ignite
+[ERROR] tokio-rs/axum Error: hyper::Error: connection closed before body fully read
+    at axum/src/extract/body.rs:42 in extract
+    at axum/src/router.rs:88 in handle
+[ERROR] seanmonstar/warp Error: warp filter: rejection - unauthorized request
+    at warp/server.rs:42 in serve
+    at warp/filter.rs:88 in apply
+[ERROR] sinatra Error: Sinatra::NotFoundError: route not found for POST /api/checkout
+    at sinatra/base.rb:42 in route!
+    at sinatra/main.rb:88 in call
+[ERROR] puma starting Error: Errno::EADDRINUSE - bind failed for [IP]:[PORT]
+    at puma/webserver.rb:42 in add_tcp_listener
+    at puma/worker.rb:88 in run
+[ERROR] puma starting Error: Errno::EADDRINUSE - bind failed for [IP]:[PORT]
+    at puma/webserver.rb:42 in add_tcp_listener
+    at puma/worker.rb:88 in run
+[ERROR] unicorn worker timeout Error: Unicorn::WorkerKiller::MemoryQuota at 512MB
+    at unicorn/worker.rb:42 in process_client
+    at unicorn/http_server.rb:88 in worker_loop
+[ERROR] phusion passenger Error: AppServerCrashError: application exited unexpectedly with signal SIGSEGV
+    at passenger/ruby/app_server.rb:42 in handle
+    at passenger/ruby/request_handler.rb:88 in process
+[x3] [ERROR] [TIME] gofiber Error: request [ID] failed from [IP]:[PORT]
+[FATAL] [TIME] rocket rust server crash: aborting due to unrecoverable error commit=[HASH]

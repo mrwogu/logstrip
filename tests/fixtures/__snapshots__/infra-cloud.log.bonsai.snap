@@ -1,0 +1,8 @@
+Error: UPGRADE FAILED: cannot patch "my-release-deployment" with kind Deployment: Deployment.apps "my-release-deployment" is invalid: spec.template.spec.containers[0].image: Required value
+[ERROR] [TIME] Container failed to start. Failed to start and then listen on the port defined by the PORT environment variable.
+[ERROR] [TIME] The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable.
+START RequestId: [ID] Version: $LATEST
+[TIME] [ID] INFO Processing event
+[TIME] [ID] ERROR Invoke Error {"errorType":"TimeoutError","errorMessage":"Task timed out after 5.01 seconds"}
+END RequestId: [ID]
+REPORT RequestId: [ID]  Duration: 5010.51 ms Billed Duration: 5011 ms Memory Size: 128 MB Max Memory Used: 64 MB

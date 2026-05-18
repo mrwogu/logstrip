@@ -1,0 +1,4 @@
+[INFO] pagerduty alert triggered: API5xxRate > 5%
+[DEBUG] pagerduty incident #42 created
+[ERROR] pagerduty escalation failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] pagerduty API key expired - cannot acknowledge incidents commit=abcdef1234567890abcdef1234567890abcdef12

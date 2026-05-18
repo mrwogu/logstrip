@@ -1,0 +1,4 @@
+[INFO] cost explorer pricing data synced
+[DEBUG] cost explorer 42 cost allocations computed
+[ERROR] cost explorer cannot retrieve spot pricing for us-east-1 for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] cost explorer API rate limit exceeded commit=abcdef1234567890abcdef1234567890abcdef12

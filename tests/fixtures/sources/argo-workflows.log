@@ -1,0 +1,7 @@
+[INFO] argo workflows pipeline started: build-and-deploy
+[DEBUG] argo workflows stage: checkout completed in 2.1s
+[DEBUG] argo workflows stage: build completed in 42.3s
+[ERROR] argo workflows step failed: exit code 1 in stage "test"
+[ERROR] argo workflows deployment failed after rollback exhausted
+::error file=.github/workflows/deploy.yml,line=88::deployment failed for service checkout-api request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] argo workflows pipeline aborted: timeout after 60 minutes commit=abcdef1234567890abcdef1234567890abcdef12

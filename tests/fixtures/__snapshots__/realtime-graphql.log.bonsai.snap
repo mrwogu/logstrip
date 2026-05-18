@@ -1,0 +1,32 @@
+[ERROR] socket.io server Error: TransportCloseError: transport closed unexpectedly for client [ID]
+    at socketio/engine.io.js:42 in onClose
+    at socketio/server.js:88 in handle
+[ERROR] socket.io server Error: TransportCloseError: transport closed unexpectedly for client [ID]
+    at socketio/engine.io.js:42 in onClose
+    at socketio/server.js:88 in handle
+[ERROR] pusher channel Error: PusherAuthenticationError: invalid app key abc123 at [IP]
+    at pusher/lib/channel.js:42 in subscribe
+    at pusher/lib/pusher.js:88 in trigger
+[ERROR] ably realtime Error: AblyError: channel unavailable - connection state is FAILED
+    at ably/lib/realtime/channel.js:42 in attach
+    at ably/lib/realtime/connection.js:88 in connect
+[ERROR] livekit-server Error: RoomError: cannot create room - TURN server unreachable at [IP]:[PORT]
+    at livekit-server/pkg/service/room.go:42 in createRoom
+    at livekit-server/pkg/service/server.go:88 in handle
+[ERROR] centrifugo Error: CentrifugoError: connection drop - redis subscribe failed at [IP]:[PORT]
+    at centrifugo/internal/core/hub.go:42 in subscribe
+    at centrifugo/internal/core/server.go:88 in run
+[ERROR] apollo server Error: GraphQLError: Schema validation failed - type "Order" is undefined
+    at apollographql/src/schema/validate.ts:42 in validate
+    at apollographql/src/server/index.ts:88 in start
+[ERROR] graphql-yoga Error: YogaError: context factory failed - cannot read property of undefined
+    at graphql-yoga/src/server.ts:42 in createContext
+    at graphql-yoga/src/handler.ts:88 in handle
+[ERROR] mercurius Error: FastifyError: mercurius upload schema incompatible with gateway
+    at mercurius/index.js:42 in register
+    at mercurius/plugin.js:88 in apply
+[ERROR] dgraph query Error: DgraphError: predicate "orders.total" not found in schema
+    at dgraph/dgraph/src/client.rs:42 in query
+    at dgraph/dgraph/src/worker.rs:88 in execute
+[x2] [ERROR] [TIME] socket.io Error: client [ID] disconnected from [IP]:[PORT]
+[FATAL] [TIME] apollo server FATAL: schema incompatible with federation gateway commit=[HASH]

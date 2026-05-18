@@ -1,0 +1,4 @@
+[INFO] sphinx 42 pages generated
+[DEBUG] sphinx sitemap.xml created
+[ERROR] sphinx build error: cannot resolve module '@theme/classic'
+[FATAL] sphinx build failed with exit code 1 commit=abcdef1234567890abcdef1234567890abcdef12

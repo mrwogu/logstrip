@@ -1,0 +1,6 @@
+[INFO] journald logger initialized with level=info
+[DEBUG] journald transport configured: file, console
+[ERROR] journald FATAL: Cannot write to log file /var/log/app/server.log
+[ERROR] journald transport error: connection refused to 10.90.12.41:514
+[ERROR] journald buffer overflow: 42000 messages dropped for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] journald out of memory during log rotation commit=abcdef1234567890abcdef1234567890abcdef12

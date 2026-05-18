@@ -1,0 +1,32 @@
+[ERROR] wireguard Error: handshake timeout with peer [IP]:[PORT]
+    at wireguard/src/device.rs:42 in send_handshake
+    at wireguard/src/peer.rs:88 in timer_expired
+[ERROR] tailscale up Error: AuthFailedError: oauth2 token expired
+    at tailscale/control/client.go:42 in authenticate
+    at tailscale/ipn/server.go:88 in start
+[ERROR] ngrok http Error: TunnelReconnectError: failed to reconnect tunnel - server rejected connection
+    at ngrok/tunnel.go:42 in reconnect
+    at ngrok/session.go:88 in handle
+[ERROR] cloudflared tunnel Error: ConnectionError: quic connection closed by server
+    at cloudflare tunnel/connection.go:42 in serve
+    at cloudflare tunnel/origin.go:88 in proxy
+[ERROR] zerotier-one Error: NodeStatusError: node offline - cannot reach controller at [IP]
+    at zeromq/lib/node.go:42 in join
+    at zeromq/lib/manager.go:88 in monitor
+[ERROR] cloudflare workers Error: WorkersCPUError: exceeded CPU time limit of 50ms
+    at wrangler/worker.js:42 in handler
+    at wrangler/runtime.js:88 in execute
+[ERROR] deno deploy Error: DeployTimeoutError: function exceeded 150ms wall-clock limit
+    at deployctl/worker.ts:42 in handle
+    at deployctl/runtime.ts:88 in invoke
+[ERROR] serverless deploy Error: ServerlessError: stack rollback failed - CREATE_FAILED: AWS::Lambda::Function
+    at serverless framework/lib/deploy.js:42 in deploy
+    at serverless framework/lib/stack.js:88 in create
+[ERROR] openwhisk Error: wsk action invocation failed: timeout after 60000ms
+    at openwhisk/controller.go:42 in invoke
+    at openwhisk/invoker.go:88 in execute
+[ERROR] nuclio function Error: FunctionCrashError: container exited with code 137 (OOMKilled)
+    at nuclio/processor.go:42 in start
+    at nuclio/platform.go:88 in deploy
+[x3] [ERROR] [TIME] cloudflare workers Error: request [ID] exceeded CPU limit from [IP]:[PORT]
+[FATAL] [TIME] serverless framework stack CREATE_FAILED - rollback incomplete commit=[HASH]

@@ -1,0 +1,5 @@
+[INFO] linkerd proxy configured
+[DEBUG] linkerd sidecar injected for pod checkout-api
+[ERROR] linkerd connection refused to control plane at 10.90.12.41:15010
+[ERROR] linkerd mTLS handshake failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] linkerd envoy crash: out of memory commit=abcdef1234567890abcdef1234567890abcdef12

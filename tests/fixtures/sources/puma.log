@@ -1,0 +1,7 @@
+[INFO] puma webserver server started on :8080
+[DEBUG] puma webserver 8 routes registered
+[ERROR] puma webserver Error: context deadline exceeded on POST /api/checkout
+    at puma/handler.go:42 in serve
+    at puma/router.go:88 in resolve
+[ERROR] puma webserver request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] puma webserver server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

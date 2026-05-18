@@ -1,0 +1,4 @@
+[INFO] opencost pricing data synced
+[DEBUG] opencost 42 cost allocations computed
+[ERROR] opencost cannot retrieve spot pricing for us-east-1 for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] opencost API rate limit exceeded commit=abcdef1234567890abcdef1234567890abcdef12

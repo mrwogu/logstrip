@@ -1,0 +1,5 @@
+[INFO] fluent bit agent connected to backend
+[DEBUG] fluent bit 4200 spans/second ingested
+[ERROR] fluent bit connection lost to backend at 10.90.12.41:4317
+[ERROR] fluent bit span dropped for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] fluent bit buffer exhausted - data loss commit=abcdef1234567890abcdef1234567890abcdef12

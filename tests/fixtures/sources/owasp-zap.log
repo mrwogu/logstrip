@@ -1,0 +1,7 @@
+[INFO] owasp zap scan started: 42 files
+[DEBUG] owasp zap scanning directory /repo/src
+[DEBUG] owasp zap scanning directory /repo/tests
+[ERROR] owasp zap CVE-2026-12345 found in openssl: CRITICAL severity
+[ERROR] owasp zap GHSA-ab12-cd34-ef56 found in lodash: HIGH severity
+[ERROR] owasp zap High severity vulnerability found in package request-018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] owasp zap 12 critical vulnerabilities detected - policy violation commit=abcdef1234567890abcdef1234567890abcdef12

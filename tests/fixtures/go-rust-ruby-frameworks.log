@@ -1,0 +1,74 @@
+[INFO] echo lab v4 server started on :8080
+[DEBUG] echo v4 middleware registered
+[INFO] gofiber fiber v2 listening on :3000
+[DEBUG] fiber: 42 routes registered
+[INFO] go-chi chi.router initialized
+[DEBUG] chi middleware: logger, recoverer, strip
+[INFO] gobuffalo buffalo dev running on :3000
+[DEBUG] buffalo: 12 migrations applied
+[INFO] rocket rust server launched on 0.0.0.0:8000
+[DEBUG] rocket.rs: 4 routes mounted
+[INFO] tokio-rs/axum router bound to :8080
+[DEBUG] axum: 8 handler routes
+[INFO] seanmonstar/warp server listening on :3030
+[DEBUG] warp filter: path=/api/checkout
+[INFO] sinatra app started on port 4567
+[DEBUG] sinatra: 12 routes defined
+[INFO] hanami server started on :2300
+[DEBUG] hanami: 6 actions registered
+[INFO] puma starting on tcp://0.0.0.0:9292
+[DEBUG] puma worker 0 spawned
+[DEBUG] puma worker 1 spawned
+[INFO] unicorn master started at 0.0.0.0:8080
+[DEBUG] unicorn worker 0 ready
+[DEBUG] unicorn worker 1 ready
+[INFO] phusion passenger: app started
+[DEBUG] passenger: spawning app process
+[INFO] revel framework: running in dev mode
+[DEBUG] revel: 8 routes registered
+[INFO] go-kit transport: HTTP server on :8080
+[DEBUG] go kit: circuit breaker closed
+[INFO] go micro server started on :50051
+[DEBUG] go-micro: registry etcd connected
+[INFO] http-rs/tide server listening on :8080
+[DEBUG] tide: 4 routes registered
+[ERROR] echo lab Error: echo v4 handler panic: invalid route parameter
+    at labstack/echo/router.go:42 in handle
+    at labstack/echo/echo.go:88 in ServeHTTP
+[ERROR] gofiber fiber v2 Error: fiber.RequestTimeoutError: request body too large
+    at gofiber/app.go:42 in handler
+    at gofiber/router.go:88 in resolve
+[ERROR] go-chi chi.router Error: chi.middleware: context deadline exceeded
+    at go-chi/middleware.go:42 in timeout
+    at go-chi/router.go:88 in route
+[ERROR] gobuffalo buffalo dev Error: pop.ConnectionError: cannot connect to PostgreSQL at 10.90.12.43:5432
+    at buffalo/pop/connection.go:42 in open
+    at buffalo/app.go:88 in initialize
+[ERROR] rocket rust Error: io::Error: Permission denied when binding to port 8080
+    at rocket.rs/src/server.rs:42 in bind
+    at rocket.rs/src/rocket.rs:88 in ignite
+[ERROR] tokio-rs/axum Error: hyper::Error: connection closed before body fully read
+    at axum/src/extract/body.rs:42 in extract
+    at axum/src/router.rs:88 in handle
+[ERROR] seanmonstar/warp Error: warp filter: rejection - unauthorized request
+    at warp/server.rs:42 in serve
+    at warp/filter.rs:88 in apply
+[ERROR] sinatra Error: Sinatra::NotFoundError: route not found for POST /api/checkout
+    at sinatra/base.rb:42 in route!
+    at sinatra/main.rb:88 in call
+[ERROR] puma starting Error: Errno::EADDRINUSE - bind failed for 0.0.0.0:9292
+    at puma/webserver.rb:42 in add_tcp_listener
+    at puma/worker.rb:88 in run
+[ERROR] puma starting Error: Errno::EADDRINUSE - bind failed for 0.0.0.0:9293
+    at puma/webserver.rb:42 in add_tcp_listener
+    at puma/worker.rb:88 in run
+[ERROR] unicorn worker timeout Error: Unicorn::WorkerKiller::MemoryQuota at 512MB
+    at unicorn/worker.rb:42 in process_client
+    at unicorn/http_server.rb:88 in worker_loop
+[ERROR] phusion passenger Error: AppServerCrashError: application exited unexpectedly with signal SIGSEGV
+    at passenger/ruby/app_server.rb:42 in handle
+    at passenger/ruby/request_handler.rb:88 in process
+[ERROR] 2026-05-15T10:20:30.123Z gofiber Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[ERROR] 2026-05-15T10:20:30.124Z gofiber Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33457 failed from 10.42.7.18:54322
+[ERROR] 2026-05-15T10:20:30.125Z gofiber Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33458 failed from 10.42.7.18:54323
+[FATAL] 2026-05-15T10:20:35.000Z rocket rust server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,7 @@
+[INFO] neo4j server started on port 5432
+[DEBUG] neo4j connection pool: 42 active connections
+[DEBUG] neo4j checkpoint completed in 12ms
+[ERROR] neo4j FATAL: password authentication failed for user "admin" from 10.42.7.18:54321
+[ERROR] neo4j connection refused to 10.90.12.43:5432
+[ERROR] neo4j deadlock detected for transaction 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] neo4j out of disk space - cannot extend relation commit=abcdef1234567890abcdef1234567890abcdef12

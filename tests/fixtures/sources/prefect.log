@@ -1,0 +1,4 @@
+[INFO] prefect execution started: daily-etl
+[DEBUG] prefect task extract completed in 12s
+[ERROR] prefect execution failed at task "load" - connection refused for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] prefect worker timeout after 120s commit=abcdef1234567890abcdef1234567890abcdef12

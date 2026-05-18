@@ -1,0 +1,43 @@
+[INFO] 2026-05-15T10:20:30.123Z worker pid=12345 booting vitest 4.1.6
+[DEBUG] 2026-05-15T10:20:30.124Z loading config from /repo/vitest.config.ts
+[DEBUG] 2026-05-15T10:20:30.125Z resolving module graph for tests/integration/users.test.ts
+[DEBUG] 2026-05-15T10:20:30.126Z resolving module graph for tests/integration/orders.test.ts
+[DEBUG] 2026-05-15T10:20:30.127Z transform cache hit src/services/user-service.ts
+[INFO] 2026-05-15T10:20:30.200Z test run e1d8a942-1c4f-4b1c-9d76-2bf3e1ad3d77 starting
+[TRACE] 2026-05-15T10:20:30.201Z workers spawned correlationId=98c52e74-b9b5-43a4-9c0f-d4f1f5a83410
+[VERBOSE] 2026-05-15T10:20:30.205Z websocket connected sha=4d8c1b9a7e6f3c2d1a0b9c8d7e6f5a4b3c2d1e0f
+ RUN  v4.1.6 /repo
+ ✓ tests/unit/sum.test.ts (12 tests) 18ms
+ ✓ tests/unit/util.test.ts (8 tests) 9ms
+ ✗ tests/integration/users.test.ts (5 tests | 3 failed) 124ms
+[INFO] 2026-05-15T10:20:31.020Z teardown executed sessionId=12d8a942-1c4f-4b1c-9d76-2bf3e1ad3d77
+[ERROR] AssertionError: expected 500 to be 201
+    at Object.<anonymous> (/repo/tests/integration/users.test.ts:42:18)
+    at processTimers (node:internal/timers:514:7)
+    at /repo/node_modules/vitest/dist/index.js:1234:20
+    at /repo/node_modules/@vitest/runner/dist/index.js:567:15
+    at /repo/node_modules/tinypool/dist/esm/worker.js:89:5
+    at MessagePort.[nodejs.internal.kHybridDispatch] (node:internal/event_target:826:20)
+[ERROR] AssertionError: expected 500 to be 201
+    at Object.<anonymous> (/repo/tests/integration/users.test.ts:55:18)
+    at processTimers (node:internal/timers:514:7)
+    at /repo/node_modules/vitest/dist/index.js:1234:20
+    at /repo/node_modules/@vitest/runner/dist/index.js:567:15
+    at /repo/node_modules/tinypool/dist/esm/worker.js:89:5
+    at MessagePort.[nodejs.internal.kHybridDispatch] (node:internal/event_target:826:20)
+[ERROR] AssertionError: expected 500 to be 201
+    at Object.<anonymous> (/repo/tests/integration/users.test.ts:68:18)
+    at processTimers (node:internal/timers:514:7)
+    at /repo/node_modules/vitest/dist/index.js:1234:20
+    at /repo/node_modules/@vitest/runner/dist/index.js:567:15
+    at /repo/node_modules/tinypool/dist/esm/worker.js:89:5
+    at MessagePort.[nodejs.internal.kHybridDispatch] (node:internal/event_target:826:20)
+[INFO] 2026-05-15T10:20:32.001Z run summary requestId=8f923ace-09a8-4f1a-9e2c-1fbb2a9e3d22
+[INFO] 2026-05-15T10:20:32.002Z Files  2 passed | 1 failed (3)
+[INFO] 2026-05-15T10:20:32.003Z Tests  20 passed | 3 failed (23)
+[INFO] 2026-05-15T10:20:32.004Z Start at  10:20:30
+[INFO] 2026-05-15T10:20:32.005Z Duration  2.15s
+[FATAL] worker crashed with exit code 1
+[DEBUG] 2026-05-15T10:20:32.020Z shutting down hot reload server
+[DEBUG] 2026-05-15T10:20:32.021Z closing websocket connection
+[DEBUG] 2026-05-15T10:20:32.022Z flushing trace buffer

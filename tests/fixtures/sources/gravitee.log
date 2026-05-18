@@ -1,0 +1,5 @@
+[INFO] gravitee tunnel established
+[DEBUG] gravitee connection active: latency 12ms
+[ERROR] gravitee handshake timeout with peer 10.90.12.41:51820
+[ERROR] gravitee connection refused for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[FATAL] gravitee tunnel disconnected - auth expired commit=abcdef1234567890abcdef1234567890abcdef12

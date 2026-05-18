@@ -1,0 +1,7 @@
+[INFO] spinnaker pipeline started: build-and-deploy
+[DEBUG] spinnaker stage: checkout completed in 2.1s
+[DEBUG] spinnaker stage: build completed in 42.3s
+[ERROR] spinnaker step failed: exit code 1 in stage "test"
+[ERROR] spinnaker deployment failed after rollback exhausted
+::error file=.github/workflows/deploy.yml,line=88::deployment failed for service checkout-api request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] spinnaker pipeline aborted: timeout after 60 minutes commit=abcdef1234567890abcdef1234567890abcdef12

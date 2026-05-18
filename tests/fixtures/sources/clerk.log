@@ -1,0 +1,5 @@
+[INFO] clerk service started
+[DEBUG] clerk session cache initialized
+[ERROR] clerk authentication failed for user admin from 10.42.7.18:54321
+[ERROR] clerk invalid session token for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] clerk key rotation failed - cannot connect to API commit=abcdef1234567890abcdef1234567890abcdef12

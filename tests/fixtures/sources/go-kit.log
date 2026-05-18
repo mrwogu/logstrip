@@ -1,0 +1,7 @@
+[INFO] go-kit server started on :8080
+[DEBUG] go-kit 8 routes registered
+[ERROR] go-kit Error: context deadline exceeded on POST /api/checkout
+    at go-kit/handler.go:42 in serve
+    at go-kit/router.go:88 in resolve
+[ERROR] go-kit request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] go-kit server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

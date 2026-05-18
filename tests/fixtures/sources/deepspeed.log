@@ -1,0 +1,7 @@
+[INFO] deepspeed model loaded successfully
+[DEBUG] deepspeed inference: 42 tokens/s on GPU 0
+[DEBUG] deepspeed batch processing: 8 requests
+[ERROR] deepspeed Error: CUDA out of memory - tried to allocate 2.00 GiB
+[ERROR] deepspeed rate limit exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[ERROR] deepspeed model file corrupted - header checksum mismatch
+[FATAL] deepspeed NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

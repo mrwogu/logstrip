@@ -1,0 +1,6 @@
+[INFO] risingwave broker started on port 9092
+[DEBUG] risingwave topic orders: 42 partitions active
+[DEBUG] risingwave consumer group checkout-api: lag=0
+[ERROR] risingwave connection refused to broker 10.90.12.43:9092
+[ERROR] risingwave message delivery failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] risingwave cluster unreachable - quorum lost commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,6 @@
+[INFO] bullmq broker started on port 9092
+[DEBUG] bullmq topic orders: 42 partitions active
+[DEBUG] bullmq consumer group checkout-api: lag=0
+[ERROR] bullmq connection refused to broker 10.90.12.43:9092
+[ERROR] bullmq message delivery failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] bullmq cluster unreachable - quorum lost commit=abcdef1234567890abcdef1234567890abcdef12

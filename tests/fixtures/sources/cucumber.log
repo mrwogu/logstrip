@@ -1,0 +1,11 @@
+[INFO] cucumber test suite started: 42 tests
+[DEBUG] cucumber test file: tests/integration/checkout.test.ts
+[DEBUG] cucumber test file: tests/unit/payments.test.ts
+[ERROR] cucumber FAILED tests/test_orders.py::test_create_order
+    AssertionError: assert 500 == 204
+    File "/repo/tests/test_orders.py", line 42, in test_create_order
+    File "/repo/.venv/lib/python3.12/site-packages/cucumber/_client.py", line 814, in request
+[ERROR] cucumber TypeError: Cannot read properties of undefined (reading 'amount')
+    at /repo/src/payments.ts:42:18
+    at /repo/node_modules/cucumber/lib/runner.js:88:11
+[FATAL] cucumber worker crashed with exit code 1

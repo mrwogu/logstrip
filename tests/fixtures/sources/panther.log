@@ -1,0 +1,7 @@
+[INFO] panther scan started: 42 files
+[DEBUG] panther scanning directory /repo/src
+[DEBUG] panther scanning directory /repo/tests
+[ERROR] panther CVE-2026-12345 found in openssl: CRITICAL severity
+[ERROR] panther GHSA-ab12-cd34-ef56 found in lodash: HIGH severity
+[ERROR] panther High severity vulnerability found in package request-018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] panther 12 critical vulnerabilities detected - policy violation commit=abcdef1234567890abcdef1234567890abcdef12

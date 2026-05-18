@@ -1,0 +1,4 @@
+[INFO] bind9 zone loaded: example.com
+[DEBUG] bind9 42 records processed
+[ERROR] bind9 AXFR transfer failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[FATAL] bind9 zone file corrupted commit=abcdef1234567890abcdef1234567890abcdef12
