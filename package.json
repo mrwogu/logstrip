@@ -4,6 +4,7 @@
   "description": "Stream-based CLI that trims noisy server logs, build pipelines, vulnerability scanners, and container workloads down to the diagnostic context LLM agents actually need.",
   "private": false,
   "license": "MIT",
+  "author": "mrwogu",
   "type": "commonjs",
   "main": "dist/core/bonsai-parser.js",
   "types": "dist/core/bonsai-parser.d.ts",
@@ -53,7 +54,7 @@
   "bugs": {
     "url": "https://github.com/mrwogu/context-bonsai/issues"
   },
-  "homepage": "https://github.com/mrwogu/context-bonsai#readme",
+  "homepage": "https://mrwogu.github.io/context-bonsai/",
   "engines": {
     "node": ">=20"
   },
@@ -62,6 +63,7 @@
     "docs:build": "mkdocs build --strict",
     "docs:serve": "mkdocs serve",
     "prepack": "npm run build",
+    "smoke:cli": "node scripts/ci-cli-smoke.js",
     "test": "vitest run --coverage",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
