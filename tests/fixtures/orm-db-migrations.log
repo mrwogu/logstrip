@@ -1,0 +1,65 @@
+[INFO] prisma generate: 4 models generated
+[DEBUG] prisma: introspection completed
+[INFO] prisma migrate deploy: 12 migrations applied
+[DEBUG] prisma db: schema synced
+[INFO] drizzle-orm: schema validated
+[DEBUG] drizzle kit push: 3 tables updated
+[INFO] typeorm: 8 entities registered
+[DEBUG] typeorm query: SELECT * FROM orders
+[INFO] sequelize: models synchronized
+[DEBUG] sequelize-cli: 4 migrations executed
+[INFO] knex migrate:latest: 6 migrations applied
+[DEBUG] knex: seed files executed
+[INFO] flyway migrate: 12 migrations applied successfully
+[DEBUG] flyway validate: schema version 12.8
+[INFO] liquibase update: 8 changesets applied
+[DEBUG] liquibase: lock acquired
+[INFO] alembic upgrade head: revision abc123 applied
+[DEBUG] alembic revision: auto-generated migration
+[INFO] sqlalchemy.orm: session factory created
+[DEBUG] sqlalchemy: engine connected to 10.90.12.43:5432
+[INFO] mongoose.connect: connected to 10.90.12.44:27017
+[DEBUG] mongoose: 42 documents indexed
+[INFO] mikro-orm migrate: 6 migrations applied
+[DEBUG] mikroorm: schema updated
+[INFO] objection.js: 8 models registered
+[DEBUG] objectionjs: eager loading optimized
+[ERROR] prisma migrate Error: P3018: Migration failed: column "total" cannot be null in table "orders"
+    at prisma/migrate/deploy.ts:42 in applyMigration
+    at prisma/migrate/commands.ts:88 in execute
+[ERROR] prisma generate Error: P1012: Schema parsing error - model "Order" has no id field
+    at prisma/generate/generate.ts:42 in validate
+    at prisma/generate/commands.ts:88 in run
+[ERROR] drizzle kit push Error: DrizzleKitError: column "email" already exists in table "users"
+    at drizzle-orm/kit/src/push.ts:42 in validate
+    at drizzle-orm/kit/src/commands.ts:88 in execute
+[ERROR] typeorm query Error: QueryFailedError: relation "orders" does not exist
+    at typeorm/src/driver/PostgresDriver.ts:42 in query
+    at typeorm/src/persistence/EntityPersister.ts:88 in save
+[ERROR] sequelize Error: SequelizeConnectionError: password authentication failed for user "admin" at 10.90.12.43:5432
+    at sequelize/src/dialects/postgres/connection-manager.js:42 in connect
+    at sequelize/src/sequelize.js:88 in sync
+[ERROR] knex migrate Error: MigrationLockError: lock table already locked by another process
+    at knex/src/migrate/MigrationLock.js:42 in acquireLock
+    at knex/src/migrate/Migrator.js:88 in run
+[ERROR] flyway migrate Error: FlywayValidateException: migration checksum mismatch for V12__add_checkout.sql
+    at flyway/core/api/src/main/java/org/flywaydb/core/internal/command/DbMigrate.java:42 in apply
+    at flyway/core/api/src/main/java/org/flywaydb/core/Flyway.java:88 in migrate
+[ERROR] liquibase update Error: LiquibaseException: ChangeSet checksum mismatch
+    at liquibase/core/src/main/java/liquibase/changelog/ChangeSet.java:42 in execute
+    at liquibase/core/src/main/java/liquibase/Liquibase.java:88 in update
+[ERROR] alembic upgrade Error: CommandFailed: Can't locate revision identified by 'abc123'
+    at alembic/command/upgrade.py:42 in upgrade
+    at alembic/migration.py:88 in upgrade_step
+[ERROR] sqlalchemy.orm Error: OperationalError: connection refused to 10.90.12.43:5432
+    at sqlalchemy/engine/default.py:42 in execute
+    at sqlalchemy/orm/session.py:88 in flush
+[ERROR] mongoose.connect Error: MongooseServerSelectionError: connection timeout to 10.90.12.44:27017
+    at mongoose/lib/connection.js:42 in openUri
+    at mongoose/lib/model.js:88 in save
+[ERROR] mikro-orm migrate Error: MigrationError: cannot drop table "payments" - foreign key constraint fails
+    at mikro-orm/migrations/MigrationRunner.ts:42 in down
+    at mikro-orm/migrations/MigrationManager.ts:88 in execute
+[ERROR] 2026-05-15T10:20:30.123Z prisma Error: migration 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed at V8__add_payments.sql src=10.42.7.18:54321
+[ERROR] 2026-05-15T10:20:30.124Z prisma Error: migration 018f23ab-7c1d-7f44-8bfe-0acddaf33457 failed at V8__add_payments.sql src=10.42.7.18:54322
+[FATAL] 2026-05-15T10:20:35.000Z flyway migrate FATAL: database unreachable after 30 retries commit=abcdef1234567890abcdef1234567890abcdef12

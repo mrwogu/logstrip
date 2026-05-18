@@ -1,0 +1,7 @@
+[INFO] codemagic pipeline started: build-and-deploy
+[DEBUG] codemagic stage: checkout completed in 2.1s
+[DEBUG] codemagic stage: build completed in 42.3s
+[ERROR] codemagic step failed: exit code 1 in stage "test"
+[ERROR] codemagic deployment failed after rollback exhausted
+::error file=.github/workflows/deploy.yml,line=88::deployment failed for service checkout-api request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] codemagic pipeline aborted: timeout after 60 minutes commit=abcdef1234567890abcdef1234567890abcdef12

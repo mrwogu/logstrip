@@ -1,0 +1,4 @@
+[INFO] fivetran pipeline started: 42 sources
+[DEBUG] fivetran transformation completed in 8.2s
+[ERROR] fivetran pipeline failed: connection refused to 10.90.12.43:5432 for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] fivetran schema evolution error - incompatible types commit=abcdef1234567890abcdef1234567890abcdef12

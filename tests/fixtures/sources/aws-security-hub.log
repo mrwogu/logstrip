@@ -1,0 +1,7 @@
+[INFO] security hub scan started: 42 files
+[DEBUG] security hub scanning directory /repo/src
+[DEBUG] security hub scanning directory /repo/tests
+[ERROR] security hub CVE-2026-12345 found in openssl: CRITICAL severity
+[ERROR] security hub GHSA-ab12-cd34-ef56 found in lodash: HIGH severity
+[ERROR] security hub High severity vulnerability found in package request-018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] security hub 12 critical vulnerabilities detected - policy violation commit=abcdef1234567890abcdef1234567890abcdef12

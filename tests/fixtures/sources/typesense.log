@@ -1,0 +1,5 @@
+[INFO] typesense index created: products (42000 documents)
+[DEBUG] typesense query latency: 12ms p99
+[ERROR] typesense connection refused to 10.90.12.44:7700
+[ERROR] typesense index corruption for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] typesense out of memory during indexing commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,5 @@
+[INFO] amazon ses 420 emails sent today
+[DEBUG] amazon ses template rendered: order-confirmation
+[ERROR] amazon ses delivery failed: bounce detected for user@example.com
+[ERROR] amazon ses quota exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[FATAL] amazon ses SMTP server unreachable commit=abcdef1234567890abcdef1234567890abcdef12

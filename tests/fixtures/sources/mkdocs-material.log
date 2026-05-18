@@ -1,0 +1,4 @@
+[INFO] mkdocs-material 42 pages generated
+[DEBUG] mkdocs-material sitemap.xml created
+[ERROR] mkdocs-material build error: cannot resolve module '@theme/classic'
+[FATAL] mkdocs-material build failed with exit code 1 commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,5 @@
+[INFO] solr index created: products (42000 documents)
+[DEBUG] solr query latency: 12ms p99
+[ERROR] solr connection refused to 10.90.12.44:7700
+[ERROR] solr index corruption for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] solr out of memory during indexing commit=abcdef1234567890abcdef1234567890abcdef12

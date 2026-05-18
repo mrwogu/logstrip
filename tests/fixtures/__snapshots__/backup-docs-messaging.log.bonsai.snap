@@ -1,0 +1,50 @@
+[ERROR] velero backup Error: VeleroBackupError: failed to snapshot volume PVC-checkout-data - timeout waiting for snapshot creation
+    at velero/backup/backup.go:42 in runBackup
+    at velero/backup/manager.go:88 in process
+[ERROR] velero restore Error: VeleroRestoreError: resource "Deployment/checkout-api" already exists and cannot be restored
+    at velero/restore/restore.go:42 in runRestore
+    at velero/restore/manager.go:88 in process
+[ERROR] restic backup Error: ResticRepositoryError: repository locked by another process at [IP]
+    at restic/internal/repository/repository.go:42 in Lock
+    at restic/internal/backend/local/local.go:88 in Save
+[ERROR] borg backup Error: BorgLockError: Unable to acquire lock for /mnt/backup/repo - another backup running
+    at borgmatic/borg/repository.py:42 in lock
+    at borgmatic/borg/backup.py:88 in create
+[ERROR] docusaurus build Error: WebpackError: Cannot resolve module '@docusaurus/theme-classic'
+    at docusaurus/lib/webpack/config.js:42 in resolve
+    at docusaurus/lib/commands/build.js:88 in compile
+[ERROR] sphinx-build Error: ExtensionError: sphinx.ext.autodoc failed to import module 'app.core'
+    at sphinx/ext/autodoc/__init__.py:42 in process
+    at sphinx/ext/autodoc/importer.py:88 in import_object
+[ERROR] mdbook build Error: MdbookError: chapter 4 references non-existent file SUMMARY.md
+    at rust-lang/mdbook/src/book/book.rs:42 in load
+    at rust-lang/mdbook/src/cmd/build.rs:88 in execute
+[ERROR] bullmq queue Error: StalledJobError: job abc123def456ghi789 stalled for 300s - moving to failed
+    at bullmq/src/job.ts:42 in moveStalledJobsToFailed
+    at bull mq/src/queue.ts:88 in runStalledChecker
+[ERROR] bull-redis Error: BullQueueError: redis connection refused at [IP]:[PORT]
+    at bull queue/src/queue.ts:42 in connect
+    at bull.process/src/worker.ts:88 in run
+[ERROR] kestra flow Error: KestraExecutionError: flow "daily-etl" failed at task "load" - connection refused
+    at kestra/runner/executor.java:42 in execute
+    at kestra/queue/queue.java:88 in offer
+[ERROR] windmill Error: WindmillWorkerError: script "etl_import" timed out after 120s
+    at windmill-dev/worker/worker.go:42 in execute
+    at windmill-dev/worker/pool.go:88 in schedule
+[ERROR] inngest function Error: InngestFunctionError: step "validate-payment" failed - timeout
+    at inngest/lib/step.ts:42 in invoke
+    at inngest/lib/function.ts:88 in execute
+[ERROR] trigger.dev job Error: TriggerDevError: job "send-notification" failed - API returned 503
+    at triggerdev/lib/job.ts:42 in run
+    at trigger.dev/lib/runner.ts:88 in process
+[ERROR] kubecost api Error: KubecostPricingError: cannot retrieve spot pricing for us-east-1 from AWS
+    at kubecost/api/pricing.go:42 in fetchSpotPrice
+    at kubecost/api/router.go:88 in serve
+[ERROR] amazon ecr Error: ECRPushError: image push failed - repository policy denies access for [IP]
+    at ecr.amazonaws/client.go:42 in pushImage
+    at ecr.amazonaws/docker.go:88 in upload
+[ERROR] cosign sign Error: CosignError: keyless signing failed - Fulcio API unreachable
+    at cosign/cmd/sign.go:42 in sign
+    at cosign/verify.go:88 in verify
+[x2] [ERROR] [TIME] velero backup Error: volume [ID] snapshot timeout from [IP]:[PORT]
+[FATAL] [TIME] restic backup FATAL: repository corrupted - index missing commit=[HASH]

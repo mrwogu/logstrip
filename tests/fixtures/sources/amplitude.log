@@ -1,0 +1,4 @@
+[INFO] amplitude dashboard ready
+[DEBUG] amplitude 4200 events tracked today
+[ERROR] amplitude buffer overflow: 12000 events dropped for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] amplitude database connection refused commit=abcdef1234567890abcdef1234567890abcdef12

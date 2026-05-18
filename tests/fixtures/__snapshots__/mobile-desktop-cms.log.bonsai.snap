@@ -1,0 +1,52 @@
+[ERROR] react-native Error: bundling failed: Error: Unable to resolve module `@company/auth` from `/app/src/App.tsx`
+[... hidden internal library frames ...]
+[ERROR] flutter Error: FormatException: Invalid UTF-8 in response body
+    at _parseBody (/app/.pub-cache/hosted/pub.dev/http-1.2.0/lib/src/response.dart:42:15)
+    at dart:async/zone.dart:88 in _rootRun
+[ERROR] expo start Error: TypeError: Cannot read properties of undefined (reading 'apiKey')
+[... hidden internal library frames ...]
+[ERROR] electron-builder Error: Cannot find module 'electron'
+[... hidden internal library frames ...]
+[ERROR] tauri build Error: cargo build failed: cannot find function `main` in crate `app`
+    at rustc/error.rs:42 in emit
+    at cargo/build.rs:88 in compile
+[ERROR] tauri app Error: PermissionDenied: window creation failed
+    at tauri/app/src/window.rs:42 in new
+    at tauri/app/src/main.rs:88 in run
+[ERROR] capacitor run Error: Android SDK not found at ANDROID_HOME
+    at @capacitor/core/platform.js:42 in detectSDK
+[... hidden internal library frames ...]
+[ERROR] ionic framework Error: ENOENT: no such file 'ionic.config.json'
+[... hidden internal library frames ...]
+[ERROR] wordpress PHP Fatal error: Uncaught TypeError: Cannot access offset of type string in /var/www/wp-content/plugins/checkout/processor.php on line 42
+    at /var/www/wp-content/plugins/checkout/processor.php:42
+    at /var/www/wp-includes/class-wp-hook.php:88
+[ERROR] drupal Error: PluginNotFoundException: plugin "field_group" not found
+    at drupal/core/lib/Drupal/Component/Plugin/Exception/PluginNotFoundException.php:42
+    at drupal/core/modules/field/field.module:88
+[ERROR] strapi start Error: Error: Connection refused to database [IP]:[PORT]
+    at strapi/packages/strapi/lib/services/connect.js:42 in connect
+    at strapi/packages/strapi/lib/app.js:88 in start
+[ERROR] ghost cms Error: ENOENT: theme template not found 'index.hbs'
+    at ghost-cli/lib/commands/start.js:42 in validate
+    at ghost-cli/lib/bootstrap.js:88 in run
+[ERROR] shopify Error: ShopifyAPIError: 422 Unprocessable Entity - variant already exists
+    at shopify-cli/lib/api/client.js:42 in request
+    at shopify-cli/lib/commands/push.js:88 in execute
+[ERROR] magento2 Error: Magento\Framework\DB\Adapter\DatabaseException: SQLSTATE[HY000]: General error: 1205 Lock wait timeout
+    at magento2/lib/internal/Magento/Framework/DB/Adapter/Pdo/Mysql.php:42 in query
+    at magento2/lib/internal/Magento/Framework/DB/Adapter/Pdo/Mysql.php:88 in connect
+[ERROR] meilisearch index Error: MeilisearchCommunicationError: connection refused to [IP]:[PORT]
+    at meilisearch/lib/src/index.rs:42 in update
+    at meilisearch/lib/src/runner.rs:88 in execute
+[ERROR] typesense server Error: TypesenseError: Out of memory during indexing
+    at typesense/server/src/indices_manager.rs:42 in index_batch
+    at typesense/server/src/main.rs:88 in run
+[ERROR] apache solr Error: SolrException: Error opening new searcher - too many open files
+    at solrconfig/solr/core/src/java/org/apache/solr/core/SolrCore.java:42 in openSearcher
+    at solrconfig/solr/core/src/java/org/apache/solr/update/DirectUpdateHandler2.java:88 in commit
+[ERROR] algolia index Error: AlgoliaAPIError: 429 Too many requests - quota exceeded
+    at algolia/lib/src/index.py:42 in save_objects
+    at algolia/lib/src/client.py:88 in request
+[x2] [ERROR] [TIME] react-native Error: request [ID] failed on POST /api/checkout from [IP]:[PORT]
+[FATAL] [TIME] electron-builder process killed by SIGTERM commit=[HASH]

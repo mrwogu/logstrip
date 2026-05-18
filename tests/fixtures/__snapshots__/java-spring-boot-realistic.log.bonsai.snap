@@ -1,0 +1,15 @@
+[TIME]  INFO 181 --- [checkout-api] [nio-8080-exec-1] c.e.checkout.web.HealthController        : readiness probe succeeded instance=checkout-api-7d9f8c7d4f-r8z2p
+[TIME]  INFO 181 --- [checkout-api] [nio-8080-exec-3] c.e.checkout.web.CheckoutController      : POST /checkout orderId=ord-88421 requestId=[ID] customer=demo-customer-42
+[TIME] DEBUG 181 --- [checkout-api] [nio-8080-exec-3] org.hibernate.SQL                        : select i1_0.sku,i1_0.available from inventory i1_0 where i1_0.sku=?
+[TIME]  WARN 181 --- [checkout-api] [nio-8080-exec-3] c.e.checkout.inventory.InventoryClient   : retrying reservation sku=SKU-422 attempt=2 after timeout requestId=[ID]
+[TIME] ERROR 181 --- [checkout-api] [nio-8080-exec-3] c.e.checkout.web.CheckoutController      : Checkout request failed orderId=ord-88421 requestId=[ID]
+[x2] java.lang.IllegalStateException: Inventory reservation failed for order [ID]
+    at com.example.checkout.inventory.InventoryClient.reserve(InventoryClient.java:74)
+    at com.example.checkout.service.CheckoutService.placeOrder(CheckoutService.java:132)
+    at com.example.checkout.web.CheckoutController.checkout(CheckoutController.java:58)
+[... hidden internal library frames ...]
+Caused by: java.net.SocketTimeoutException: Read timed out
+[... hidden internal library frames ...]
+[TIME] ERROR 181 --- [checkout-api] [nio-8080-exec-3] o.s.b.a.w.s.e.BasicErrorController       : Resolved [java.lang.IllegalStateException: Inventory reservation failed]
+[TIME]  INFO 181 --- [checkout-api] [nio-8080-exec-5] c.e.checkout.web.HealthController        : liveness probe succeeded instance=checkout-api-7d9f8c7d4f-r8z2p
+[TIME] DEBUG 181 --- [checkout-api] [scheduling-1] c.e.checkout.jobs.CartExpiryJob          : scanned 128 expired carts

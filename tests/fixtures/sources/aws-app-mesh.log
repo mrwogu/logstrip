@@ -1,0 +1,5 @@
+[INFO] app mesh proxy configured
+[DEBUG] app mesh sidecar injected for pod checkout-api
+[ERROR] app mesh connection refused to control plane at 10.90.12.41:15010
+[ERROR] app mesh mTLS handshake failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] app mesh envoy crash: out of memory commit=abcdef1234567890abcdef1234567890abcdef12

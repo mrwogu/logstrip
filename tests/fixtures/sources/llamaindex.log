@@ -1,0 +1,7 @@
+[INFO] llamaindex model loaded successfully
+[DEBUG] llamaindex inference: 42 tokens/s on GPU 0
+[DEBUG] llamaindex batch processing: 8 requests
+[ERROR] llamaindex Error: CUDA out of memory - tried to allocate 2.00 GiB
+[ERROR] llamaindex rate limit exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[ERROR] llamaindex model file corrupted - header checksum mismatch
+[FATAL] llamaindex NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

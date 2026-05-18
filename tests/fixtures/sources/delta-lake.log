@@ -1,0 +1,4 @@
+[INFO] delta lake pipeline started: 42 sources
+[DEBUG] delta lake transformation completed in 8.2s
+[ERROR] delta lake pipeline failed: connection refused to 10.90.12.43:5432 for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] delta lake schema evolution error - incompatible types commit=abcdef1234567890abcdef1234567890abcdef12

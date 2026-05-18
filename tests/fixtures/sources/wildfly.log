@@ -1,0 +1,9 @@
+[INFO] wildfly application starting on port 8080
+[DEBUG] wildfly configuration loaded from application.yml
+[DEBUG] wildfly datasource url=jdbc:postgresql://10.90.12.43:5432/app
+[ERROR] wildfly HTTP Status 500 - Internal Server Error
+    at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:118)
+    at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:55)
+[ERROR] wildfly ServletException processing request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 on /api/checkout from 10.42.7.18:54321
+[ERROR] wildfly ServletException processing request 018f23ab-7c1d-7f44-8bfe-0acddaf33457 on /api/checkout from 10.42.7.18:54322
+[FATAL] wildfly OutOfMemoryError: Java heap space commit=abcdef1234567890abcdef1234567890abcdef12

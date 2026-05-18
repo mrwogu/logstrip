@@ -1,0 +1,4 @@
+[INFO] step functions execution started: daily-etl
+[DEBUG] step functions task extract completed in 12s
+[ERROR] step functions execution failed at task "load" - connection refused for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] step functions worker timeout after 120s commit=abcdef1234567890abcdef1234567890abcdef12

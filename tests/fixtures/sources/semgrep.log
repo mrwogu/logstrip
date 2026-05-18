@@ -1,0 +1,7 @@
+[INFO] semgrep scan started: 42 files
+[DEBUG] semgrep scanning directory /repo/src
+[DEBUG] semgrep scanning directory /repo/tests
+[ERROR] semgrep CVE-2026-12345 found in openssl: CRITICAL severity
+[ERROR] semgrep GHSA-ab12-cd34-ef56 found in lodash: HIGH severity
+[ERROR] semgrep High severity vulnerability found in package request-018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] semgrep 12 critical vulnerabilities detected - policy violation commit=abcdef1234567890abcdef1234567890abcdef12

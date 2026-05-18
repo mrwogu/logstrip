@@ -1,0 +1,60 @@
+[INFO] express server listening on port 3000
+[INFO] express routes registered successfully
+[DEBUG] fastify server started at 0.0.0.0:8080
+[DEBUG] fastify plugin loaded: @fastify/cors
+[INFO] @nestjs/core bootstrapped successfully
+[INFO] @nestjs/core modules initialized
+[INFO] next build compiled successfully
+[DEBUG] next dev server hot reload triggered
+[DEBUG] nuxt build asset optimization running
+[INFO] nuxt build done in 12.4s
+[DEBUG] sveltekit adapter-node generated
+[INFO] @remix-run/dev server ready
+[INFO] astro build complete in 3.2s
+[INFO] hono server listening on port 3000
+[INFO] deno task build completed
+[DEBUG] deno run cache warmup
+[ERROR] express router Error: Cannot find module '@company/auth'
+    at internalRequire (/srv/node_modules/express/lib/router/index.js:42:15)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] fastify FST_ERR_CTR_INITIALIZER: plugin initialization failed
+    at Object.register (/srv/node_modules/fastify/lib/plugin.js:88:11)
+    at process._tickCallback (node:internal/process/next_tick:28)
+[ERROR] @nestjs/core NestError: Circular dependency detected between AuthService and UserService
+    at ModuleLoader.load (/srv/node_modules/@nestjs/core/nest-application.js:118:23)
+    at Object.register (node:internal/modules/cjs/loader:1105:14)
+[ERROR] next build Error: Cannot resolve dependency 'react-dom/client'
+    at build (/srv/node_modules/next/dist/build/index.js:88:15)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[FATAL] nuxt build Error: NuxtFatalError: Cannot read properties of undefined (reading 'modules')
+    at buildApp (/srv/node_modules/nuxt/dist/app/build.js:42:18)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] sveltekit Error: Cannot find module '$lib/stores/auth'
+    at resolve (/srv/node_modules/@sveltejs/kit/dist/vite/index.js:55:12)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] remix Error: @remix-run/react requires React 18+
+    at checkReact (/srv/node_modules/@remix-run/react/index.js:22:11)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] astro build Error: AstroUserError: Content collection schema invalid
+    at validateSchema (/srv/node_modules/astro/dist/content/index.js:88:15)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] hono server TypeError: Cannot read properties of undefined (reading 'headers')
+    at handleRequest (/srv/node_modules/hono/dist/compose.js:42:18)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] deno task Error: PermissionDenied: network access to "https://api.example.com", run again with --allow-net
+    at opDenoFetch (deno:runtime/js/30_fetch.js:88:11)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] elysia server Error: ElysiaValidationError: Invalid body - expected { name: string, email: string }
+    at validate (/srv/node_modules/elysia/dist/validation.js:42:15)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] 2026-05-15T08:01:12.436Z express Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed on route POST /api/checkout src=10.42.7.18:54321
+[ERROR] 2026-05-15T08:01:12.437Z express Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33457 failed on route POST /api/checkout src=10.42.7.18:54322
+[ERROR] 2026-05-15T08:01:12.438Z express Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33458 failed on route POST /api/checkout src=10.42.7.18:54323
+[WARN] express ECONNREFUSED connecting to redis 10.90.12.41:6379
+[WARN] fastify connection timeout to database 10.90.12.42:5432
+[ERROR] pino ERROR: unhandled rejection in payment worker requestId=018f23ab-7c1d-7f44-8bfe-0acddaf33459
+[ERROR] pino ERROR: unhandled rejection in payment worker requestId=018f23ab-7c1d-7f44-8bfe-0acddaf33460
+[ERROR] pino ERROR: unhandled rejection in payment worker requestId=018f23ab-7c1d-7f44-8bfe-0acddaf33461
+[ERROR] winston logger FATAL: Cannot connect to MongoDB at 10.90.12.43:27017
+[ERROR] bunyan logger FATAL: Out of memory: heap allocation failed
+[FATAL] 2026-05-15T08:01:15.000Z nextjs worker crashed with signal SIGABRT after uncaught exception commit=abcdef1234567890abcdef1234567890abcdef12

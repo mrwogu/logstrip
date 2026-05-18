@@ -1,0 +1,31 @@
+[ERROR] express router Error: Cannot find module '@company/auth'
+[... hidden internal library frames ...]
+[ERROR] fastify FST_ERR_CTR_INITIALIZER: plugin initialization failed
+[... hidden internal library frames ...]
+    at process._tickCallback (node:internal/process/next_tick:28)
+[ERROR] @nestjs/core NestError: Circular dependency detected between AuthService and UserService
+[... hidden internal library frames ...]
+[ERROR] next build Error: Cannot resolve dependency 'react-dom/client'
+[... hidden internal library frames ...]
+[FATAL] nuxt build Error: NuxtFatalError: Cannot read properties of undefined (reading 'modules')
+[... hidden internal library frames ...]
+[ERROR] sveltekit Error: Cannot find module '$lib/stores/auth'
+[... hidden internal library frames ...]
+[ERROR] remix Error: @remix-run/react requires React 18+
+[... hidden internal library frames ...]
+[ERROR] astro build Error: AstroUserError: Content collection schema invalid
+[... hidden internal library frames ...]
+[ERROR] hono server TypeError: Cannot read properties of undefined (reading 'headers')
+[... hidden internal library frames ...]
+[ERROR] deno task Error: PermissionDenied: network access to "https://api.example.com", run again with --allow-net
+    at opDenoFetch (deno:runtime/js/30_fetch.js:88:11)
+[... hidden internal library frames ...]
+[ERROR] elysia server Error: ElysiaValidationError: Invalid body - expected { name: string, email: string }
+[... hidden internal library frames ...]
+[x3] [ERROR] [TIME] express Error: request [ID] failed on route POST /api/checkout src=[IP]:[PORT]
+[WARN] express ECONNREFUSED connecting to redis [IP]:[PORT]
+[WARN] fastify connection timeout to database [IP]:[PORT]
+[x3] [ERROR] pino ERROR: unhandled rejection in payment worker requestId=[ID]
+[ERROR] winston logger FATAL: Cannot connect to MongoDB at [IP]:[PORT]
+[ERROR] bunyan logger FATAL: Out of memory: heap allocation failed
+[FATAL] [TIME] nextjs worker crashed with signal SIGABRT after uncaught exception commit=[HASH]

@@ -1,0 +1,32 @@
+[ERROR] homeassistant Error: IntegrationSetupError: cannot setup integration "hue" - discovery failed at [IP]
+    at homeassistant/setup.py:42 in async_setup_entry
+    at homeassistant/loader.py:88 in initialize
+[ERROR] platformio Error: PlatformioBuildError: compilation failed for board esp32-devkitc
+    at platformio.org/builder/main.py:42 in compile
+    at platformio/run.py:88 in run
+[ERROR] esphome config Error: ESPHomeValidationError: pin GPIO32 already used by sensor "dht22"
+    at esphome/core/config.py:42 in validate
+    at esphome/components/sensor.py:88 in validate_pin
+[ERROR] tasmota mqtt Error: MQTTConnectionError: broker unreachable at [IP]:[PORT]
+    at tasmota/mqtt/client.go:42 in connect
+    at tasmota/mqtt/handler.go:88 in reconnect
+[ERROR] openhab Error: BindingError: cannot connect to Zigbee coordinator on /dev/ttyACM0
+    at openhab/binding/zigbee/handler.java:42 in initialize
+    at openhabian/core/thing.java:88 in update
+[ERROR] arduino-cli Error: UploadError: cannot open serial port /dev/ttyUSB0 - permission denied
+    at arduino-cli/compile.go:42 in upload
+    at arduino-cli/board.go:88 in detect
+[ERROR] unityengine Error: NullReferenceException: Object reference not set to instance in PlayerController.Update()
+    at unity/Assets/Scripts/PlayerController.cs:42 in Update
+    at unity/Runtime/PlayerLoop.cs:88 in update
+[ERROR] unreal engine Error: AccessViolationException: attempted to read from uninitialized pointer in UCheckoutComponent::ProcessPayment
+    at ue5/Source/Checkout/CheckoutComponent.cpp:42 in ProcessPayment
+    at ue5/Engine/GameplayStatics.cpp:88 in Execute
+[ERROR] godot engine Error: ScriptError: attempt to call function 'process_order' on null instance
+    at godot/project/scripts/order_manager.gd:42 in _process
+    at godot/engine/scene_tree.cpp:88 in physics
+[ERROR] bevy engine Error: PanicError: ECS system "payment_processor" panicked: index out of bounds
+    at bevy_ecs/src/system/function_system.rs:42 in run
+    at bevy/engine/src/app.rs:88 in update
+[x2] [ERROR] [TIME] homeassistant Error: integration [ID] failed at [IP]:[PORT]
+[FATAL] [TIME] unityengine FATAL: out of memory loading asset bundle commit=[HASH]

@@ -1,0 +1,7 @@
+[INFO] kube-hunter container started: image checkout-api:latest
+[DEBUG] kube-hunter health check passed on port 8080
+[DEBUG] kube-hunter Normal Pulled container checkout-api in pod checkout-api-7b8759d7b9-mk2dq
+[ERROR] kube-hunter CrashLoopBackOff: back-off restarting failed container checkout-api in pod checkout-api-7b8759d7b9-mk2dq
+[ERROR] kube-hunter ImagePullBackOff: failed to pull image checkout-api:latest - rpc error: code = Unknown desc = failed to resolve reference
+[ERROR] kube-hunter OOMKilled: container checkout-api exceeded memory limit for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] kube-hunter container runtime error: runc create failed commit=abcdef1234567890abcdef1234567890abcdef12

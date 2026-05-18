@@ -1,0 +1,7 @@
+[x2] {"time":"[TIME]","level":"error","msg":"database timeout","requestId":"[ID]","clientIp":"[IP]:[PORT]","traceId":"[HASH]"}
+Caused by: Error: connect ECONNREFUSED [IP]:[PORT]
+    at query (/srv/app/src/db.ts:84:17)
+    at performCheckout (/srv/app/src/checkout.ts:144:13)
+[... hidden internal library frames ...]
+{"time":"[TIME]","severity":"critical","msg":"checkout failed permanently","requestId":"[ID]","status":503}
+{"time":"[TIME]","level":"error","msg":"database timeout","requestId":"[ID]","clientIp":"[IP]:[PORT]"}

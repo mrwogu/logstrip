@@ -1,0 +1,7 @@
+[INFO] postgres server started on port 5432
+[DEBUG] postgres connection pool: 42 active connections
+[DEBUG] postgres checkpoint completed in 12ms
+[ERROR] postgres FATAL: password authentication failed for user "admin" from 10.42.7.18:54321
+[ERROR] postgres connection refused to 10.90.12.43:5432
+[ERROR] postgres deadlock detected for transaction 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] postgres out of disk space - cannot extend relation commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,7 @@
+[INFO] mlrun model loaded successfully
+[DEBUG] mlrun inference: 42 tokens/s on GPU 0
+[DEBUG] mlrun batch processing: 8 requests
+[ERROR] mlrun Error: CUDA out of memory - tried to allocate 2.00 GiB
+[ERROR] mlrun rate limit exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[ERROR] mlrun model file corrupted - header checksum mismatch
+[FATAL] mlrun NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

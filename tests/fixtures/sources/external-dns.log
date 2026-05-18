@@ -1,0 +1,4 @@
+[INFO] external-dns zone loaded: example.com
+[DEBUG] external-dns 42 records processed
+[ERROR] external-dns AXFR transfer failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[FATAL] external-dns zone file corrupted commit=abcdef1234567890abcdef1234567890abcdef12

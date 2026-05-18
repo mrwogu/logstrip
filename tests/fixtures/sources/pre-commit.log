@@ -1,0 +1,4 @@
+[INFO] pre-commit hook executed: pre-commit
+[DEBUG] pre-commit 42 files staged
+[ERROR] pre-commit merge conflict in src/checkout/api.ts for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] pre-commit push rejected: protected branch commit=abcdef1234567890abcdef1234567890abcdef12

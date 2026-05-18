@@ -1,0 +1,4 @@
+[INFO] apollo server server started on port 3000
+[DEBUG] apollo server 42 clients connected
+[ERROR] apollo server transport closed unexpectedly for client 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] apollo server schema validation failed commit=abcdef1234567890abcdef1234567890abcdef12

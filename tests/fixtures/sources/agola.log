@@ -1,0 +1,7 @@
+[INFO] agola pipeline started: build-and-deploy
+[DEBUG] agola stage: checkout completed in 2.1s
+[DEBUG] agola stage: build completed in 42.3s
+[ERROR] agola step failed: exit code 1 in stage "test"
+[ERROR] agola deployment failed after rollback exhausted
+::error file=.github/workflows/deploy.yml,line=88::deployment failed for service checkout-api request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] agola pipeline aborted: timeout after 60 minutes commit=abcdef1234567890abcdef1234567890abcdef12

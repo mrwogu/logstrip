@@ -1,0 +1,4 @@
+[INFO] pylint: 42 files checked
+[DEBUG] pylint: 0 errors, 3 warnings
+[ERROR] pylint: error: incompatible type "str"; expected "int" in /repo/src/checkout.py:42
+[FATAL] pylint: type checking failed with 12 errors commit=abcdef1234567890abcdef1234567890abcdef12

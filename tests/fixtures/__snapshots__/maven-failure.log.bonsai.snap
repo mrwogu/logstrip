@@ -1,0 +1,20 @@
+[x2] [WARN] /repo/src/main/java/com/example/checkout/PaymentService.java:[42,16] unchecked cast
+[ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol
+[ERROR]   symbol:   class Logger
+[ERROR]   location: class com.example.checkout.CartService
+[ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol
+[ERROR]   symbol:   class Logger
+[ERROR]   location: class com.example.checkout.CartService
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project checkout: Compilation failure
+[ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol
+[ERROR]   symbol:   class Logger
+[ERROR]   location: class com.example.checkout.CartService
+[ERROR] -> [Help 1]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+Caused by: java.lang.NullPointerException: Cannot invoke "User.getEmail()" because the return value of "Session.getUser()" is null
+    at com.example.checkout.CartService.checkout(CartService.java:42)
+    at com.example.checkout.CheckoutController.process(CheckoutController.java:88)
+[... hidden internal library frames ...]

@@ -1,0 +1,7 @@
+[INFO] tide server started on :8080
+[DEBUG] tide 8 routes registered
+[ERROR] tide Error: context deadline exceeded on POST /api/checkout
+    at tide/handler.go:42 in serve
+    at tide/router.go:88 in resolve
+[ERROR] tide request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] tide server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12
