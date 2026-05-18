@@ -1,0 +1,15 @@
+{
+  "name": "context-bonsai",
+  "description": "ContextBonsai plugin marketplace for Droid.",
+  "owner": {
+    "name": "mrwogu"
+  },
+  "plugins": [
+    {
+      "name": "context-bonsai",
+      "description": "Slash command, skill, and helper droids for compressing noisy CI and build logs with ContextBonsai.",
+      "source": "./plugins/context-bonsai",
+      "category": "developer-tools"
+    }
+  ]
+}

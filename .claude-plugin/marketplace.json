@@ -1,0 +1,13 @@
+{
+  "name": "context-bonsai",
+  "owner": {
+    "name": "mrwogu"
+  },
+  "plugins": [
+    {
+      "name": "context-bonsai",
+      "source": "./plugins/context-bonsai",
+      "description": "Slash command, skill, and helper agents for compressing noisy CI and build logs with ContextBonsai."
+    }
+  ]
+}

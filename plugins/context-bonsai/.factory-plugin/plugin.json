@@ -1,0 +1,11 @@
+{
+  "name": "context-bonsai",
+  "description": "Adds ContextBonsai slash commands, skills, and helper droids for compressing noisy CI and build logs.",
+  "version": "1.0.0",
+  "author": {
+    "name": "mrwogu"
+  },
+  "homepage": "https://mrwogu.github.io/context-bonsai/",
+  "repository": "https://github.com/mrwogu/context-bonsai",
+  "license": "MIT"
+}
