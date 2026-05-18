@@ -164,17 +164,8 @@ treated as a lightweight helper rather than a complete compression pass.
 
 ## Tested log sources and tools
 
-The smoke suite currently validates parser behavior against realistic fixtures from:
-
-- **Vitest** test failures
-- **Jest** test failures
-- **Docker/BuildKit** build output
-- **Maven** Java build failures
-- **Pytest** Python failures
-- **Webpack** bundling failures
-- **Structured JSON server logs** (application/runtime output)
-- **Vulnerability scanner output** (`CVE-*`, `GHSA-*`, severity/fixed-version patterns)
-- **Kubernetes/kubelet container runtime failures** (`BackOff`, `ErrImagePull`, `panic`, `goroutine`)
+The parser detects **705+ log ecosystems** across 30+ categories.
+See the [Supported Sources](sources.md) page for the full catalogue.
 
 Fixture files live in `tests/fixtures/*.log` and deterministic outputs in
 `tests/fixtures/__snapshots__/*.bonsai.snap`.

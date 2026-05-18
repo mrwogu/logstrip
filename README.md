@@ -74,8 +74,7 @@ checks.
 [... hidden internal library frames ...]
 ```
 
-Try the interactive browser demo on the
-[documentation homepage](https://mrwogu.github.io/context-bonsai/#live-demo).
+See the [full source catalogue](https://mrwogu.github.io/context-bonsai/reference/sources/) for all 705+ detected ecosystems.
 
 ---
 
@@ -200,7 +199,7 @@ for install steps.
 
 ## How It Works
 
-ContextBonsai applies several cuts to every streamed line:
+ContextBonsai detects **705+ log ecosystems** and applies several cuts to every streamed line:
 
 | Cut | What it does |
 | :--- | :--- |
