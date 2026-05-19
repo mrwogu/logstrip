@@ -10,6 +10,7 @@ _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub
 
 [![CI](https://github.com/mrwogu/logstrip/actions/workflows/ci.yml/badge.svg)](https://github.com/mrwogu/logstrip/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/logstrip?color=white)](https://www.npmjs.com/package/logstrip)
+[![GitHub Action](https://img.shields.io/badge/marketplace-LogStrip-blue?logo=githubactions&logoColor=white)](https://github.com/marketplace/actions/logstrip)
 [![Coverage](https://codecov.io/gh/mrwogu/logstrip/branch/main/graph/badge.svg)](https://codecov.io/gh/mrwogu/logstrip)
 [![License: MIT](https://img.shields.io/badge/license-MIT-white.svg)](https://opensource.org/licenses/MIT)
 
@@ -296,9 +297,11 @@ custom config integration.
 
 ## GitHub Action <a id="github-action"></a>
 
-The repository also ships an optional GitHub Action that wraps the same parser.
+The repository also ships an optional [GitHub Action](https://github.com/marketplace/actions/logstrip) that wraps the same parser.
 It is useful when you want a single step in CI and a tidy Step Summary, but the
 CLI is the primary distribution channel.
+
+> **Dogfooding:** This project uses its own action in its [CI pipeline](https://github.com/mrwogu/logstrip/actions/workflows/ci.yml) to compress fixture logs and render token savings in every workflow run.
 
 ```yaml
 - name: Compress logs with LogStrip

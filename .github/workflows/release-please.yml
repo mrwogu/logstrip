@@ -21,6 +21,7 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          publish: true
 
       - name: Checkout release tag
         if: ${{ steps.release.outputs.release_created }}

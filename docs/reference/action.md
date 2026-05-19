@@ -9,6 +9,8 @@ CLI / library. The CLI is the canonical distribution channel - the action
 exists so you can drop LogStrip into a workflow with one step and get a
 GitHub Step Summary for free.
 
+[![Publish to GitHub Marketplace](https://img.shields.io/badge/marketplace-LogStrip-blue?logo=githubactions&logoColor=white)](https://github.com/marketplace/actions/logstrip)
+
 If you can call shell from your workflow, prefer the CLI directly:
 
 ```yaml
