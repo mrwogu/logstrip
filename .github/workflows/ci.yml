@@ -45,6 +45,14 @@ jobs:
       - name: CLI smoke test
         run: npm run smoke:cli
 
+      - name: Compress CI logs with LogStrip
+        if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
+        id: logstrip
+        uses: mrwogu/logstrip@v1
+        with:
+          log-path: tests/fixtures/ci-platforms.log
+          aggressiveness: high
+
       - name: Security audit
         run: npm audit
 
