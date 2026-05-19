@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [20.x, 22.x, 24.x]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript Strict Check
+        run: npm run typecheck
+
+      - name: Test with 100% coverage
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build
+
+      - name: CLI smoke test
+        run: npm run smoke:cli
+
+      - name: Security audit
+        run: npm audit
+
+      - name: Setup Python for docs
+        if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+
+      - name: Install docs dependencies
+        if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
+        run: pip install -r requirements-docs.txt
+
+      - name: Build docs
+        if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
+        run: npm run docs:build
+
+      - name: Upload coverage to Codecov
+        if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          fail_ci_if_error: true
+
+      - name: Upload coverage artifact
+        if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+          retention-days: 7
+
+      - name: Upload action artifact
+        if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: logstrip-action
+          path: |
+            action.yml
+            package.json
+            package-lock.json
+            dist/action
+            dist/cli
+            dist/core
+          retention-days: 7
+
+  action-smoke-test:
+    name: Action Artifact Smoke Test
+    needs: build
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download action artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: logstrip-action
+          path: action-package
+
+      - name: Smoke test parser artifact
+        run: node scripts/ci-action-artifact-smoke.js action-package
+
+      - name: Smoke test bundled GitHub Action
+        uses: ./action-package
+        with:
+          log-path: raw.log
+
+      - name: Verify action output
+        run: node scripts/ci-assert-smoke-output.js raw.logstrip.log
