@@ -29,15 +29,11 @@ _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub
 
 </div>
 
----
-
 You paste a 50k-line CI log into your agent. It chews 200k+ tokens on noise — health checks, framework internals, repeated stack frames, UUIDs — and still misses the one `[ERROR]` line that matters. ContextBonsai trims that to the diagnostic context an LLM actually needs. One command. Zero dependencies. Streaming — never loads the full log into memory.
 
 **What changes:** Session 1 your build fails with a flaky test. You feed the log through `bonsai`. Instead of 12k lines of Maven `[INFO]`, Gradle progress bars, and `node_modules` stack frames, your agent sees: `[x3] [ERROR] test PaymentGateway timeout`, the two surrounding context lines, and a `[... hidden internal library frames ...]` marker. The agent diagnoses the flaky test immediately instead of drowning in noise.
 
----
-
-## Install
+## Install <a id="install"></a>
 
 Requires Node.js 20 or newer.
 
@@ -51,9 +47,7 @@ Or run without installing:
 npx -y context-bonsai raw.log -o clean.log
 ```
 
----
-
-## Quick Start
+## Quick Start <a id="quick-start"></a>
 
 ```bash
 # File in, file out
@@ -80,9 +74,9 @@ Bonsai output:
   [... hidden internal library frames ...]
 ```
 
----
+## Benchmarks <a id="benchmarks"></a>
 
-## ![Benchmarks](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-benchmarks.svg)
+![Benchmarks](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-benchmarks.svg)
 
 Compression ratios from the 38 fixture test suite across real-world log sources:
 
@@ -103,9 +97,9 @@ Production logs with millions of lines routinely hit **80%+** token savings beca
 
 > Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) — 38 `.log` files covering 705+ ecosystem signatures. Each fixture has a committed snapshot baseline.
 
----
+## vs Alternatives <a id="vs-alternatives"></a>
 
-## ![vs Alternatives](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-competitors.svg)
+![vs Alternatives](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-competitors.svg)
 
 | | **ContextBonsai** | `grep -v` / `awk` | LLM summarization | logreduce |
 |:---|:---|:---|:---|:---|
@@ -120,9 +114,9 @@ Production logs with millions of lines routinely hit **80%+** token savings beca
 | **Extensible** | `.bonsai.yml` custom config | Shell scripts | Prompt engineering | Plugin system |
 | **CI integration** | CLI + GitHub Action | Shell scripts | API wrapper | CLI |
 
----
+## Works with every agent <a id="works-with-every-agent"></a>
 
-## ![Works with every agent](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-agents.svg)
+![Works with every agent](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-agents.svg)
 
 ContextBonsai ships agent plugin bundles so assistants compress logs before
 diagnosing them. The workflow is the same everywhere: run `bonsai`, analyze the
@@ -137,9 +131,9 @@ Works with **any** agent that can run a shell command or read a file. One binary
 
 See the [Agent Plugin Installation guide](https://mrwogu.github.io/context-bonsai/guides/plugins/) for per-agent setup.
 
----
+## How It Works <a id="how-it-works"></a>
 
-## ![How It Works](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-how.svg)
+![How It Works](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-how.svg)
 
 ContextBonsai detects **705+ log ecosystems** and applies several cuts to every streamed line:
 
@@ -171,9 +165,9 @@ becomes:
 
 See the [full source catalogue](https://mrwogu.github.io/context-bonsai/reference/sources/) for all 705+ detected ecosystems.
 
----
+## Custom Configuration <a id="custom-configuration-bonsaiyml"></a>
 
-## ![Custom Configuration](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-config.svg)
+![Custom Configuration](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-config.svg)
 
 Corporations and teams running internal tools can extend ContextBonsai
 without modifying source code. Create a `.bonsai.yml` file (or pass
@@ -231,9 +225,7 @@ bonsai ci-output.log -o clean.log --config /etc/bonsai/acme.yml  # explicit
 
 Full config reference: [CLI docs — Custom configuration](https://mrwogu.github.io/context-bonsai/reference/cli/#custom-configuration-bonsaiyml)
 
----
-
-## CLI
+## CLI <a id="cli"></a>
 
 ContextBonsai is primarily a CLI tool. Both `bonsai` and `context-bonsai` are
 registered as bins, so you can call whichever feels natural.
@@ -288,9 +280,7 @@ bonsai raw.log --stats -o clean.log; Get-Content clean.log -Tail 20
 | `1` | runtime failure (I/O error, stream error) |
 | `2` | usage error (bad flag, unsupported aggressiveness, `--json` without `--output`, stdin is a TTY) |
 
----
-
-## Library
+## Library <a id="library"></a>
 
 The compiled package also ships the TypeScript core for embedding directly in
 your own Node tooling.
@@ -309,9 +299,7 @@ console.log(`saved ${result.savedTokens} tokens (${result.savingsPercent}%)`);
 (stdin, network sockets, custom transforms). Pass `configPath` in options for
 custom config integration.
 
----
-
-## GitHub Action
+## GitHub Action <a id="github-action"></a>
 
 The repository also ships an optional GitHub Action that wraps the same parser.
 It is useful when you want a single step in CI and a tidy Step Summary, but the
@@ -332,8 +320,6 @@ CLI is the primary distribution channel.
 See the [GitHub Action reference](https://mrwogu.github.io/context-bonsai/reference/action/)
 for inputs, outputs, and the Step Summary contract.
 
----
-
 ## Documentation
 
 | Resource | Description |
@@ -346,8 +332,6 @@ for inputs, outputs, and the Step Summary contract.
 | [Source Catalogue](https://mrwogu.github.io/context-bonsai/reference/sources/) | All 705+ detected log ecosystem signatures. |
 | [Security](https://mrwogu.github.io/context-bonsai/guides/security/) | Sanitization and safe log handling notes. |
 
----
-
 ## Local Development
 
 ```bash
@@ -356,8 +340,6 @@ npm run typecheck
 npm run test:coverage    # 100/100/100/100 gate
 npm run build
 ```
-
----
 
 <div align="center">
   <sub>Built for engineers who want smaller logs, cheaper prompts, and cleaner AI diagnostics.</sub>
