@@ -9,7 +9,6 @@
   "main": "dist/core/logstrip-parser.js",
   "types": "dist/core/logstrip-parser.d.ts",
   "bin": {
-    "logstrip": "dist/cli/index.js",
     "logstrip": "dist/cli/index.js"
   },
   "exports": {
