@@ -17,9 +17,6 @@ set -euo pipefail
 INPUT=$(cat)
 EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // empty' 2>/dev/null || true)
 
-# DEBUG: log intermediate state to stderr when LOGSTRIP_HOOK_DEBUG=1
-debug() { [ "${LOGSTRIP_HOOK_DEBUG:-0}" = "1" ] && echo "LOGSTRIP_HOOK: $*" >&2 || true; }
-
 case "$EVENT" in
   PreToolUse)
     # Only intercept Read tool calls
@@ -77,21 +74,18 @@ case "$EVENT" in
   UserPromptSubmit)
     # Detect pasted log output in the user prompt
     PROMPT=$(echo "$INPUT" | jq -r '.prompt // empty' 2>/dev/null || true)
-    debug "UPS prompt_len=${#PROMPT}"
-    [ -z "$PROMPT" ] && { debug "UPS exit: empty prompt"; exit 0; }
+    [ -z "$PROMPT" ] && exit 0
 
     # Pasted logs are multi-line — skip short messages
     LINES=$(printf '%s\n' "$PROMPT" | wc -l | tr -d '[:space:]')
-    debug "UPS lines=$LINES"
-    [ "$LINES" -lt 5 ] && { debug "UPS exit: lines<5"; exit 0; }
+    [ "$LINES" -lt 5 ] && exit 0
 
     # Log-detection heuristics (need 2+ matches)
     SCORE=0
 
     # Timestamps: ISO 8601 or HH:MM:SS.mmm
-    COUNT=$(printf '%s' "$PROMPT" | grep -cE '(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}|\d{2}:\d{2}:\d{2}[.,]\d{3})' 2>/dev/null || true)
+    COUNT=$(printf '%s' "$PROMPT" | grep -cE '([0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}|[0-9]{2}:[0-9]{2}:[0-9]{2}[.,][0-9]{3})' 2>/dev/null || true)
     COUNT=${COUNT:-0}
-    debug "UPS timestamps=$COUNT"
     [ "$COUNT" -ge 2 ] && SCORE=$((SCORE + 1))
 
     # Log levels: [ERROR], [INFO], or unbracketed ERROR:, WARNING:, npm ERR!
@@ -115,8 +109,7 @@ case "$EVENT" in
     COUNT=${COUNT:-0}
     [ "$COUNT" -ge 2 ] && SCORE=$((SCORE + 1))
 
-    debug "UPS final_score=$SCORE"
-    [ "$SCORE" -lt 2 ] && { debug "UPS exit: score<2"; exit 0; }
+    [ "$SCORE" -lt 2 ] && exit 0
 
     # Log-like content detected — inject auto-activation context
     jq -nc '{
