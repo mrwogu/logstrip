@@ -1,6 +1,6 @@
 ---
 title: Log Compression CLI Reference
-description: Complete CLI reference for LogStrip — flags, exit codes, I/O contract, stats, JSON output, and .logstrip.yml custom configuration.
+description: Complete CLI reference for LogStrip — flags, exit codes, I/O contract, stats, JSON output. Extend with .logstrip.yml: custom sources, diagnostic patterns, ignore rules, sanitization, and internal stack patterns.
 ---
 # CLI Reference
 
