@@ -1,3 +1,7 @@
+---
+title: 705+ Supported Log Sources
+description: LogStrip detects 705+ log ecosystems automatically — CI, Docker, Kubernetes, Spring Boot, Trivy, Snyk, nginx, and more. Full catalogue by category.
+---
 # Supported Sources
 
 LogStrip automatically detects the source of your logs and provides this information in its JSON report to help AI agents understand the context of the issue.

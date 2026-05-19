@@ -1,3 +1,7 @@
+---
+title: GitHub Action for Log Compression
+description: Drop LogStrip into any GitHub Actions workflow with one step. Automatic Step Summary, zero config, read-only permissions. CLI is preferred for non-GitHub CI.
+---
 # GitHub Action Reference
 
 The GitHub Action is an **optional, thin wrapper** around the LogStrip

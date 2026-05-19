@@ -1,3 +1,10 @@
+---
+title: Log Compression CLI for AI Agents
+description: Free, zero-dependency CLI that compresses noisy logs into high-signal AI context. 705+ detected ecosystems, stream-safe, deterministic output. Install with npm.
+---
+
+<h1 class="logstrip-sr-only">LogStrip — Log Compression CLI for AI Agents</h1>
+
 <section class="logstrip-hero" markdown="1">
 <div class="logstrip-hero__inner" markdown="1">
 <div class="logstrip-hero__copy" markdown="1">
@@ -90,7 +97,7 @@
 
 <div class="logstrip-ecosystem-marquee__rows" data-logstrip-marquee-rows></div>
 
-<p class="logstrip-sources-banner__more"><a href="reference/sources/">view all 705+ sources →</a></p>
+<p class="logstrip-sources-banner__more"><a href="reference/sources/">view all 705+ sources →</a> · <a href="reference/cli.md#custom-configuration-logstripyml">add your own</a></p>
 </div>
 
 <div class="logstrip-grid" markdown="1">

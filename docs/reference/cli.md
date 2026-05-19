@@ -1,3 +1,7 @@
+---
+title: Log Compression CLI Reference
+description: Complete CLI reference for LogStrip — flags, exit codes, I/O contract, stats, JSON output, and .logstrip.yml custom configuration.
+---
 # CLI Reference
 
 The CLI is the primary distribution channel for LogStrip. It is published

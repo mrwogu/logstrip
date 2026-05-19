@@ -1,6 +1,6 @@
 site_name: LogStrip
 site_url: https://mrwogu.github.io/logstrip/
-site_description: Stream-first CLI that compresses noisy logs into high-signal AI context with automatic source detection across 700+ log ecosystems.
+site_description: Free, zero-dependency CLI that compresses noisy logs into high-signal AI context. 705+ detected ecosystems, stream-safe, deterministic output.
 site_author: mrwogu
 repo_url: https://github.com/mrwogu/logstrip
 
@@ -10,8 +10,11 @@ theme:
   name: material
   custom_dir: docs/overrides
   language: en
+  static_templates:
+    - robots.txt
+    - google8efd01431ceb2f51.html
   favicon: assets/images/favicon.ico
-  logo: assets/images/logo-256.webp
+  logo: assets/images/logo-icon-256.webp
   palette:
     - scheme: slate
       primary: black

@@ -1163,22 +1163,27 @@ html {
 
 .logstrip-ecosystem-marquee {
   margin: -0.5rem 0 1.5rem;
-  padding: clamp(1rem, 2vw, 1.4rem) 0 clamp(1rem, 2vw, 1.2rem);
+  padding: 0.5rem 0 clamp(1rem, 2vw, 1.2rem);
   border: 1px solid var(--logstrip-border);
   border-radius: 1rem;
   background:
     radial-gradient(circle at 50% 0%, rgba(164, 255, 175, 0.08), transparent 18rem),
     rgba(255, 255, 255, 0.02);
   overflow: hidden;
+  text-align: center;
 }
 
-.logstrip-ecosystem-marquee > .logstrip-kicker,
-.logstrip-ecosystem-marquee > h2 {
+.md-typeset .logstrip-ecosystem-marquee > .logstrip-kicker {
+  margin: 0 auto 0.4rem;
+}
+
+.md-typeset .logstrip-ecosystem-marquee > .logstrip-kicker,
+.md-typeset .logstrip-ecosystem-marquee > h2 {
   padding: 0 clamp(1.2rem, 3vw, 2.4rem);
 }
 
 .logstrip-ecosystem-marquee h2 {
-  margin-top: 0.35rem;
+  margin-top: 0.15rem;
   margin-bottom: 0.65rem;
   white-space: nowrap;
 }
@@ -1557,4 +1562,17 @@ html {
   .logstrip-playground {
     padding: 0.75rem;
   }
+}
+
+/* Screen-reader-only heading for SEO */
+.logstrip-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

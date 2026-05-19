@@ -1,3 +1,7 @@
+---
+title: How Log Compression Works for AI
+description: Step-by-step breakdown of how LogStrip scores, sanitizes, dampens, folds, and collapses logs into high-signal AI context. Hybrid context engine, not regex-only filtering.
+---
 # Compression Flow for AI Readiness
 
 LogStrip processes raw logs through a multi-step engine to optimize them for AI consumption. This flow ensures high-signal context is preserved while noise is minimized.

@@ -1,3 +1,7 @@
+---
+title: AI Agent Plugins for Log Compression
+description: Install LogStrip plugins for Claude Code, Copilot, Cursor, Factory Droid, Codex, and OpenCode. Compress-first workflow so every agent receives smaller, higher-signal logs.
+---
 # Agent Plugins
 
 LogStrip is CLI-first, but the repository ships plugin/config bundles for

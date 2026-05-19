@@ -1,3 +1,7 @@
+---
+title: Install LogStrip CLI
+description: Install the LogStrip log compression CLI in one command. File, pipe, or stdin — trim noisy logs for AI agents in seconds.
+---
 # Getting Started
 
 LogStrip is primarily distributed as an npm CLI. This page covers the

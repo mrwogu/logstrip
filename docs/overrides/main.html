@@ -7,4 +7,35 @@
   <meta property="og:image:type" content="image/png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{{ config.site_url }}assets/images/og-image-1200x630.png" />
+  {% if page and page.file and page.file.src_uri == "index.md" %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "LogStrip",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Linux, macOS, Windows",
+    "description": "Free, zero-dependency CLI that compresses noisy logs into high-signal AI context with automatic source detection across 705+ log ecosystems.",
+    "url": "{{ config.site_url }}",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "installUrl": "https://www.npmjs.com/package/logstrip",
+    "programmingLanguage": "TypeScript",
+    "runtimePlatform": "Node.js >= 20",
+    "featureList": [
+      "Stream-based log compression",
+      "705+ detected log ecosystems",
+      "Automatic source detection",
+      "Sanitization of UUIDs, timestamps, hashes, IPs",
+      "TF-IDF dampening and duplicate folding",
+      "Internal stack frame collapsing",
+      "JSON and stats output",
+      "GitHub Action wrapper"
+    ]
+  }
+  </script>
+  {% endif %}
 {% endblock %}

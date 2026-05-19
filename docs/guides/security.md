@@ -1,3 +1,7 @@
+---
+title: Log Sanitization and Security
+description: How LogStrip sanitizes UUIDs, timestamps, hashes, and IPs before logs reach AI agents. Not a secret scanner — recommended security posture for CI workflows.
+---
 # Security
 
 LogStrip is designed to reduce accidental data exposure before logs are passed to an LLM. The same sanitization rules apply whether the parser is invoked through the CLI, the library, or the GitHub Action wrapper.

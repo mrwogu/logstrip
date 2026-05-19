@@ -1,3 +1,7 @@
+---
+title: CI/CD Workflow Examples for Log Compression
+description: Real workflow examples — compress test logs, use stdin pipes, matrix jobs, artifact upload, and the GitHub Action wrapper. GitHub Actions, PowerShell, and Unix pipes.
+---
 # Workflow Examples
 
 The examples below favour the CLI - it composes naturally with any CI that can

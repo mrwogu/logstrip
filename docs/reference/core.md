@@ -1,3 +1,7 @@
+---
+title: Core TypeScript API Reference
+description: Process logs in Node.js with processLogStream and processLogFile. Stream-based, deterministic, zero external dependencies. Sanitization, scoring, and deduplication API.
+---
 # Core API Reference
 
 The core parser lives in `src/core/logstrip-parser.ts`. It is intentionally independent from GitHub Actions and does not import `@actions/*`.

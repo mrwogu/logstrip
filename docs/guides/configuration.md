@@ -1,3 +1,7 @@
+---
+title: CLI and Action Configuration
+description: Configure input, output, aggressiveness levels, stats, and JSON reporting for the LogStrip CLI and GitHub Action. Default and custom settings explained.
+---
 # Configuration
 
 The current release keeps configuration intentionally small. The CLI exposes

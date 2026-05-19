@@ -1,3 +1,7 @@
+---
+title: Troubleshooting Log Compression
+description: Fix empty output, exit codes, missing files, and short stack traces in the LogStrip CLI and GitHub Action. Common errors and solutions.
+---
 # Troubleshooting
 
 ## The compressed log is empty
