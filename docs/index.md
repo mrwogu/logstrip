@@ -97,7 +97,7 @@ description: Free, zero-dependency CLI that compresses noisy logs into high-sign
 
 <div class="logstrip-ecosystem-marquee__rows" data-logstrip-marquee-rows></div>
 
-<p class="logstrip-sources-banner__more"><a href="reference/sources/">view all 705+ sources →</a> · <a href="reference/cli.md#custom-configuration-logstripyml">add your own</a></p>
+<p class="logstrip-sources-banner__more"><a href="reference/sources/">view all 705+ sources →</a> · <a href="reference/cli/#custom-configuration-logstripyml">add your own</a></p>
 </div>
 
 <div class="logstrip-grid" markdown="1">
