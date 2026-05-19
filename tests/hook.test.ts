@@ -175,6 +175,7 @@ beforeAll(async () => {
   hookEnv = {
     ...process.env,
     PATH: `${binDir}:${process.env.PATH ?? '/usr/bin:/bin'}`,
+    LOGSTRIP_HOOK_DEBUG: '1',
   };
 });
 
