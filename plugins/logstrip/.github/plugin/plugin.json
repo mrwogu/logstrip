@@ -1,0 +1,21 @@
+{
+  "name": "logstrip",
+  "displayName": "LogStrip",
+  "description": "Compress noisy CI, build, runtime, scanner, and test logs before Copilot diagnoses them.",
+  "version": "1.0.0",
+  "author": {
+    "name": "mrwogu"
+  },
+  "homepage": "https://mrwogu.github.io/logstrip/",
+  "repository": "https://github.com/mrwogu/logstrip",
+  "license": "MIT",
+  "keywords": [
+    "logs",
+    "ci",
+    "llm",
+    "compression"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "agents": "./agents/"
+}
