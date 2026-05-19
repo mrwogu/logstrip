@@ -539,6 +539,9 @@ describe('UserPromptSubmit — boundary conditions', () => {
       makeUserPromptSubmitInput(boundaryLogLines),
     );
     expect(result.exitCode).toBe(0);
+    if (!result.stdout.trim()) {
+      console.error('DIAG boundary5: stdout=EMPTY stderr=' + JSON.stringify(result.stderr));
+    }
 
     const json = parseJson<{
       hookSpecificOutput: { additionalContext: string };
@@ -573,6 +576,9 @@ describe('UserPromptSubmit — boundary conditions', () => {
     const result = await runHook(
       makeUserPromptSubmitInput(twoHeuristicPaste),
     );
+    if (!result.stdout.trim()) {
+      console.error('DIAG score2: stdout=EMPTY stderr=' + JSON.stringify(result.stderr));
+    }
     const json = parseJson<{
       hookSpecificOutput: { additionalContext: string };
     }>(result.stdout);
@@ -730,6 +736,9 @@ describe('performance — latency budgets', () => {
 
     const result = await runHook(makeUserPromptSubmitInput(bigPaste));
     expect(result.exitCode).toBe(0);
+    if (!result.stdout.trim()) {
+      console.error('DIAG 1000line: stdout=EMPTY stderr=' + JSON.stringify(result.stderr).slice(0, 500));
+    }
 
     const json = parseJson<{
       hookSpecificOutput: { additionalContext: string };
