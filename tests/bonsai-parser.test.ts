@@ -14,6 +14,7 @@ import {
   TFIDF_MAP_LIMIT,
   TFIDF_PENALTY,
   TFIDF_REPEAT_THRESHOLD,
+  buildMergedConfig,
   createRepeatSignature,
   detectLogSources,
   estimateTokens,
@@ -1010,6 +1011,224 @@ describe('bonsai parser', () => {
       await expect(
         processLogFile(join(directory, 'missing.log'), outputPath),
       ).rejects.toThrow();
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+});
+
+describe('custom config integration', () => {
+  it('buildMergedConfig returns built-in sources without config', () => {
+    const merged = buildMergedConfig();
+    expect(merged.mergedSources.length).toBeGreaterThan(0);
+    expect(merged.diagnosticPatterns).toHaveLength(0);
+  });
+
+  it('buildMergedConfig merges custom sources with existing ones', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'bonsai-config-merge-'));
+    try {
+      const configPath = join(directory, '.bonsai.yml');
+      await writeFile(
+        configPath,
+        `sources:
+  - name: acme-tool
+    markers:
+      - acme-tool
+      - "[ACME]"
+diagnosticPatterns:
+  - "ACME_ERROR_\\\\d+"
+ignorePatterns:
+  - "\\\\bheartbeat\\\\b"
+sanitizePatterns:
+  - pattern: "\\\\bACME-USER-\\\\d+\\\\b"
+    replacement: "[ACME-USER]"
+internalStackPatterns:
+  - "/opt/acme/lib/"
+`,
+        'utf8',
+      );
+
+      const merged = buildMergedConfig({ configPath });
+      expect(merged.mergedSources.some(([name]) => name === 'acme-tool')).toBe(true);
+      expect(merged.diagnosticPatterns).toHaveLength(1);
+      expect(merged.ignorePatterns).toHaveLength(1);
+      expect(merged.sanitizePatterns).toHaveLength(1);
+      expect(merged.internalStackPatterns).toHaveLength(1);
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it('custom ignore patterns drop matching lines', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'bonsai-config-ignore-'));
+    try {
+      const configPath = join(directory, '.bonsai.yml');
+      await writeFile(
+        configPath,
+        `ignorePatterns:
+  - "\\\\bheartbeat\\\\b"
+`,
+        'utf8',
+      );
+
+      const input = Readable.from([
+        '[ERROR] critical failure\n',
+        'heartbeat ok\n',
+        '[WARN] something wrong\n',
+      ]);
+      const output = new MemoryWritable();
+      const result = await processLogStream(input, output, {
+        aggressiveness: 'low',
+        configPath,
+      });
+
+      const out = output.content();
+      expect(out).toContain('[ERROR] critical failure');
+      expect(out).not.toContain('heartbeat');
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it('custom diagnostic patterns boost line score', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'bonsai-config-diag-'));
+    try {
+      const configPath = join(directory, '.bonsai.yml');
+      await writeFile(
+        configPath,
+        `diagnosticPatterns:
+  - "ACME_ERROR_\\\\d+"
+`,
+        'utf8',
+      );
+
+      const input = Readable.from([
+        'ACME_ERROR_42 something broke\n',
+        'boring noise line\n',
+      ]);
+      const output = new MemoryWritable();
+      const result = await processLogStream(input, output, {
+        aggressiveness: 'high',
+        configPath,
+      });
+
+      const out = output.content();
+      expect(out).toContain('ACME_ERROR_42');
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it('custom sanitize patterns mask matched text', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'bonsai-config-sanitize-'));
+    try {
+      const configPath = join(directory, '.bonsai.yml');
+      await writeFile(
+        configPath,
+        `sanitizePatterns:
+  - pattern: "\\\\bACME-USER-\\\\d+\\\\b"
+    replacement: "[ACME-USER]"
+`,
+        'utf8',
+      );
+
+      const input = Readable.from([
+        '[ERROR] auth failed for ACME-USER-12345\n',
+      ]);
+      const output = new MemoryWritable();
+      const result = await processLogStream(input, output, {
+        aggressiveness: 'high',
+        configPath,
+      });
+
+      const out = output.content();
+      expect(out).toContain('[ACME-USER]');
+      expect(out).not.toContain('ACME-USER-12345');
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it('custom internal stack patterns collapse matching lines', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'bonsai-config-istack-'));
+    try {
+      const configPath = join(directory, '.bonsai.yml');
+      await writeFile(
+        configPath,
+        `internalStackPatterns:
+  - "/opt/acme/lib/"
+`,
+        'utf8',
+      );
+
+      const input = Readable.from([
+        '[ERROR] crash\n',
+        '  at acme.run (/opt/acme/lib/core.js:10:5)\n',
+        '  at acme.run (/opt/acme/lib/util.js:20:3)\n',
+        '[WARN] after\n',
+      ]);
+      const output = new MemoryWritable();
+      const result = await processLogStream(input, output, {
+        aggressiveness: 'high',
+        configPath,
+      });
+
+      const out = output.content();
+      expect(out).toContain('[ERROR] crash');
+      expect(out).toContain(INTERNAL_STACK_MARKER);
+      expect(out).not.toContain('/opt/acme/lib/');
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it('custom sources are detected in log output', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'bonsai-config-sources-'));
+    try {
+      const configPath = join(directory, '.bonsai.yml');
+      await writeFile(
+        configPath,
+        `sources:
+  - name: acme-gateway
+    markers:
+      - acme-gateway
+`,
+        'utf8',
+      );
+
+      const input = Readable.from([
+        '[ERROR] acme-gateway connection refused\n',
+      ]);
+      const output = new MemoryWritable();
+      const result = await processLogStream(input, output, {
+        aggressiveness: 'high',
+        configPath,
+      });
+
+      expect(result.detectedSources).toContain('acme-gateway');
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it('custom markers merge into existing built-in source', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'bonsai-config-merge-src-'));
+    try {
+      const configPath = join(directory, '.bonsai.yml');
+      await writeFile(
+        configPath,
+        `sources:
+  - name: docker
+    markers:
+      - custom-docker-marker
+`,
+        'utf8',
+      );
+
+      const merged = buildMergedConfig({ configPath });
+      const dockerEntry = merged.mergedSources.find(([name]) => name === 'docker');
+      expect(dockerEntry).toBeDefined();
+      expect(dockerEntry![1]).toContain('custom-docker-marker');
     } finally {
       await rm(directory, { force: true, recursive: true });
     }

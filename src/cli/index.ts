@@ -27,6 +27,7 @@ Options:
                            Default: high.
   -s, --stats              Print compression statistics to stderr.
   -j, --json               Print BonsaiResult as JSON to stdout. Requires --output.
+      --config <path>      Path to .bonsai.yml config file. Auto-detects from cwd.
   -h, --help               Show this help text and exit.
   -v, --version            Print the CLI version and exit.
 
@@ -43,6 +44,7 @@ export interface CliOptions {
   aggressiveness: Aggressiveness;
   stats: boolean;
   json: boolean;
+  config?: string;
   help: boolean;
   version: boolean;
 }
@@ -80,6 +82,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         aggressiveness: { type: 'string', short: 'a' },
         stats: { type: 'boolean', short: 's', default: false },
         json: { type: 'boolean', short: 'j', default: false },
+        config: { type: 'string' },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', short: 'v', default: false },
       },
@@ -114,6 +117,10 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     aggressiveness,
     stats: parsed.values.stats === true,
     json: parsed.values.json === true,
+    config:
+      typeof parsed.values.config === 'string'
+        ? parsed.values.config
+        : undefined,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
   };
@@ -232,6 +239,7 @@ export async function runCli(
   try {
     result = await processLogStream(input, output as Writable, {
       aggressiveness: options.aggressiveness,
+      configPath: options.config,
     });
   } catch (error) {
     if (options.input !== undefined) {

@@ -27,6 +27,7 @@ Options:
                            Default: high.
   -s, --stats              Print compression statistics to stderr.
   -j, --json               Print BonsaiResult as JSON to stdout. Requires --output.
+      --config <path>      Path to .bonsai.yml config file. Auto-detects from cwd.
   -h, --help               Show this help text and exit.
   -v, --version            Print the CLI version and exit.
 
@@ -60,6 +61,7 @@ function parseCliOptions(argv) {
                 aggressiveness: { type: 'string', short: 'a' },
                 stats: { type: 'boolean', short: 's', default: false },
                 json: { type: 'boolean', short: 'j', default: false },
+                config: { type: 'string' },
                 help: { type: 'boolean', short: 'h', default: false },
                 version: { type: 'boolean', short: 'v', default: false },
             },
@@ -87,6 +89,9 @@ function parseCliOptions(argv) {
         aggressiveness,
         stats: parsed.values.stats === true,
         json: parsed.values.json === true,
+        config: typeof parsed.values.config === 'string'
+            ? parsed.values.config
+            : undefined,
         help: parsed.values.help === true,
         version: parsed.values.version === true,
     };
@@ -175,6 +180,7 @@ async function runCli(argv, io) {
     try {
         result = await (0, bonsai_parser_1.processLogStream)(input, output, {
             aggressiveness: options.aggressiveness,
+            configPath: options.config,
         });
     }
     catch (error) {

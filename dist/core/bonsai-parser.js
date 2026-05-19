@@ -13,6 +13,7 @@ exports.looksLikeDiagnosticLine = looksLikeDiagnosticLine;
 exports.isInternalStackTraceLine = isInternalStackTraceLine;
 exports.estimateTokens = estimateTokens;
 exports.scoreLineRelevance = scoreLineRelevance;
+exports.buildMergedConfig = buildMergedConfig;
 exports.processLogStream = processLogStream;
 exports.processLogFile = processLogFile;
 exports.pathsReferToSameFile = pathsReferToSameFile;
@@ -21,6 +22,7 @@ const node_fs_1 = require("node:fs");
 const node_path_1 = __importDefault(require("node:path"));
 const node_readline_1 = require("node:readline");
 const promises_1 = require("node:stream/promises");
+const bonsai_config_js_1 = require("./bonsai-config.js");
 exports.INTERNAL_STACK_MARKER = '[... hidden internal library frames ...]';
 const AGGRESSIVENESS_LEVELS = [
     'low',
@@ -836,9 +838,9 @@ exports.LOG_SOURCE_SIGNATURES = [
     ['borg', ['borg backup', 'borgmatic']],
 ];
 exports.KNOWN_LOG_SOURCES = exports.LOG_SOURCE_SIGNATURES.map(([source]) => source);
-function collectDetectedSourceHits(line, hits) {
+function collectDetectedSourceHits(line, hits, sources = exports.LOG_SOURCE_SIGNATURES) {
     const normalized = line.toLowerCase();
-    for (const [source, markers] of exports.LOG_SOURCE_SIGNATURES) {
+    for (const [source, markers] of sources) {
         for (const marker of markers) {
             if (normalized.includes(marker)) {
                 hits.set(source, (hits.get(source) ?? 0) + 1);
@@ -1084,8 +1086,32 @@ function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
     }
     return score;
 }
+function buildMergedConfig(options = {}) {
+    const config = (0, bonsai_config_js_1.loadBonsaiConfig)(options.configPath);
+    const mergedSources = [
+        ...exports.LOG_SOURCE_SIGNATURES,
+    ];
+    for (const sig of config.sources) {
+        const existing = mergedSources.find(([name]) => name === sig.name);
+        if (existing !== undefined) {
+            const merged = [...new Set([...existing[1], ...sig.markers])];
+            const idx = mergedSources.indexOf(existing);
+            mergedSources[idx] = [sig.name, merged];
+        }
+        else {
+            mergedSources.push([sig.name, sig.markers]);
+        }
+    }
+    return { ...config, mergedSources };
+}
 async function processLogStream(input, output, options = {}) {
     const aggressiveness = parseAggressiveness(options.aggressiveness);
+    const merged = buildMergedConfig(options);
+    // Compile custom patterns once per stream
+    const customDiagnosticRegexes = merged.diagnosticPatterns.map((p) => new RegExp(p, 'u'));
+    const customIgnoreRegexes = merged.ignorePatterns.map((p) => new RegExp(p, 'u'));
+    const customInternalStackRegexes = merged.internalStackPatterns.map((p) => new RegExp(p, 'u'));
+    const customSanitizeRules = merged.sanitizePatterns.map((r) => ({ regex: new RegExp(r.pattern, r.flags ?? 'gu'), replacement: r.replacement }));
     const stats = createEmptyStats();
     const detectedSourceHits = new Map();
     // TF-IDF: frequency map for sanitized lines (bounded for memory safety)
@@ -1127,13 +1153,19 @@ async function processLogStream(input, output, options = {}) {
     };
     for await (const rawLine of lines) {
         const line = String(rawLine);
-        collectDetectedSourceHits(line, detectedSourceHits);
+        collectDetectedSourceHits(line, detectedSourceHits, merged.mergedSources);
         stats.inputLines += 1;
         stats.inputWords += countWords(line);
         stats.inputBytes += Buffer.byteLength(`${line}\n`, 'utf8');
         // Empty lines always dropped; don't disturb context state
         if (line.trim().length === 0) {
             stats.droppedLines += 1;
+            continue;
+        }
+        // Custom ignore patterns (drop matching lines early)
+        if (customIgnoreRegexes.some((r) => r.test(line))) {
+            stats.droppedLines += 1;
+            hidingInternalStack = false;
             continue;
         }
         // Noise tags (INFO/DEBUG/TRACE/VERBOSE) are silently dropped without
@@ -1144,9 +1176,15 @@ async function processLogStream(input, output, options = {}) {
             hidingInternalStack = false;
             continue;
         }
-        const sanitized = sanitizeLine(line);
+        let sanitized = sanitizeLine(line);
+        // Apply custom sanitize rules
+        for (const rule of customSanitizeRules) {
+            sanitized = sanitized.replace(rule.regex, rule.replacement);
+        }
         // Internal stack-frame collapsing (priority over scoring)
-        if (isInternalStackTraceLine(sanitized)) {
+        const isCustomInternalStack = customInternalStackRegexes.length > 0 &&
+            customInternalStackRegexes.some((r) => r.test(sanitized));
+        if (isInternalStackTraceLine(sanitized) || isCustomInternalStack) {
             stats.hiddenInternalStackLines += 1;
             if (!hidingInternalStack) {
                 await flushContextBefore();
@@ -1164,8 +1202,15 @@ async function processLogStream(input, output, options = {}) {
             seenCount = 1;
         }
         seenLines.set(sanitized, seenCount);
-        // Score the sanitized line
-        const score = scoreLineRelevance(sanitized, aggressiveness, seenCount);
+        // Score the sanitized line (built-in + custom diagnostic patterns)
+        let score = scoreLineRelevance(sanitized, aggressiveness, seenCount);
+        // Custom diagnostic patterns contribute +50 per match (same as built-in DIAGNOSTIC_PATTERN)
+        for (const regex of customDiagnosticRegexes) {
+            if (regex.test(sanitized)) {
+                score += 50;
+                break;
+            }
+        }
         if (score >= exports.SCORE_KEEP_THRESHOLD) {
             // Hard keep: flush buffered context, emit, open after-context window
             await flushContextBefore();

@@ -70,8 +70,16 @@ describe('parseCliOptions', () => {
     expect(opts.aggressiveness).toBe('high');
     expect(opts.stats).toBe(false);
     expect(opts.json).toBe(false);
+    expect(opts.config).toBeUndefined();
     expect(opts.help).toBe(false);
     expect(opts.version).toBe(false);
+  });
+
+  it('parses --config flag', () => {
+    const opts = parseCliOptions(['raw.log', '--config', '.bonsai.yml']);
+
+    expect(opts.input).toBe('raw.log');
+    expect(opts.config).toBe('.bonsai.yml');
   });
 
   it('parses every short flag', () => {
