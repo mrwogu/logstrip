@@ -1,0 +1,5 @@
+[INFO] cloudflare plan completed: 42 resources
+[DEBUG] cloudflare refresh state: no changes detected
+[ERROR] cloudflare Error: UPGRADE FAILED: cannot patch deployment checkout-api
+[ERROR] cloudflare state locked by another process at 10.90.12.41 for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] cloudflare plan failed: 3 resource creation errors commit=abcdef1234567890abcdef1234567890abcdef12

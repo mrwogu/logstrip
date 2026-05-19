@@ -1,0 +1,5 @@
+[INFO] sparkpost 420 emails sent today
+[DEBUG] sparkpost template rendered: order-confirmation
+[ERROR] sparkpost delivery failed: bounce detected for user@example.com
+[ERROR] sparkpost quota exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[FATAL] sparkpost SMTP server unreachable commit=abcdef1234567890abcdef1234567890abcdef12

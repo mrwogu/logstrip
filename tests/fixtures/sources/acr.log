@@ -1,0 +1,4 @@
+[INFO] azure container registry image pushed successfully
+[DEBUG] azure container registry 42 layers uploaded
+[ERROR] azure container registry push failed: repository policy denies access for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] azure container registry signature verification failed commit=abcdef1234567890abcdef1234567890abcdef12

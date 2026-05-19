@@ -1,0 +1,9 @@
+[INFO] ninja: build stopped application starting on port 8080
+[DEBUG] ninja: build stopped configuration loaded from application.yml
+[DEBUG] ninja: build stopped datasource url=jdbc:postgresql://10.90.12.43:5432/app
+[ERROR] ninja: build stopped HTTP Status 500 - Internal Server Error
+    at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:118)
+    at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:55)
+[ERROR] ninja: build stopped ServletException processing request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 on /api/checkout from 10.42.7.18:54321
+[ERROR] ninja: build stopped ServletException processing request 018f23ab-7c1d-7f44-8bfe-0acddaf33457 on /api/checkout from 10.42.7.18:54322
+[FATAL] ninja: build stopped OutOfMemoryError: Java heap space commit=abcdef1234567890abcdef1234567890abcdef12

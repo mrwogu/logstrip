@@ -1,0 +1,4 @@
+[INFO] grafana oncall alert triggered: API5xxRate > 5%
+[DEBUG] grafana oncall incident #42 created
+[ERROR] grafana oncall escalation failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] grafana oncall API key expired - cannot acknowledge incidents commit=abcdef1234567890abcdef1234567890abcdef12

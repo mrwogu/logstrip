@@ -1,0 +1,16 @@
+[x2] [ERROR] Error: UPGRADE FAILED: cannot patch "checkout-api-deployment" with kind Deployment: Deployment.apps "checkout-api-deployment" is invalid
+[ERROR] Error: error updating ECS Service (arn:aws:ecs:us-east-1:[ACCOUNT]:service/checkout-prod/checkout-api): InvalidParameterException
+  with aws_ecs_service.checkout-api,
+  on main.tf line 42, in resource "aws_ecs_service" "checkout-api":
+  42:   service_name = "checkout-api"
+[ERROR] Error: waiting for ECS Service (checkout-api) stable: timeout while waiting for state to become 'tfSTABLE'
+[TIME] [FATAL] terraform apply failed: 3 errors occurred
+[x2] [TIME] [ERROR] fatal: [checkout-prod-01]: FAILED! => {"changed": false, "msg": "Container checkout-api failed to start: OCI runtime create failed"}
+[TIME] [FATAL] PLAY RECAP *** checkout-prod-01: ok=2  changed=1  unreachable=0  failed=1
+[x2] [TIME] [ERROR] Failed to start checkout-api.service: Unit checkout-api.service is not loaded properly: Exec format error
+[TIME] [ERROR] Failed to connect to bus: No such file or directory
+[TIME] [ERROR] checkout-api[1842]: FATAL: password authentication failed for user "checkout_admin"
+[TIME] [ERROR] checkout-api[1842]: Connection refused to [IP]:[PORT] — retrying in 2s
+[TIME] [FATAL] checkout-api[1842]: status=1 FAILURE — exiting
+[TIME] [ERROR] Error: resource aws_rds_cluster.checkout-db not found (may have been manually deleted)
+[TIME] [FATAL] terraform destroy failed: state lock inconsistency

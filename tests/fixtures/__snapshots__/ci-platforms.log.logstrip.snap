@@ -1,0 +1,24 @@
+::notice file=.github/workflows/deploy.yml,line=12::Using node-version 22.x
+::error file=.github/workflows/deploy.yml,line=42::deployment failed after rollback exhausted
+::error file=src/api/checkout.ts,line=88::TypeError: Cannot read properties of undefined (reading 'paymentIntent')
+::warning file=src/api/checkout.ts,line=52::Deprecated API usage detected
+[TIME] [ERROR] Build step failed with exit code 1
+[TIME] [FATAL] Workflow run cancelled — critical failure in deploy step
+[x2] [TIME] [ERROR] Error: Process completed with exit code 1.
+Running with gitlab-runner 16.7.0 (a1b2c3d4) on gitlab-runner-prod-01
+[x2] [TIME] [ERROR] ERROR: Job failed: exit code 1
+[TIME] [ERROR] Runner system failure: cannot connect to Docker daemon
+[TIME] [WARN] Retrying job in 5 seconds...
+[TIME] [ERROR] ERROR: Job failed: docker pull failed
+[x2] [Pipeline] [ERROR] Stage "Deploy" failed — timeout after 300s
+[Pipeline] [FATAL] Pipeline aborted: deploy stage exceeded timeout
+[Pipeline] [ERROR] org.jenkinsci.plugins.workflow.steps.FlowInterruptedException: Pipeline execution cancelled
+  at org.jenkinsci.plugins.workflow.cps.CpsFlowExecution.interrupt(CpsFlowExecution.java:123)
+  at jenkins.model.Jenkins$7.run(Jenkins.java:1123)
+[Pipeline] [WARN] Archiving artifacts from failed build
+Spin Up: starting container checkout-api-test
+Spin Cancelled
+[x2] [TIME] [ERROR] Step failed — Sidecar container exited with code 137
+[TIME] [ERROR] job was not approved — requires manual approval from #checkout-ops
+[TIME] [FATAL] CircleCI workflow halted: approval required
+[TIME] [WARN] Uploading build artifacts for debugging

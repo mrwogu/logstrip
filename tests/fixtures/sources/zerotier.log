@@ -1,0 +1,5 @@
+[INFO] zerotier tunnel established
+[DEBUG] zerotier connection active: latency 12ms
+[ERROR] zerotier handshake timeout with peer 10.90.12.41:51820
+[ERROR] zerotier connection refused for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[FATAL] zerotier tunnel disconnected - auth expired commit=abcdef1234567890abcdef1234567890abcdef12

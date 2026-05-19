@@ -1,0 +1,5 @@
+[INFO] sanity.io site health check passed
+[DEBUG] sanity.io cache rebuild completed
+[ERROR] sanity.io Error: Cannot find module '@company/theme' in /var/www/wp-content/plugins/checkout/processor.php:42
+[ERROR] sanity.io request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] sanity.io database connection refused commit=abcdef1234567890abcdef1234567890abcdef12

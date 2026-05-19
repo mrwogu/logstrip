@@ -1,0 +1,5 @@
+[INFO] flutter build started: release configuration
+[DEBUG] flutter packaging for platform: darwin-arm64
+[ERROR] flutter Error: Cannot find module 'react-native/Libraries/Core/InitializeCore'
+[ERROR] flutter build failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[FATAL] flutter process killed by SIGTERM commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,5 @@
+[INFO] dex idp service started
+[DEBUG] dex idp session cache initialized
+[ERROR] dex idp authentication failed for user admin from 10.42.7.18:54321
+[ERROR] dex idp invalid session token for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] dex idp key rotation failed - cannot connect to API commit=abcdef1234567890abcdef1234567890abcdef12

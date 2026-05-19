@@ -1,0 +1,7 @@
+[INFO] hashicorp nomad container started: image checkout-api:latest
+[DEBUG] hashicorp nomad health check passed on port 8080
+[DEBUG] hashicorp nomad Normal Pulled container checkout-api in pod checkout-api-7b8759d7b9-mk2dq
+[ERROR] hashicorp nomad CrashLoopBackOff: back-off restarting failed container checkout-api in pod checkout-api-7b8759d7b9-mk2dq
+[ERROR] hashicorp nomad ImagePullBackOff: failed to pull image checkout-api:latest - rpc error: code = Unknown desc = failed to resolve reference
+[ERROR] hashicorp nomad OOMKilled: container checkout-api exceeded memory limit for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] hashicorp nomad container runtime error: runc create failed commit=abcdef1234567890abcdef1234567890abcdef12

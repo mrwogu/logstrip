@@ -1,0 +1,7 @@
+[INFO] dotnet  pipeline started: build-and-deploy
+[DEBUG] dotnet  stage: checkout completed in 2.1s
+[DEBUG] dotnet  stage: build completed in 42.3s
+[ERROR] dotnet  step failed: exit code 1 in stage "test"
+[ERROR] dotnet  deployment failed after rollback exhausted
+::error file=.github/workflows/deploy.yml,line=88::deployment failed for service checkout-api request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] dotnet  pipeline aborted: timeout after 60 minutes commit=abcdef1234567890abcdef1234567890abcdef12

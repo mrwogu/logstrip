@@ -1,0 +1,6 @@
+[INFO] wasabi initialized successfully
+[DEBUG] wasabi configuration loaded
+[DEBUG] wasabi processing event on worker-1
+[ERROR] wasabi Error: operation failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[ERROR] wasabi Error: operation failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33457 from 10.42.7.18:54322
+[FATAL] wasabi FATAL: unrecoverable error - aborting commit=abcdef1234567890abcdef1234567890abcdef12

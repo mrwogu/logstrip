@@ -1,0 +1,24 @@
+[INFO] 2026-05-16T10:24:31.011Z checkout-api booting pid=412 node=v22.12.0 commit=5f3a2d1b8c4e9f001122334455667788
+[DEBUG] 2026-05-16T10:24:31.145Z loaded config file /app/config/production.json
+[INFO] 2026-05-16T10:24:31.487Z listening on 0.0.0.0:3000
+[INFO] 2026-05-16T10:24:34.002Z GET /healthz 200 3ms requestId=7e7f9d1d-6a2b-4c19-b33d-2d08b953d001
+[INFO] 2026-05-16T10:24:36.881Z POST /api/checkout 202 41ms requestId=7e7f9d1d-6a2b-4c19-b33d-2d08b953d002
+[WARN] 2026-05-16T10:24:37.102Z queue checkout-events lag=1842 partition=3
+[ERROR] 2026-05-16T10:24:38.219Z unhandledRejection requestId=7e7f9d1d-6a2b-4c19-b33d-2d08b953d003 route=POST /api/checkout
+[ERROR] 2026-05-16T10:24:38.219Z unhandledRejection requestId=8f8e0e2e-7b3c-4d20-a44e-3e19c064e004 route=POST /api/checkout
+TypeError: Cannot read properties of undefined (reading 'total')
+    at buildPaymentIntent (/srv/app/src/payments/build-payment-intent.ts:42:23)
+    at CheckoutService.confirm (/srv/app/src/checkout/checkout-service.ts:118:17)
+    at async checkoutHandler (/srv/app/src/http/routes/checkout.ts:76:9)
+    at Layer.handle [as handle_request] (/srv/app/node_modules/express/lib/router/layer.js:95:5)
+    at next (/srv/app/node_modules/express/lib/router/route.js:149:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[ERROR] 2026-05-16T10:24:38.236Z failed to publish checkout.failed event to 10.52.4.18:9092 requestId=7e7f9d1d-6a2b-4c19-b33d-2d08b953d003
+[INFO] 2026-05-16T10:24:39.004Z GET /healthz 200 4ms requestId=7e7f9d1d-6a2b-4c19-b33d-2d08b953d004
+[DEBUG] 2026-05-16T10:24:39.118Z metrics flush complete counters=42 histograms=18
+[FATAL] 2026-05-16T10:24:40.001Z worker crashed with signal SIGABRT after uncaught exception
+Error: Cannot recover checkout worker after unhandled rejection
+    at shutdown (/srv/app/src/runtime/shutdown.ts:29:11)
+    at process.emit (node:events:520:35)
+    at process._fatalException (node:internal/process/execution:191:25)
+[INFO] 2026-05-16T10:24:40.210Z pm2 restart scheduled for checkout-api in 1500ms

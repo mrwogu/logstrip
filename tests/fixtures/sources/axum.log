@@ -1,0 +1,7 @@
+[INFO] axum server started on :8080
+[DEBUG] axum 8 routes registered
+[ERROR] axum Error: context deadline exceeded on POST /api/checkout
+    at axum/handler.go:42 in serve
+    at axum/router.go:88 in resolve
+[ERROR] axum request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] axum server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

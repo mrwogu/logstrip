@@ -1,0 +1,12 @@
+START RequestId: [ID] Version: $LATEST
+[x2] [TIME] [ERROR] ERROR Invoke Error {"errorType":"TimeoutError","errorMessage":"Task timed out after 5.01 seconds","stackTrace":["at Timeout._onTimeout (/var/task/node_modules/pg/client.js:42:18)","at listOnTimeout (internal/timers.js:559:11)","at processTimers (internal/timers.js:502:5)"]}
+END RequestId: [ID]
+REPORT RequestId: [ID] Duration: 5001.23ms Billed Duration: 5002ms Memory Size: 256 MB Max Memory Used: 128 MB
+[x2] [TIME] {"timestamp":"[TIME]","level":"error","msg":"database timeout","requestId":"[ID]","error":"connect ECONNREFUSED [IP]:[PORT]"}
+[TIME] {"timestamp":"[TIME]","level":"fatal","msg":"worker crashed with exit code 1","service":"checkout-api","env":"prod"}
+[x2] [TIME] [ERROR] [ERROR] Container failed to start. Failed to start and then listen on the port defined by the PORT environment variable.
+[TIME] [FATAL] Cloud Run deployment failed: revision checkout-api-00042-hey failed with Health: Unhealthy
+[TIME] [WARN] Rolling back to previous revision checkout-api-00041
+[TIME] [ERROR] Microsoft.Azure.WebJobs.Host: Exception while executing function: CheckoutProcess
+[x2] [TIME] [ERROR] System.TimeoutException: The request timed out after 30 seconds waiting for a response from the payment gateway at [IP]:[PORT]
+[TIME] [FATAL] Function CheckoutProcess failed: System.TimeoutException

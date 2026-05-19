@@ -1,0 +1,9 @@
+[INFO] tornado server listening on port 3000
+[DEBUG] tornado middleware registered: cors, auth, logging
+[DEBUG] tornado route GET /api/health responded 200 in 12ms
+[ERROR] tornado Error: Cannot find module '@company/auth'
+    at internalRequire (/srv/node_modules/tornado-framework/lib/router/index.js:42:15)
+    at Module._compile (node:internal/modules/cjs/loader:1105:14)
+[ERROR] tornado Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed on POST /api/checkout from 10.42.7.18:54321
+[ERROR] tornado Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33457 failed on POST /api/checkout from 10.42.7.18:54322
+[FATAL] tornado worker crashed with signal SIGABRT after uncaught exception commit=abcdef1234567890abcdef1234567890abcdef12

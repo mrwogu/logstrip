@@ -1,0 +1,50 @@
+[ERROR] amazon ses Error: ThrottlingException: Daily message quota exceeded for account [IP]
+    at email.amazonaws.com/SendEmail:42 in invoke
+    at aws ses/lib/client.js:88 in send
+[ERROR] amazon ses Error: ThrottlingException: Daily message quota exceeded for account [IP]
+    at email.amazonaws.com/SendEmail:42 in invoke
+    at aws ses/lib/client.js:88 in send
+[ERROR] mailchimp Error: CampaignError: template rendering failed - merge tag *|FNAME|* not found
+    at mailchimp/lib/campaigns.js:42 in render
+    at mailchimp/lib/templates.js:88 in parse
+[ERROR] brevo Error: SendinblueAPIError: 403 Forbidden - sender address not verified
+    at sendinblue/lib/api.js:42 in sendTransacEmail
+    at sendinblue/lib/client.js:88 in request
+[ERROR] postmark Error: PostmarkError: InactiveRecipient - bounce detected for user@example.com
+    at postmarkapp/lib/client.js:42 in send
+    at postmarkapp/lib/bounce.js:88 in handle
+[ERROR] resend Error: ResendAPIError: 422 Invalid email address format
+    at resend.com/lib/email.js:42 in send
+    at resend/lib/client.js:88 in request
+[ERROR] sparkpost mail Error: SparkpostDeliveryError: 550 5.7.1 message content rejected - spam detected
+    at sparkpost/lib/transmissions.js:42 in send
+    at sparkpost/lib/client.js:88 in request
+[ERROR] dagger do Error: DaggerBuildError: build pipeline failed - container compilation error
+    at dagger.io/pipeline/build.go:42 in compile
+    at dagger.io/pipeline/runner.go:88 in execute
+[ERROR] fastlane lane Error: FastlaneError: match certificate expired for com.example.app
+    at fastlane/lib/match/runner.rb:42 in run
+    at fastlane/lib/fastlane.rb:88 in execute
+[ERROR] bitrise build Error: BitriseStepError: step "xcode-test" failed with exit code 65
+    at bitrise.io/steps/step.go:42 in execute
+    at bitrise.io/workflow/runner.go:88 in run
+[ERROR] codemagic-cli Error: CodemagicBuildError: Xcode build failed - archive export error
+    at codemagic/build/xcode.go:42 in archive
+    at codemagic/build/runner.go:88 in execute
+[ERROR] app center Error: AppCenterBuildError: gradle build failed - compilation error in CheckoutActivity.java
+    at appcenter/lib/build.go:42 in compile
+    at appcenter.ms/lib/agent.go:88 in run
+[ERROR] woodpecker-ci pipeline Error: StepError: plugin "docker" returned exit code 1
+    at woodpecker/pipeline/step.go:42 in exec
+    at woodpecker/agent/runner.go:88 in run
+[ERROR] aws cdk Error: CdkSynthError: Cannot find resource "CheckoutLambda" in stack
+    at cdk deploy/lib/synth.ts:42 in synthesize
+    at aws cdk/lib/app.ts:88 in run
+[ERROR] minikube start Error: DriverError: cannot start docker driver - docker not running
+    at minikube/start/driver.go:42 in start
+    at minikube/node/start.go:88 in boot
+[ERROR] kind create Error: NodeCreateError: failed to create node - container runtime not available
+    at sigs.k8s.io/kind/cmd/create.go:42 in createNode
+    at sigs.k8s.io/kind/cmd/cluster.go:88 in create
+[x2] [ERROR] [TIME] aws ses Error: email [ID] quota exceeded from [IP]:[PORT]
+[FATAL] [TIME] bitrise FATAL: build timeout after 60 minutes commit=[HASH]

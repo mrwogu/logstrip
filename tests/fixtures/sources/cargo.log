@@ -1,0 +1,7 @@
+[INFO] cargo build server started on :8080
+[DEBUG] cargo build 8 routes registered
+[ERROR] cargo build Error: context deadline exceeded on POST /api/checkout
+    at cargo/handler.go:42 in serve
+    at cargo/router.go:88 in resolve
+[ERROR] cargo build request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] cargo build server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

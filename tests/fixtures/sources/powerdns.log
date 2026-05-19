@@ -1,0 +1,4 @@
+[INFO] powerdns zone loaded: example.com
+[DEBUG] powerdns 42 records processed
+[ERROR] powerdns AXFR transfer failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[FATAL] powerdns zone file corrupted commit=abcdef1234567890abcdef1234567890abcdef12

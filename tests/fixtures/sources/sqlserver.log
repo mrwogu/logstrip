@@ -1,0 +1,7 @@
+[INFO] sql server server started on port 5432
+[DEBUG] sql server connection pool: 42 active connections
+[DEBUG] sql server checkpoint completed in 12ms
+[ERROR] sql server FATAL: password authentication failed for user "admin" from 10.42.7.18:54321
+[ERROR] sql server connection refused to 10.90.12.43:5432
+[ERROR] sql server deadlock detected for transaction 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] sql server out of disk space - cannot extend relation commit=abcdef1234567890abcdef1234567890abcdef12

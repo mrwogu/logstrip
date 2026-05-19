@@ -1,0 +1,29 @@
+[ERROR] ruff check F401: `app.utils.helpers` imported but unused
+[ERROR] ruff check E501: line too long (142 > 120 characters)
+[ERROR] ruff check F401: `app.services.payments` imported but unused
+[ERROR] mypy: error: Argument 1 to "process_order" has incompatible type "str"; expected "int"
+[ERROR] mypy: error: Incompatible return type "None" vs "Order"
+[ERROR] pyright - error: Type of "order.total" is "unknown" and not assignable to "float"
+[ERROR] pyright - error: Cannot access attribute "items" on type "None"
+[ERROR] pylint E0602: Undefined variable 'checkout_id'
+[ERROR] pylint W0612: Unused variable 'response'
+[ERROR] aiohttp.server Error: RuntimeError: Session is closed when processing request [ID]
+    at aiohttp/client.py:42 in _request
+    at aiohttp/connector.py:88 in connect
+[ERROR] aiohttp.server Error: RuntimeError: Session is closed when processing request [ID]
+    at aiohttp/client.py:42 in _request
+    at aiohttp/connector.py:88 in connect
+[ERROR] sanic server Error: SanicException: Request timeout on POST /api/checkout
+    at sanic/app.py:42 in handle_request
+    at sanic/router.py:88 in resolve
+[FATAL] tornado.web Error: RuntimeError: IOLoop.current is closing
+    at tornado/ioloop.py:42 in _run_callback
+    at tornado/stack_context.py:88 in run
+[ERROR] twisted.internet Error: ReactorNotRunning: Cannot stop reactor that is not running
+    at twisted/internet/base.py:42 in stop
+    at twisted/internet/defer.py:88 in callback
+[ERROR] scrapy crawl Error: SpiderError: Cannot parse response from [IP]
+    at scrapy/spider.py:42 in parse
+    at scrapy/middleware.py:88 in process_spider_output
+[x2] [ERROR] [TIME] aiohttp Error: timeout for request [ID] on /api/checkout from [IP]:[PORT]
+[FATAL] [TIME] sanic server crash: Out of memory commit=[HASH]

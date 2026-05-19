@@ -1,0 +1,4 @@
+[INFO] docusaurus 42 pages generated
+[DEBUG] docusaurus sitemap.xml created
+[ERROR] docusaurus build error: cannot resolve module '@theme/classic'
+[FATAL] docusaurus build failed with exit code 1 commit=abcdef1234567890abcdef1234567890abcdef12

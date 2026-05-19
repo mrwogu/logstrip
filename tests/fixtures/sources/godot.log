@@ -1,0 +1,5 @@
+[INFO] godot engine device connected on /dev/ttyUSB0
+[DEBUG] godot engine sensor reading: temperature=22.5
+[ERROR] godot engine connection timeout after 30s to 10.90.12.41:1883
+[ERROR] godot engine runtime error: null reference for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] godot engine firmware update failed - device bricked commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,26 @@
+[INFO] 2026-05-15T11:00:00Z Sending build context to Docker daemon  4.012 MB
+[INFO] 2026-05-15T11:00:00Z Step 1/12 : FROM node:22-slim AS builder
+[INFO] 2026-05-15T11:00:00Z 22-slim: Pulling from library/node
+[DEBUG] 2026-05-15T11:00:00Z 9f54eef41275: Already exists digest=sha256:9f54eef41275bedab710fcb6c46f3d3f1c6c5e93c0a78b8a52a4c98a23b8c7d1
+[DEBUG] 2026-05-15T11:00:00Z 8b1a5b8e2c1d: Already exists digest=sha256:8b1a5b8e2c1d09f5e4d3c2b1a09f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7
+[INFO] 2026-05-15T11:00:01Z Status: Image is up to date for node:22-slim
+[INFO] 2026-05-15T11:00:01Z Step 2/12 : WORKDIR /app
+[INFO] 2026-05-15T11:00:01Z Step 3/12 : COPY package.json package-lock.json ./
+[INFO] 2026-05-15T11:00:01Z Step 4/12 : RUN npm ci --omit=dev
+[INFO] 2026-05-15T11:00:02Z npm warn deprecated request@2.88.2: request has been deprecated
+[WARN] npm warn deprecated har-validator@5.1.5: this library is no longer supported
+[INFO] 2026-05-15T11:00:25Z added 247 packages in 23s
+[INFO] 2026-05-15T11:00:25Z Step 5/12 : COPY . .
+[INFO] 2026-05-15T11:00:26Z Step 6/12 : RUN npm run build
+[INFO] 2026-05-15T11:00:26Z > app@1.0.0 build
+[INFO] 2026-05-15T11:00:26Z > tsc -p tsconfig.build.json
+[ERROR] src/services/payment-service.ts(42,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+[ERROR] src/services/payment-service.ts(42,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+[ERROR] src/services/payment-service.ts(42,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+[ERROR] src/repositories/user-repository.ts(118,23): error TS18048: 'user.email' is possibly 'undefined'.
+[ERROR] src/repositories/user-repository.ts(118,23): error TS18048: 'user.email' is possibly 'undefined'.
+[FATAL] BUILD FAILURE: 2 distinct type errors detected
+[INFO] 2026-05-15T11:00:32Z The command '/bin/sh -c npm run build' returned a non-zero code: 1
+[ERROR] failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+[DEBUG] 2026-05-15T11:00:32Z buildkit: snapshot abandoned id=7e9c5d2a4b1f3e8c0d9a8b7c6d5e4f3a
+[DEBUG] 2026-05-15T11:00:32Z buildkit: snapshot abandoned id=8a0d6e3b5c2g4f9d1e0b9c8d7e6f5a4b

@@ -1,0 +1,7 @@
+[INFO] apache geode server started on port 5432
+[DEBUG] apache geode connection pool: 42 active connections
+[DEBUG] apache geode checkpoint completed in 12ms
+[ERROR] apache geode FATAL: password authentication failed for user "admin" from 10.42.7.18:54321
+[ERROR] apache geode connection refused to 10.90.12.43:5432
+[ERROR] apache geode deadlock detected for transaction 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] apache geode out of disk space - cannot extend relation commit=abcdef1234567890abcdef1234567890abcdef12

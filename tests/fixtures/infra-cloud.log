@@ -1,0 +1,16 @@
+[INFO] helm upgrade --install my-release ./my-chart
+[DEBUG] Loading chart from ./my-chart
+[DEBUG] Preparing upgrade...
+Error: UPGRADE FAILED: cannot patch "my-release-deployment" with kind Deployment: Deployment.apps "my-release-deployment" is invalid: spec.template.spec.containers[0].image: Required value
+[INFO] Cloud Run deployment started
+[DEBUG] Provisioning container instances
+[INFO] 2026-05-15T12:05:00.123Z Cloud Run revision my-service-00001-abc is ready.
+[ERROR] 2026-05-15T12:05:10.456Z Container failed to start. Failed to start and then listen on the port defined by the PORT environment variable.
+[ERROR] 2026-05-15T12:05:10.500Z The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable.
+[INFO] AWS Lambda invocation started
+START RequestId: 8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d Version: $LATEST
+[DEBUG] Loading handler function
+2026-05-15T12:10:00.000Z 8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d INFO Processing event
+2026-05-15T12:10:05.123Z 8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d ERROR Invoke Error {"errorType":"TimeoutError","errorMessage":"Task timed out after 5.01 seconds"}
+END RequestId: 8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d
+REPORT RequestId: 8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d  Duration: 5010.51 ms Billed Duration: 5011 ms Memory Size: 128 MB Max Memory Used: 64 MB

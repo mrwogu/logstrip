@@ -1,0 +1,62 @@
+[INFO] ollama serve started on 0.0.0.0:11434
+[DEBUG] ollama run model llama3:8b loading
+[INFO] vllm serve engine started with 4 GPUs
+[DEBUG] vllm engine scheduler: 128 pending requests
+[INFO] torchserve model management API on port 8080
+[DEBUG] torch serve worker started for resnet50
+[INFO] comfyui manager web interface on port 8188
+[DEBUG] comfyui workflow loading: sd_xl_base
+[INFO] huggingface model cache: /root/.cache/huggingface
+[DEBUG] huggingface.co download: meta-llama/Llama-3-8B
+[INFO] openai api: gpt-4o deployment active
+[DEBUG] openai usage: 1.2M tokens today
+[INFO] langchain agent initialized with tools
+[DEBUG] langchain.py callback handler registered
+[INFO] llamaindex index built from 42 documents
+[DEBUG] llamaindex retrieval: top-5 results
+[INFO] deepspeed runner: zero-3 offload enabled
+[DEBUG] deepspeed engine optimizer step completed
+[INFO] llama.cpp server started on port 8081
+[DEBUG] llama cpp inference: 42 tokens/s
+[INFO] stable diffusion webui running on port 7860
+[DEBUG] stablediffusion model: sdxl-1.0 loaded
+[ERROR] openai api Error: Rate limit exceeded - retry after 20s
+[ERROR] openai api Error: Rate limit exceeded - retry after 20s
+[ERROR] openai api Error: Rate limit exceeded - retry after 20s
+[ERROR] huggingface download Error: ConnectionError: Cannot reach huggingface.co/api/models/meta-llama/Llama-3-8B
+    at huggingface_hub/file_download.py:42 in _request_with_retries
+    at urllib3/connectionpool.py:88 in urlopen
+    at urllib3/connectionpool.py:42 in _make_request
+[ERROR] vllm serve Error: CUDA out of memory. Tried to allocate 2.00 GiB
+    at vllm/engine/executor.py:42 in _run_workers
+    at vllm/worker/model_runner.py:88 in load_model
+[ERROR] vllm engine Error: RuntimeError: NCCL error: unhandled system error
+    at vllm/distributed/communication_op.py:42 in broadcast
+    at torch/distributed/distributed_c10d.py:88 in broadcast
+[ERROR] torchserve Error: ModelLoadError: Failed to load resnet50.mar
+    at ts/torch_handler/base_handler.py:42 in initialize
+    at ts/service.py:88 in load_model
+[ERROR] comfyui manager Error: RuntimeError: CUDA out of memory during image generation
+    at comfyui/nodes.py:42 in process_sample
+    at comfyui/execution.py:88 in execute
+[ERROR] ollama run Error: model not found: mixtral:8x7b
+    at ollama/runner.go:42 in loadModel
+    at ollama/api.go:88 in GenerateHandler
+[ERROR] llama.cpp inference Error: model file corrupted - header checksum mismatch
+    at llama.cpp/llama.cpp:42 in llama_model_load
+    at llama.cpp/llama.cpp:88 in llama_decode
+[ERROR] deepspeed runner Error: DeepSpeedRuntimeError: ZeRO-3 partition overflow
+    at deepspeed/runtime/engine.py:42 in step
+    at deepspeed/utils/nvtx.py:88 in instrument
+[ERROR] langchain agent Error: OutputParserError: Could not parse LLM output
+    at langchain/output_parsers/__init__.py:42 in parse
+    at langchain/chains/llm.py:88 in _call
+[ERROR] llamaindex Error: ValueError: Embedding dimension mismatch: expected 1536, got 768
+    at llamaindex/indices/vector_store/base.py:42 in _build_index_from_nodes
+    at llamaindex/storage/vector_store.py:88 in add
+[ERROR] stable diffusion Error: RuntimeError: Latent dimension mismatch
+    at stablediffusion/pipeline_stable_diffusion_xl.py:42 in __call__
+    at stablediffusion/pipelines/utils.py:88 in decode
+[ERROR] 2026-05-15T10:20:30.123Z vllm serve Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 CUDA error on GPU 0 10.42.7.18:54321
+[ERROR] 2026-05-15T10:20:30.124Z vllm serve Error: request 018f23ab-7c1d-7f44-8bfe-0acddaf33457 CUDA error on GPU 1 10.42.7.18:54322
+[FATAL] 2026-05-15T10:20:35.000Z vllm engine NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

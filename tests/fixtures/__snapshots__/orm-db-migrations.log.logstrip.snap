@@ -1,0 +1,38 @@
+[ERROR] prisma migrate Error: P3018: Migration failed: column "total" cannot be null in table "orders"
+    at prisma/migrate/deploy.ts:42 in applyMigration
+    at prisma/migrate/commands.ts:88 in execute
+[ERROR] prisma generate Error: P1012: Schema parsing error - model "Order" has no id field
+    at prisma/generate/generate.ts:42 in validate
+    at prisma/generate/commands.ts:88 in run
+[ERROR] drizzle kit push Error: DrizzleKitError: column "email" already exists in table "users"
+    at drizzle-orm/kit/src/push.ts:42 in validate
+    at drizzle-orm/kit/src/commands.ts:88 in execute
+[ERROR] typeorm query Error: QueryFailedError: relation "orders" does not exist
+    at typeorm/src/driver/PostgresDriver.ts:42 in query
+    at typeorm/src/persistence/EntityPersister.ts:88 in save
+[ERROR] sequelize Error: SequelizeConnectionError: password authentication failed for user "admin" at [IP]:[PORT]
+    at sequelize/src/dialects/postgres/connection-manager.js:42 in connect
+    at sequelize/src/sequelize.js:88 in sync
+[ERROR] knex migrate Error: MigrationLockError: lock table already locked by another process
+    at knex/src/migrate/MigrationLock.js:42 in acquireLock
+    at knex/src/migrate/Migrator.js:88 in run
+[ERROR] flyway migrate Error: FlywayValidateException: migration checksum mismatch for V12__add_checkout.sql
+    at flyway/core/api/src/main/java/org/flywaydb/core/internal/command/DbMigrate.java:42 in apply
+    at flyway/core/api/src/main/java/org/flywaydb/core/Flyway.java:88 in migrate
+[ERROR] liquibase update Error: LiquibaseException: ChangeSet checksum mismatch
+    at liquibase/core/src/main/java/liquibase/changelog/ChangeSet.java:42 in execute
+    at liquibase/core/src/main/java/liquibase/Liquibase.java:88 in update
+[ERROR] alembic upgrade Error: CommandFailed: Can't locate revision identified by 'abc123'
+    at alembic/command/upgrade.py:42 in upgrade
+    at alembic/migration.py:88 in upgrade_step
+[ERROR] sqlalchemy.orm Error: OperationalError: connection refused to [IP]:[PORT]
+    at sqlalchemy/engine/default.py:42 in execute
+    at sqlalchemy/orm/session.py:88 in flush
+[ERROR] mongoose.connect Error: MongooseServerSelectionError: connection timeout to [IP]:[PORT]
+    at mongoose/lib/connection.js:42 in openUri
+    at mongoose/lib/model.js:88 in save
+[ERROR] mikro-orm migrate Error: MigrationError: cannot drop table "payments" - foreign key constraint fails
+    at mikro-orm/migrations/MigrationRunner.ts:42 in down
+    at mikro-orm/migrations/MigrationManager.ts:88 in execute
+[x2] [ERROR] [TIME] prisma Error: migration [ID] failed at V8__add_payments.sql src=[IP]:[PORT]
+[FATAL] [TIME] flyway migrate FATAL: database unreachable after 30 retries commit=[HASH]

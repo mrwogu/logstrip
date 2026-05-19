@@ -1,0 +1,5 @@
+[INFO] arduino device connected on /dev/ttyUSB0
+[DEBUG] arduino sensor reading: temperature=22.5
+[ERROR] arduino connection timeout after 30s to 10.90.12.41:1883
+[ERROR] arduino runtime error: null reference for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] arduino firmware update failed - device bricked commit=abcdef1234567890abcdef1234567890abcdef12

@@ -1,0 +1,23 @@
+[INFO] postgresql connection established
+2026-05-15 12:00:00.000 UTC [42] FATAL:  password authentication failed for user "admin"
+2026-05-15 12:00:00.000 UTC [42] DETAIL:  Role "admin" does not exist.
+[DEBUG] 42:C 15 May 2026 12:00:01.123 * <redis> Background saving terminated with success
+42:M 15 May 2026 12:00:05.456 # <redis> Error allocating resoures for the AOF rewrite.
+[INFO] [Kafka] INFO [Consumer clientId=consumer-console-consumer-96860-1, groupId=console-consumer-96860] Discovered group coordinator kafka-broker:9092
+[ERROR] [Kafka] ERROR [Consumer clientId=consumer-console-consumer-96860-1, groupId=console-consumer-96860] Connection to node -1 (kafka-broker/10.0.1.42:9092) could not be established. Broker may not be available.
+[INFO] Sentry is initializing
+[ERROR] Sentry: failed to send event 9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e to https://sentry.io/api/123456/store/
+[INFO] OpenTelemetry SDK initialized
+[ERROR] OpenTelemetry: Error exporting spans: Connection refused to localhost:4317
+[INFO] Running semgrep...
+[DEBUG] Scanning 450 files
+Semgrep found 1 issue:
+src/auth.py:42: High severity: Detected a hardcoded secret 'password123'. Use environment variables instead.
+[INFO] Running snyk test
+[DEBUG] Analyzing dependencies...
+✗ High severity vulnerability found in lodash
+  Description: Prototype Pollution
+  Info: https://security.snyk.io/vuln/SNYK-JS-LODASH-73639
+  Introduced through: my-project@1.0.0 > lodash@4.17.15
+  From: my-project@1.0.0 > lodash@4.17.15
+  Fixed in: 4.17.21

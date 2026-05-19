@@ -1,0 +1,7 @@
+[INFO] actix server started on :8080
+[DEBUG] actix 8 routes registered
+[ERROR] actix Error: context deadline exceeded on POST /api/checkout
+    at actix/handler.go:42 in serve
+    at actix/router.go:88 in resolve
+[ERROR] actix request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] actix server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

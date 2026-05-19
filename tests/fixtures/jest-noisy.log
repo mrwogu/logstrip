@@ -1,0 +1,47 @@
+[INFO] 2026-05-15T08:01:00.000Z jest worker booted pid=4011 jobId=ae9c1d2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f
+[INFO] 2026-05-15T08:01:00.001Z runner using 4 workers
+[DEBUG] 2026-05-15T08:01:00.002Z transformer cache hit src/index.ts hash=9f8e7d6c5b4a39281706f5e4d3c2b1a0
+[DEBUG] 2026-05-15T08:01:00.003Z transformer cache hit src/api.ts hash=8e7d6c5b4a39281706f5e4d3c2b1a0f9
+[DEBUG] 2026-05-15T08:01:00.004Z transformer cache hit src/db.ts hash=7d6c5b4a39281706f5e4d3c2b1a0f9e8
+[INFO] 2026-05-15T08:01:00.500Z PASS src/api.test.ts (123ms)
+[INFO] 2026-05-15T08:01:00.600Z PASS src/util.test.ts (87ms)
+[INFO] 2026-05-15T08:01:00.700Z FAIL src/payments.test.ts (412ms)
+[ERROR] TypeError: Cannot read properties of undefined (reading 'amount') at request d1b3a8f7-2e4c-4b9a-9d2e-1c4a5b6c7d8e
+    at Payments.charge (/repo/src/payments.ts:42:18)
+    at Object.<anonymous> (/repo/src/payments.test.ts:31:25)
+    at Promise.then.completed (/repo/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/repo/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/repo/node_modules/jest-circus/build/run.js:316:40)
+    at _runTest (/repo/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/repo/node_modules/jest-circus/build/run.js:126:9)
+    at run (/repo/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/repo/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+[ERROR] TypeError: Cannot read properties of undefined (reading 'amount') at request e2c4b9f8-3f5d-5cab-ae3f-2d5b6c7d8e9f
+    at Payments.charge (/repo/src/payments.ts:42:18)
+    at Object.<anonymous> (/repo/src/payments.test.ts:48:25)
+    at Promise.then.completed (/repo/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/repo/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/repo/node_modules/jest-circus/build/run.js:316:40)
+    at _runTest (/repo/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/repo/node_modules/jest-circus/build/run.js:126:9)
+    at run (/repo/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/repo/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+[ERROR] TypeError: Cannot read properties of undefined (reading 'amount') at request f3d5cabb-4a6e-6db0-bf4a-3e6c7d8e9faa
+    at Payments.charge (/repo/src/payments.ts:42:18)
+    at Object.<anonymous> (/repo/src/payments.test.ts:65:25)
+    at Promise.then.completed (/repo/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/repo/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/repo/node_modules/jest-circus/build/run.js:316:40)
+    at _runTest (/repo/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/repo/node_modules/jest-circus/build/run.js:126:9)
+    at run (/repo/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/repo/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+[INFO] 2026-05-15T08:01:01.200Z Test Suites: 1 failed, 2 passed, 3 total
+[INFO] 2026-05-15T08:01:01.201Z Tests:       3 failed, 14 passed, 17 total
+[INFO] 2026-05-15T08:01:01.202Z Snapshots:   0 total
+[INFO] 2026-05-15T08:01:01.203Z Time:        1.823s
+[INFO] 2026-05-15T08:01:01.204Z Ran all test suites.
+[DEBUG] 2026-05-15T08:01:01.300Z jest worker exiting pid=4011

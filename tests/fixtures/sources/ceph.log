@@ -1,0 +1,5 @@
+[INFO] ceph plan completed: 42 resources
+[DEBUG] ceph refresh state: no changes detected
+[ERROR] ceph Error: UPGRADE FAILED: cannot patch deployment checkout-api
+[ERROR] ceph state locked by another process at 10.90.12.41 for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] ceph plan failed: 3 resource creation errors commit=abcdef1234567890abcdef1234567890abcdef12

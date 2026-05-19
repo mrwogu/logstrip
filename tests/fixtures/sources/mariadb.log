@@ -1,0 +1,7 @@
+[INFO] mariadb server started on port 5432
+[DEBUG] mariadb connection pool: 42 active connections
+[DEBUG] mariadb checkpoint completed in 12ms
+[ERROR] mariadb FATAL: password authentication failed for user "admin" from 10.42.7.18:54321
+[ERROR] mariadb connection refused to 10.90.12.43:5432
+[ERROR] mariadb deadlock detected for transaction 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] mariadb out of disk space - cannot extend relation commit=abcdef1234567890abcdef1234567890abcdef12

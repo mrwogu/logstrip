@@ -1,0 +1,5 @@
+[INFO] ionic build started: release configuration
+[DEBUG] ionic packaging for platform: darwin-arm64
+[ERROR] ionic Error: Cannot find module 'react-native/Libraries/Core/InitializeCore'
+[ERROR] ionic build failed for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[FATAL] ionic process killed by SIGTERM commit=abcdef1234567890abcdef1234567890abcdef12

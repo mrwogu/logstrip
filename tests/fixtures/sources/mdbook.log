@@ -1,0 +1,4 @@
+[INFO] mdbook 42 pages generated
+[DEBUG] mdbook sitemap.xml created
+[ERROR] mdbook build error: cannot resolve module '@theme/classic'
+[FATAL] mdbook build failed with exit code 1 commit=abcdef1234567890abcdef1234567890abcdef12

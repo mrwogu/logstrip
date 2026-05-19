@@ -1,0 +1,5 @@
+[INFO] postmark 420 emails sent today
+[DEBUG] postmark template rendered: order-confirmation
+[ERROR] postmark delivery failed: bounce detected for user@example.com
+[ERROR] postmark quota exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 from 10.42.7.18:54321
+[FATAL] postmark SMTP server unreachable commit=abcdef1234567890abcdef1234567890abcdef12

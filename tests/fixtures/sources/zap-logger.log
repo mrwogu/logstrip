@@ -1,0 +1,6 @@
+[INFO] zap logger logger initialized with level=info
+[DEBUG] zap logger transport configured: file, console
+[ERROR] zap logger FATAL: Cannot write to log file /var/log/app/server.log
+[ERROR] zap logger transport error: connection refused to 10.90.12.41:514
+[ERROR] zap logger buffer overflow: 42000 messages dropped for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] zap logger out of memory during log rotation commit=abcdef1234567890abcdef1234567890abcdef12

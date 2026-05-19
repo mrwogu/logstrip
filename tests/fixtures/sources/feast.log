@@ -1,0 +1,7 @@
+[INFO] feast feature store model loaded successfully
+[DEBUG] feast feature store inference: 42 tokens/s on GPU 0
+[DEBUG] feast feature store batch processing: 8 requests
+[ERROR] feast feature store Error: CUDA out of memory - tried to allocate 2.00 GiB
+[ERROR] feast feature store rate limit exceeded for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[ERROR] feast feature store model file corrupted - header checksum mismatch
+[FATAL] feast feature store NCCL timeout - all GPUs unreachable commit=abcdef1234567890abcdef1234567890abcdef12

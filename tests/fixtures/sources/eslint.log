@@ -1,0 +1,7 @@
+[INFO] eslint pipeline started: build-and-deploy
+[DEBUG] eslint stage: checkout completed in 2.1s
+[DEBUG] eslint stage: build completed in 42.3s
+[ERROR] eslint step failed: exit code 1 in stage "test"
+[ERROR] eslint deployment failed after rollback exhausted
+::error file=.github/workflows/deploy.yml,line=88::deployment failed for service checkout-api request 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+[FATAL] eslint pipeline aborted: timeout after 60 minutes commit=abcdef1234567890abcdef1234567890abcdef12

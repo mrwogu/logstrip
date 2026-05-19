@@ -1,0 +1,7 @@
+[INFO] bundle install server started on :8080
+[DEBUG] bundle install 8 routes registered
+[ERROR] bundle install Error: context deadline exceeded on POST /api/checkout
+    at bundler/handler.go:42 in serve
+    at bundler/router.go:88 in resolve
+[ERROR] bundle install request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 failed from 10.42.7.18:54321
+[FATAL] bundle install server crash: aborting due to unrecoverable error commit=abcdef1234567890abcdef1234567890abcdef12

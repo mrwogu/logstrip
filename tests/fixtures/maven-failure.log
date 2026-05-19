@@ -1,0 +1,41 @@
+[INFO] Scanning for projects...
+[INFO] -----------------------< com.example:checkout >-----------------------
+[INFO] Building checkout-service 1.4.2
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] --- maven-resources-plugin:3.3.1:resources (default-resources) @ checkout ---
+[INFO] Copying 4 resources from src/main/resources to target/classes
+[INFO] --- maven-compiler-plugin:3.13.0:compile (default-compile) @ checkout ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 87 source files with javac [debug parameters release 21] to target/classes
+[WARN] /repo/src/main/java/com/example/checkout/PaymentService.java:[42,16] unchecked cast
+[WARN] /repo/src/main/java/com/example/checkout/PaymentService.java:[42,16] unchecked cast
+[ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol
+[ERROR]   symbol:   class Logger
+[ERROR]   location: class com.example.checkout.CartService
+[ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol
+[ERROR]   symbol:   class Logger
+[ERROR]   location: class com.example.checkout.CartService
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  4.215 s
+[INFO] Finished at: 2026-05-15T09:42:11+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project checkout: Compilation failure
+[ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol
+[ERROR]   symbol:   class Logger
+[ERROR]   location: class com.example.checkout.CartService
+[ERROR] -> [Help 1]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+Caused by: java.lang.NullPointerException: Cannot invoke "User.getEmail()" because the return value of "Session.getUser()" is null
+    at com.example.checkout.CartService.checkout(CartService.java:42)
+    at com.example.checkout.CheckoutController.process(CheckoutController.java:88)
+    at jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+    at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+    at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)
+    at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
+[INFO] correlationId=4d1f93b1-d1b8-46a8-8a7c-2a3d8b8f1e2a session=72a8c5e4b91f3d8a6e0c9b5d4f2e1a83
+[INFO] correlationId=5e2fa4c2-e2c9-57b9-9b8d-3b4e9c9f2f3b session=83b9d6f5ca20e4b97f1da6c5d3f3b294

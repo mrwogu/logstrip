@@ -1,0 +1,4 @@
+[INFO] cpython initialized successfully
+[DEBUG] cpython JIT compilation: 42 methods compiled
+[ERROR] cpython segmentation fault for request 018f23ab-7c1d-7f44-8bfe-0acddaf33456 at 10.42.7.18:54321
+[FATAL] cpython heap exhausted - out of memory commit=abcdef1234567890abcdef1234567890abcdef12

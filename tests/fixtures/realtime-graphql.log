@@ -1,0 +1,53 @@
+[INFO] socket.io server listening on port 3000
+[DEBUG] socketio: 42 clients connected
+[INFO] pusher channel: app connected
+[DEBUG] pusher: 8 channels active
+[INFO] ably realtime: connection established
+[DEBUG] ably channel: 12 subscriptions
+[INFO] livekit-server: room created
+[DEBUG] livekit: 4 participants connected
+[INFO] centrifugo: node started on :8000
+[DEBUG] centrifugal: 42 connections active
+[INFO] apollo server: schema built successfully
+[DEBUG] apollographql: 8 resolvers registered
+[INFO] graphql-yoga: server started on :4000
+[DEBUG] graphql yoga: 4 query resolvers
+[INFO] mercurius: plugin registered
+[DEBUG] mercurius upload: schema extended
+[INFO] dgraph: cluster healthy
+[DEBUG] dgraph query: 420 results returned
+[INFO] dgraph ratel: UI available on :8000
+[DEBUG] dgraph: zero node leader elected
+[ERROR] socket.io server Error: TransportCloseError: transport closed unexpectedly for client 018f23ab-7c1d-7f44-8bfe-0acddaf33456
+    at socketio/engine.io.js:42 in onClose
+    at socketio/server.js:88 in handle
+[ERROR] socket.io server Error: TransportCloseError: transport closed unexpectedly for client 018f23ab-7c1d-7f44-8bfe-0acddaf33457
+    at socketio/engine.io.js:42 in onClose
+    at socketio/server.js:88 in handle
+[ERROR] pusher channel Error: PusherAuthenticationError: invalid app key abc123 at 10.90.12.41
+    at pusher/lib/channel.js:42 in subscribe
+    at pusher/lib/pusher.js:88 in trigger
+[ERROR] ably realtime Error: AblyError: channel unavailable - connection state is FAILED
+    at ably/lib/realtime/channel.js:42 in attach
+    at ably/lib/realtime/connection.js:88 in connect
+[ERROR] livekit-server Error: RoomError: cannot create room - TURN server unreachable at 10.90.12.42:3478
+    at livekit-server/pkg/service/room.go:42 in createRoom
+    at livekit-server/pkg/service/server.go:88 in handle
+[ERROR] centrifugo Error: CentrifugoError: connection drop - redis subscribe failed at 10.90.12.43:6379
+    at centrifugo/internal/core/hub.go:42 in subscribe
+    at centrifugo/internal/core/server.go:88 in run
+[ERROR] apollo server Error: GraphQLError: Schema validation failed - type "Order" is undefined
+    at apollographql/src/schema/validate.ts:42 in validate
+    at apollographql/src/server/index.ts:88 in start
+[ERROR] graphql-yoga Error: YogaError: context factory failed - cannot read property of undefined
+    at graphql-yoga/src/server.ts:42 in createContext
+    at graphql-yoga/src/handler.ts:88 in handle
+[ERROR] mercurius Error: FastifyError: mercurius upload schema incompatible with gateway
+    at mercurius/index.js:42 in register
+    at mercurius/plugin.js:88 in apply
+[ERROR] dgraph query Error: DgraphError: predicate "orders.total" not found in schema
+    at dgraph/dgraph/src/client.rs:42 in query
+    at dgraph/dgraph/src/worker.rs:88 in execute
+[ERROR] 2026-05-15T10:20:30.123Z socket.io Error: client 018f23ab-7c1d-7f44-8bfe-0acddaf33456 disconnected from 10.42.7.18:54321
+[ERROR] 2026-05-15T10:20:30.124Z socket.io Error: client 018f23ab-7c1d-7f44-8bfe-0acddaf33457 disconnected from 10.42.7.18:54322
+[FATAL] 2026-05-15T10:20:35.000Z apollo server FATAL: schema incompatible with federation gateway commit=abcdef1234567890abcdef1234567890abcdef12
