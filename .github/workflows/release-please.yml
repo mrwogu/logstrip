@@ -48,10 +48,6 @@ jobs:
           npm run build
           npm audit
 
-      - name: Upgrade npm for OIDC trusted publishing
-        if: ${{ steps.release.outputs.release_created }}
-        run: npm install -g npm@latest
-
       - name: Publish to npm
         if: ${{ steps.release.outputs.release_created }}
         run: npm publish --provenance --access public
