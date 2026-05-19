@@ -297,9 +297,11 @@ custom config integration.
 
 ## GitHub Action <a id="github-action"></a>
 
-The repository also ships an optional GitHub Action that wraps the same parser.
+The repository also ships an optional [GitHub Action](https://github.com/marketplace/actions/logstrip) that wraps the same parser.
 It is useful when you want a single step in CI and a tidy Step Summary, but the
 CLI is the primary distribution channel.
+
+> **Dogfooding:** This project uses its own action in its [CI pipeline](https://github.com/mrwogu/logstrip/actions/workflows/ci.yml) to compress fixture logs and render token savings in every workflow run.
 
 ```yaml
 - name: Compress logs with LogStrip
