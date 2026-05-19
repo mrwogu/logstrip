@@ -74,9 +74,8 @@ LogStrip output:
   [... hidden internal library frames ...]
 ```
 
-## Benchmarks <a id="benchmarks"></a>
-
-![Benchmarks](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-benchmarks.svg)
+<a id="benchmarks"></a>
+<img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-benchmarks.svg" alt="Benchmarks" width="320">
 
 Compression ratios from the 38 fixture test suite across real-world log sources:
 
@@ -97,9 +96,8 @@ Production logs with millions of lines routinely hit **80%+** token savings beca
 
 > Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) — 38 `.log` files covering 705+ ecosystem signatures. Each fixture has a committed snapshot baseline.
 
-## vs Alternatives <a id="vs-alternatives"></a>
-
-![vs Alternatives](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-competitors.svg)
+<a id="vs-alternatives"></a>
+<img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-competitors.svg" alt="vs Alternatives" width="320">
 
 | | **LogStrip** | `grep -v` / `awk` | LLM summarization | logreduce |
 |:---|:---|:---|:---|:---|
@@ -114,9 +112,8 @@ Production logs with millions of lines routinely hit **80%+** token savings beca
 | **Extensible** | `.logstrip.yml` custom config | Shell scripts | Prompt engineering | Plugin system |
 | **CI integration** | CLI + GitHub Action | Shell scripts | API wrapper | CLI |
 
-## Works with every agent <a id="works-with-every-agent"></a>
-
-![Works with every agent](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-agents.svg)
+<a id="works-with-every-agent"></a>
+<img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-agents.svg" alt="Works with every agent" width="320">
 
 LogStrip ships agent plugin bundles so assistants compress logs before
 diagnosing them. The workflow is the same everywhere: run `logstrip`, analyze the
@@ -131,9 +128,8 @@ Works with **any** agent that can run a shell command or read a file. One binary
 
 See the [Agent Plugin Installation guide](https://mrwogu.github.io/logstrip/guides/plugins/) for per-agent setup.
 
-## How It Works <a id="how-it-works"></a>
-
-![How It Works](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-how.svg)
+<a id="how-it-works"></a>
+<img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-how.svg" alt="How It Works" width="320">
 
 LogStrip detects **705+ log ecosystems** and applies several cuts to every streamed line:
 
@@ -165,9 +161,8 @@ becomes:
 
 See the [full source catalogue](https://mrwogu.github.io/logstrip/reference/sources/) for all 705+ detected ecosystems.
 
-## Custom Configuration <a id="custom-configuration-logstripyml"></a>
-
-![Custom Configuration](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-config.svg)
+<a id="custom-configuration-logstripyml"></a>
+<img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-config.svg" alt="Custom Configuration" width="320">
 
 Corporations and teams running internal tools can extend LogStrip
 without modifying source code. Create a `.logstrip.yml` file (or pass
