@@ -7,12 +7,12 @@ import {
   pathsReferToSameFile,
   processLogStream,
   type Aggressiveness,
-  type BonsaiResult,
-} from '../core/bonsai-parser';
+  type LogStripResult,
+} from '../core/logstrip-parser';
 
 export const CLI_VERSION = '1.0.0'; // x-release-please-version
 
-export const HELP_TEXT = `Usage: bonsai [INPUT] [options]
+export const HELP_TEXT = `Usage: logstrip [INPUT] [options]
 
 Stream-based log compression that trims noisy server logs, build
 pipelines, vulnerability scanners, and container workloads down to the
@@ -26,16 +26,16 @@ Options:
   -a, --aggressiveness <l> Compression preset: low | medium | high | aggressive.
                            Default: high.
   -s, --stats              Print compression statistics to stderr.
-  -j, --json               Print BonsaiResult as JSON to stdout. Requires --output.
-      --config <path>      Path to .bonsai.yml config file. Auto-detects from cwd.
+  -j, --json               Print LogStripResult as JSON to stdout. Requires --output.
+      --config <path>      Path to .logstrip.yml config file. Auto-detects from cwd.
   -h, --help               Show this help text and exit.
   -v, --version            Print the CLI version and exit.
 
 Examples:
-  bonsai raw.log -o clean.log
-  cat raw.log | bonsai > clean.log
-  bonsai raw.log --stats > clean.log
-  bonsai raw.log -o clean.log --json
+  logstrip raw.log -o clean.log
+  cat raw.log | logstrip > clean.log
+  logstrip raw.log --stats > clean.log
+  logstrip raw.log -o clean.log --json
 `;
 
 export interface CliOptions {
@@ -126,9 +126,9 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
   };
 }
 
-export function formatStats(result: BonsaiResult): string {
+export function formatStats(result: LogStripResult): string {
   const lines = [
-    'ContextBonsai compression report',
+    'LogStrip compression report',
     `  input lines     : ${result.stats.inputLines}`,
     `  output lines    : ${result.stats.outputLines}`,
     `  dropped lines   : ${result.stats.droppedLines}`,
@@ -183,7 +183,7 @@ export async function runCli(
     options = parseCliOptions(argv);
   } catch (error) {
     const cliError = error as CliError;
-    await writeAll(io.stderr, `bonsai: ${cliError.message}\n`);
+    await writeAll(io.stderr, `logstrip: ${cliError.message}\n`);
     return cliError.exitCode;
   }
 
@@ -200,7 +200,7 @@ export async function runCli(
   if (options.json && options.output === undefined) {
     await writeAll(
       io.stderr,
-      'bonsai: --json requires --output so the compressed log does not collide with the JSON report on stdout\n',
+      'logstrip: --json requires --output so the compressed log does not collide with the JSON report on stdout\n',
     );
     return 2;
   }
@@ -208,7 +208,7 @@ export async function runCli(
   if (options.input === undefined && io.stdinIsTTY) {
     await writeAll(
       io.stderr,
-      'bonsai: no INPUT given and stdin is a terminal. Pass a file path or pipe a log.\n',
+      'logstrip: no INPUT given and stdin is a terminal. Pass a file path or pipe a log.\n',
     );
     return 2;
   }
@@ -220,7 +220,7 @@ export async function runCli(
   ) {
     await writeAll(
       io.stderr,
-      'bonsai: INPUT and --output must be different paths; refusing to overwrite the input log\n',
+      'logstrip: INPUT and --output must be different paths; refusing to overwrite the input log\n',
     );
     return 2;
   }
@@ -235,7 +235,7 @@ export async function runCli(
       ? createWriteStream(options.output, { encoding: 'utf8' })
       : (io.stdout as NodeJS.WritableStream);
 
-  let result: BonsaiResult;
+  let result: LogStripResult;
   try {
     result = await processLogStream(input, output as Writable, {
       aggressiveness: options.aggressiveness,
@@ -248,7 +248,7 @@ export async function runCli(
     if (options.output !== undefined) {
       (output as Writable).destroy();
     }
-    await writeAll(io.stderr, `bonsai: ${messageOf(error)}\n`);
+    await writeAll(io.stderr, `logstrip: ${messageOf(error)}\n`);
     return 1;
   }
 
@@ -279,7 +279,7 @@ if (require.main === module) {
     })
     .catch((error: unknown) => {
       process.stderr.write(
-        `bonsai: ${error instanceof Error ? error.stack ?? error.message : String(error)}\n`,
+        `logstrip: ${error instanceof Error ? error.stack ?? error.message : String(error)}\n`,
       );
       process.exitCode = 1;
     });

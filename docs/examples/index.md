@@ -9,8 +9,8 @@ run shell. The GitHub Action wrapper is shown last for completeness.
 - name: Run tests
   run: npm test > raw_logs.txt 2>&1 || true
 
-- name: Compress logs with ContextBonsai
-  run: npx -y context-bonsai raw_logs.txt -o clean.log --stats
+- name: Compress logs with LogStrip
+  run: npx -y logstrip raw_logs.txt -o clean.log --stats
 
 - name: Analyze
   run: your-ai-agent analyze --file clean.log
@@ -22,7 +22,7 @@ run shell. The GitHub Action wrapper is shown last for completeness.
 - name: Run tests and compress on the fly
   shell: bash
   run: |
-    npm test 2>&1 | npx -y context-bonsai > clean.log || true
+    npm test 2>&1 | npx -y logstrip > clean.log || true
     cat clean.log
 ```
 
@@ -33,9 +33,9 @@ run shell. The GitHub Action wrapper is shown last for completeness.
   shell: pwsh
   run: npm test *> raw_logs.txt; if ($LASTEXITCODE -ne 0) { exit 0 }
 
-- name: Compress logs with ContextBonsai
+- name: Compress logs with LogStrip
   shell: pwsh
-  run: npx -y context-bonsai raw_logs.txt -o clean.log --stats
+  run: npx -y logstrip raw_logs.txt -o clean.log --stats
 ```
 
 ## Use with matrix jobs (CLI)
@@ -58,7 +58,7 @@ steps:
 
   - name: Compress logs
     run: |
-      npx -y context-bonsai "raw-node-${{ matrix.node-version }}.log" \
+      npx -y logstrip "raw-node-${{ matrix.node-version }}.log" \
         -o "clean-node-${{ matrix.node-version }}.log" \
         --stats
 ```
@@ -70,12 +70,12 @@ steps:
   run: npm test > raw_logs.txt 2>&1 || true
 
 - name: Compress logs
-  run: npx -y context-bonsai raw_logs.txt -o clean.log --json > stats.json
+  run: npx -y logstrip raw_logs.txt -o clean.log --json > stats.json
 
 - name: Upload compact logs and report
   uses: actions/upload-artifact@v4
   with:
-    name: bonsai-logs
+    name: logstrip-logs
     path: |
       clean.log
       stats.json
@@ -100,13 +100,13 @@ steps:
   run: npm test > raw_logs.txt 2>&1 || true
 
 - name: Compress logs
-  uses: mrwogu/context-bonsai@v1
-  id: bonsai
+  uses: mrwogu/logstrip@v1
+  id: logstrip
   with:
     log-path: raw_logs.txt
 
 - name: Analyze
-  run: your-ai-agent analyze --file "${{ steps.bonsai.outputs.output-path }}"
+  run: your-ai-agent analyze --file "${{ steps.logstrip.outputs.output-path }}"
 ```
 
 The action exists for ergonomics inside GitHub Actions specifically. Any other

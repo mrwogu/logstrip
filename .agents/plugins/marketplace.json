@@ -1,14 +1,14 @@
 {
-  "name": "context-bonsai",
+  "name": "logstrip",
   "interface": {
-    "displayName": "ContextBonsai"
+    "displayName": "LogStrip"
   },
   "plugins": [
     {
-      "name": "context-bonsai",
+      "name": "logstrip",
       "source": {
         "source": "local",
-        "path": "./plugins/context-bonsai"
+        "path": "./plugins/logstrip"
       },
       "policy": {
         "installation": "AVAILABLE",

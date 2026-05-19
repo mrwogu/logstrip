@@ -1,6 +1,6 @@
 # Security
 
-ContextBonsai is designed to reduce accidental data exposure before logs are passed to an LLM. The same sanitization rules apply whether the parser is invoked through the CLI, the library, or the GitHub Action wrapper.
+LogStrip is designed to reduce accidental data exposure before logs are passed to an LLM. The same sanitization rules apply whether the parser is invoked through the CLI, the library, or the GitHub Action wrapper.
 
 ## Sanitized values
 
@@ -14,7 +14,7 @@ This lowers token cost and removes identifiers that rarely help root-cause analy
 
 ## What is not guaranteed
 
-ContextBonsai is not a secret scanner. It does not guarantee removal of:
+LogStrip is not a secret scanner. It does not guarantee removal of:
 
 - API keys;
 - passwords;

@@ -1,7 +1,7 @@
 {
-  "name": "context-bonsai",
+  "name": "logstrip",
   "metadata": {
-    "description": "ContextBonsai plugin marketplace for GitHub Copilot.",
+    "description": "LogStrip plugin marketplace for GitHub Copilot.",
     "version": "1.0.0"
   },
   "owner": {
@@ -9,11 +9,11 @@
   },
   "plugins": [
     {
-      "name": "context-bonsai",
-      "source": "./plugins/context-bonsai",
+      "name": "logstrip",
+      "source": "./plugins/logstrip",
       "description": "Compress noisy CI, build, runtime, scanner, and test logs before Copilot diagnoses them.",
       "version": "1.0.0",
-      "repository": "https://github.com/mrwogu/context-bonsai",
+      "repository": "https://github.com/mrwogu/logstrip",
       "keywords": [
         "logs",
         "ci",
@@ -22,7 +22,7 @@
       ],
       "license": "MIT",
       "skills": [
-        "./skills/context-bonsai"
+        "./skills/logstrip"
       ],
       "commands": "./commands/",
       "agents": "./agents/"

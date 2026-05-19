@@ -1,4 +1,4 @@
-# ContextBonsai reference knowledge
+# LogStrip reference knowledge
 
 @knowledge {
   """
@@ -23,20 +23,20 @@
 
   ```bash
     # File in, file out (stats reserved for stderr if --stats)
-    bonsai raw.log -o clean.log
+    logstrip raw.log -o clean.log
 
     # Unix pipe (stdin -> stdout)
-    cat raw.log | bonsai > clean.log
+    cat raw.log | logstrip > clean.log
 
     # File in, content to stdout, stats to stderr
-    bonsai raw.log --stats > clean.log
+    logstrip raw.log --stats > clean.log
 
-    # Machine-readable report (BonsaiResult JSON on stdout, compressed log to file)
-    bonsai raw.log -o clean.log --json
+    # Machine-readable report (LogStripResult JSON on stdout, compressed log to file)
+    logstrip raw.log -o clean.log --json
 
     # Help / version
-    bonsai --help
-    bonsai --version
+    logstrip --help
+    logstrip --version
   ```
 
   Exit codes: 0 success, 1 runtime failure, 2 usage error.
@@ -50,9 +50,9 @@
       '[ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed' \\
       > raw.log
 
-    node dist/cli/index.js raw.log > bonsai.log
+    node dist/cli/index.js raw.log > logstrip.log
 
-    grep -q '^\\[x2\\] \\[ERROR\\] request \\[ID\\] failed$' bonsai.log
+    grep -q '^\\[x2\\] \\[ERROR\\] request \\[ID\\] failed$' logstrip.log
   ```
 
   The literal anchored match is intentional - it catches regressions in
@@ -89,19 +89,19 @@
 
     export function parseCliOptions(argv: readonly string[]): CliOptions;
     export function runCli(argv: readonly string[], io: CliIo): Promise<number>;
-    export function formatStats(result: BonsaiResult): string;
+    export function formatStats(result: LogStripResult): string;
   ```
 
   ## Public library surface
 
-  Exported from `src/core/bonsai-parser.ts` (package main):
+  Exported from `src/core/logstrip-parser.ts` (package main):
 
   ```ts
     type Aggressiveness = 'low' | 'medium' | 'high' | 'aggressive';
 
-    interface BonsaiOptions { aggressiveness?: Aggressiveness }
+    interface LogStripOptions { aggressiveness?: Aggressiveness }
 
-    interface BonsaiStats {
+    interface LogStripStats {
       droppedLines: number;
       duplicateLines: number;
       hiddenInternalStackLines: number;
@@ -113,17 +113,17 @@
       outputWords: number;
     }
 
-    interface BonsaiResult {
+    interface LogStripResult {
       inputTokens: number;
       outputTokens: number;
       savedTokens: number;
       savingsPercent: number;
       outputPath?: string;
-      stats: BonsaiStats;
+      stats: LogStripStats;
     }
 
-    function processLogFile(input: string, output: string, options?: BonsaiOptions): Promise<BonsaiResult>;
-    function processLogStream(input: NodeJS.ReadableStream, output: NodeJS.WritableStream, options?: BonsaiOptions): Promise<BonsaiResult>;
+    function processLogFile(input: string, output: string, options?: LogStripOptions): Promise<LogStripResult>;
+    function processLogStream(input: NodeJS.ReadableStream, output: NodeJS.WritableStream, options?: LogStripOptions): Promise<LogStripResult>;
     function parseAggressiveness(value: string): Aggressiveness;
     const INTERNAL_STACK_MARKER: string;
     // plus exported helpers shouldKeepLine, sanitizeLine, looksLikeDiagnosticLine, isInternalStackTraceLine
@@ -135,7 +135,7 @@
 
   ```ts
     function buildOutputPath(input: string): string;
-    function writeSummary(result: BonsaiResult): Promise<void>;
+    function writeSummary(result: LogStripResult): Promise<void>;
     function run(): Promise<void>;
   ```
 
@@ -146,7 +146,7 @@
       log-path:        # required; path to the raw log
       aggressiveness:  # optional; low | medium | high | aggressive (default: high)
     outputs:
-      output-path:     # path to the compressed log; defaults to <input>.bonsai.log
+      output-path:     # path to the compressed log; defaults to <input>.logstrip.log
     runs:
       using: node20
       main: dist/action/index.js
@@ -157,15 +157,15 @@
   | Need                          | Location                                              |
   | ----------------------------- | ----------------------------------------------------- |
   | CLI entry                     | src/cli/index.ts                                      |
-  | Parser logic                  | src/core/bonsai-parser.ts                             |
+  | Parser logic                  | src/core/logstrip-parser.ts                             |
   | Action wrapper                | src/action/index.ts                                   |
   | Post-build shebang stamping   | scripts/post-build.js                                 |
   | CLI unit tests                | tests/cli.test.ts                                     |
-  | Parser unit tests             | tests/bonsai-parser.test.ts                           |
+  | Parser unit tests             | tests/logstrip-parser.test.ts                           |
   | Action unit tests             | tests/action.test.ts                                  |
   | E2E smoke tests               | tests/smoke.test.ts                                   |
   | Realistic logs                | tests/fixtures/*.log                                  |
-  | Snapshot baselines            | tests/fixtures/__snapshots__/*.bonsai.snap            |
+  | Snapshot baselines            | tests/fixtures/__snapshots__/*.logstrip.snap            |
   | CI pipeline                   | .github/workflows/ci.yml                              |
   | Docs source                   | docs/, mkdocs.yml, requirements-docs.txt              |
   | CLI docs                      | docs/reference/cli.md                                 |

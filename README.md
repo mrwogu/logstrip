@@ -1,19 +1,19 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/banner-800.webp" alt="ContextBonsai compresses noisy raw logs into compact AI-ready diagnostic context" width="600">
+<img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/banner-800.webp" alt="LogStrip compresses noisy raw logs into compact AI-ready diagnostic context" width="600">
 
-# ContextBonsai
+# LogStrip
 
 **compress noisy logs before they poison your LLM context**
 
 _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub Action) that turns large server logs, build pipelines, vulnerability scanners, and container workloads into dense, sanitized failure context._
 
-[![CI](https://github.com/mrwogu/context-bonsai/actions/workflows/ci.yml/badge.svg)](https://github.com/mrwogu/context-bonsai/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/context-bonsai?color=white)](https://www.npmjs.com/package/context-bonsai)
-[![Coverage](https://codecov.io/gh/mrwogu/context-bonsai/branch/main/graph/badge.svg)](https://codecov.io/gh/mrwogu/context-bonsai)
+[![CI](https://github.com/mrwogu/logstrip/actions/workflows/ci.yml/badge.svg)](https://github.com/mrwogu/logstrip/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/logstrip?color=white)](https://www.npmjs.com/package/logstrip)
+[![Coverage](https://codecov.io/gh/mrwogu/logstrip/branch/main/graph/badge.svg)](https://codecov.io/gh/mrwogu/logstrip)
 [![License: MIT](https://img.shields.io/badge/license-MIT-white.svg)](https://opensource.org/licenses/MIT)
 
-![80%+ token savings](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/stat-savings.svg)![705+ ecosystems](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/stat-ecosystems.svg)![0 runtime deps](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/stat-deps.svg)![100% coverage](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/stat-coverage.svg)![38 fixtures](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/stat-fixtures.svg)![357+ tests](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/stat-tests.svg)
+![80%+ token savings](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-savings.svg)![705+ ecosystems](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-ecosystems.svg)![0 runtime deps](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-deps.svg)![100% coverage](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-coverage.svg)![38 fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-fixtures.svg)![357+ tests](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-tests.svg)
 
 [Install](#install) ·
 [Quick Start](#quick-start) ·
@@ -21,43 +21,43 @@ _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub
 [vs Alternatives](#vs-alternatives) ·
 [Agents](#works-with-every-agent) ·
 [How It Works](#how-it-works) ·
-[Custom Config](#custom-configuration-bonsaiyml) ·
+[Custom Config](#custom-configuration-logstripyml) ·
 [CLI](#cli) ·
 [Library](#library) ·
 [GitHub Action](#github-action) ·
-[Docs](https://mrwogu.github.io/context-bonsai/)
+[Docs](https://mrwogu.github.io/logstrip/)
 
 </div>
 
-You paste a 50k-line CI log into your agent. It chews 200k+ tokens on noise — health checks, framework internals, repeated stack frames, UUIDs — and still misses the one `[ERROR]` line that matters. ContextBonsai trims that to the diagnostic context an LLM actually needs. One command. Zero dependencies. Streaming — never loads the full log into memory.
+You paste a 50k-line CI log into your agent. It chews 200k+ tokens on noise — health checks, framework internals, repeated stack frames, UUIDs — and still misses the one `[ERROR]` line that matters. LogStrip trims that to the diagnostic context an LLM actually needs. One command. Zero dependencies. Streaming — never loads the full log into memory.
 
-**What changes:** Session 1 your build fails with a flaky test. You feed the log through `bonsai`. Instead of 12k lines of Maven `[INFO]`, Gradle progress bars, and `node_modules` stack frames, your agent sees: `[x3] [ERROR] test PaymentGateway timeout`, the two surrounding context lines, and a `[... hidden internal library frames ...]` marker. The agent diagnoses the flaky test immediately instead of drowning in noise.
+**What changes:** Session 1 your build fails with a flaky test. You feed the log through `logstrip`. Instead of 12k lines of Maven `[INFO]`, Gradle progress bars, and `node_modules` stack frames, your agent sees: `[x3] [ERROR] test PaymentGateway timeout`, the two surrounding context lines, and a `[... hidden internal library frames ...]` marker. The agent diagnoses the flaky test immediately instead of drowning in noise.
 
 ## Install <a id="install"></a>
 
 Requires Node.js 20 or newer.
 
 ```bash
-npm install --global context-bonsai
+npm install --global logstrip
 ```
 
 Or run without installing:
 
 ```bash
-npx -y context-bonsai raw.log -o clean.log
+npx -y logstrip raw.log -o clean.log
 ```
 
 ## Quick Start <a id="quick-start"></a>
 
 ```bash
 # File in, file out
-bonsai raw.log -o clean.log
+logstrip raw.log -o clean.log
 
 # Unix pipe (stdin → stdout)
-cat raw.log | bonsai > clean.log
+cat raw.log | logstrip > clean.log
 
 # File in, stats to stderr, compressed log to stdout
-bonsai raw.log --stats > clean.log
+logstrip raw.log --stats > clean.log
 ```
 
 ### 30-second demo
@@ -76,7 +76,7 @@ Bonsai output:
 
 ## Benchmarks <a id="benchmarks"></a>
 
-![Benchmarks](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-benchmarks.svg)
+![Benchmarks](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-benchmarks.svg)
 
 Compression ratios from the 38 fixture test suite across real-world log sources:
 
@@ -99,9 +99,9 @@ Production logs with millions of lines routinely hit **80%+** token savings beca
 
 ## vs Alternatives <a id="vs-alternatives"></a>
 
-![vs Alternatives](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-competitors.svg)
+![vs Alternatives](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-competitors.svg)
 
-| | **ContextBonsai** | `grep -v` / `awk` | LLM summarization | logreduce |
+| | **LogStrip** | `grep -v` / `awk` | LLM summarization | logreduce |
 |:---|:---|:---|:---|:---|
 | **Type** | Streaming log compressor | Line filter | API call + prompt | ML-based anomaly detector |
 | **Token savings** | **80%+** (typical CI logs) | 20–40% (fragile patterns) | 60–80% (expensive, lossy) | ~50% (anomaly-only) |
@@ -111,31 +111,31 @@ Production logs with millions of lines routinely hit **80%+** token savings beca
 | **Stacktrace collapse** | Internal `node_modules` → single marker | No | Often drops context | No |
 | **Runtime deps** | **0** (node:\* built-ins only) | 0 | Heavy (API + tokens) | Python + ML stack |
 | **LLM cost** | **$0** (pure computation) | $0 | $0.01–$1.00+ per log | $0 (compute only) |
-| **Extensible** | `.bonsai.yml` custom config | Shell scripts | Prompt engineering | Plugin system |
+| **Extensible** | `.logstrip.yml` custom config | Shell scripts | Prompt engineering | Plugin system |
 | **CI integration** | CLI + GitHub Action | Shell scripts | API wrapper | CLI |
 
 ## Works with every agent <a id="works-with-every-agent"></a>
 
-![Works with every agent](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-agents.svg)
+![Works with every agent](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-agents.svg)
 
-ContextBonsai ships agent plugin bundles so assistants compress logs before
-diagnosing them. The workflow is the same everywhere: run `bonsai`, analyze the
-`.bonsai.log`, then report token savings from `--stats`.
+LogStrip ships agent plugin bundles so assistants compress logs before
+diagnosing them. The workflow is the same everywhere: run `logstrip`, analyze the
+`.logstrip.log`, then report token savings from `--stats`.
 
 | | | | | | |
 |:---:|:---:|:---:|:---:|:---:|:---:|
-| [![Claude Code](https://avatars.githubusercontent.com/anthropics?s=80)](https://claude.ai/product/claude-code)<br>**Claude Code**<br>marketplace plugin | [![Codex](https://avatars.githubusercontent.com/openai?s=80)](https://github.com/openai/codex)<br>**Codex CLI**<br>skill + command | [![Factory Droid](https://avatars.githubusercontent.com/factory-ai?s=80)](https://factory.ai)<br>**Factory Droid**<br>marketplace plugin | [![Cursor](https://avatars.githubusercontent.com/cursor-ai?s=80)](https://cursor.com)<br>**Cursor**<br>rule + command | [![Copilot](https://avatars.githubusercontent.com/github?s=80)](https://github.com/features/copilot)<br>**GitHub Copilot**<br>skill + command | [![OpenCode](https://avatars.githubusercontent.com/opencode-ai?s=80)](https://github.com/opencode-ai/opencode)<br>**OpenCode**<br>skill + `/bonsai` |
+| [![Claude Code](https://avatars.githubusercontent.com/anthropics?s=80)](https://claude.ai/product/claude-code)<br>**Claude Code**<br>marketplace plugin | [![Codex](https://avatars.githubusercontent.com/openai?s=80)](https://github.com/openai/codex)<br>**Codex CLI**<br>skill + command | [![Factory Droid](https://avatars.githubusercontent.com/factory-ai?s=80)](https://factory.ai)<br>**Factory Droid**<br>marketplace plugin | [![Cursor](https://avatars.githubusercontent.com/cursor-ai?s=80)](https://cursor.com)<br>**Cursor**<br>rule + command | [![Copilot](https://avatars.githubusercontent.com/github?s=80)](https://github.com/features/copilot)<br>**GitHub Copilot**<br>skill + command | [![OpenCode](https://avatars.githubusercontent.com/opencode-ai?s=80)](https://github.com/opencode-ai/opencode)<br>**OpenCode**<br>skill + `/logstrip` |
 | [![Aider](https://avatars.githubusercontent.com/aider-ai?s=80)](https://github.com/Aider-AI/aider)<br>**Aider**<br>CLI pipe | [![Cline](https://avatars.githubusercontent.com/cline?s=80)](https://github.com/cline/cline)<br>**Cline**<br>CLI pipe | [![Gemini CLI](https://avatars.githubusercontent.com/google?s=80)](https://github.com/google-gemini/gemini-cli)<br>**Gemini CLI**<br>CLI pipe | [![Windsurf](https://avatars.githubusercontent.com/windsurf-ai?s=80)](https://windsurf.com)<br>**Windsurf**<br>CLI pipe | [![Roo Code](https://avatars.githubusercontent.com/roo-code?s=80)](https://github.com/RooCodeInc/Roo-Code)<br>**Roo Code**<br>CLI pipe | **Any agent**<br>CLI / `stdin` pipe |
 
 Works with **any** agent that can run a shell command or read a file. One binary, compressed output shared across all of them.
 
-See the [Agent Plugin Installation guide](https://mrwogu.github.io/context-bonsai/guides/plugins/) for per-agent setup.
+See the [Agent Plugin Installation guide](https://mrwogu.github.io/logstrip/guides/plugins/) for per-agent setup.
 
 ## How It Works <a id="how-it-works"></a>
 
-![How It Works](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-how.svg)
+![How It Works](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-how.svg)
 
-ContextBonsai detects **705+ log ecosystems** and applies several cuts to every streamed line:
+LogStrip detects **705+ log ecosystems** and applies several cuts to every streamed line:
 
 | Cut | What it does |
 |:---|:---|
@@ -163,20 +163,20 @@ becomes:
 [... hidden internal library frames ...]
 ```
 
-See the [full source catalogue](https://mrwogu.github.io/context-bonsai/reference/sources/) for all 705+ detected ecosystems.
+See the [full source catalogue](https://mrwogu.github.io/logstrip/reference/sources/) for all 705+ detected ecosystems.
 
-## Custom Configuration <a id="custom-configuration-bonsaiyml"></a>
+## Custom Configuration <a id="custom-configuration-logstripyml"></a>
 
-![Custom Configuration](https://raw.githubusercontent.com/mrwogu/context-bonsai/main/assets/tags/section-config.svg)
+![Custom Configuration](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-config.svg)
 
-Corporations and teams running internal tools can extend ContextBonsai
-without modifying source code. Create a `.bonsai.yml` file (or pass
+Corporations and teams running internal tools can extend LogStrip
+without modifying source code. Create a `.logstrip.yml` file (or pass
 `--config path/to/config.yml`) to define custom log sources, diagnostic
 patterns, ignore rules, sanitization rules, and internal stack patterns
 that merge with the built-in set at runtime.
 
 ```yaml
-# .bonsai.yml — Acme Corp CI extension
+# .logstrip.yml — Acme Corp CI extension
 sources:
   - name: acme-ci
     markers: [acme-ci-runner, "[ACME-CI]"]
@@ -202,7 +202,7 @@ internalStackPatterns:
 **How it works:**
 
 1. **Auto-detection** — When `--config` is not provided, the CLI looks
-   for `.bonsai.yml` in the current working directory.
+   for `.logstrip.yml` in the current working directory.
 2. **Merging** — Custom sources with a name that already exists in the
    built-in set (e.g. `docker`) have their markers **merged**. New
    names are appended.
@@ -212,26 +212,26 @@ internalStackPatterns:
    +50 to the relevance score. Custom internal-stack patterns are
    checked alongside built-in ones.
 4. **Zero new runtime dependencies** — The YAML subset parser is
-   built into `bonsai-config.ts` and handles mappings, sequences,
+   built into `logstrip-config.ts` and handles mappings, sequences,
    inline arrays, quoted and unquoted strings, and comments. It does
    not require `js-yaml` or any external package.
 
 Then simply run:
 
 ```bash
-bonsai ci-output.log -o clean.log            # .bonsai.yml auto-detected
-bonsai ci-output.log -o clean.log --config /etc/bonsai/acme.yml  # explicit
+logstrip ci-output.log -o clean.log            # .logstrip.yml auto-detected
+logstrip ci-output.log -o clean.log --config /etc/logstrip/acme.yml  # explicit
 ```
 
-Full config reference: [CLI docs — Custom configuration](https://mrwogu.github.io/context-bonsai/reference/cli/#custom-configuration-bonsaiyml)
+Full config reference: [CLI docs — Custom configuration](https://mrwogu.github.io/logstrip/reference/cli/#custom-configuration-logstripyml)
 
 ## CLI <a id="cli"></a>
 
-ContextBonsai is primarily a CLI tool. Both `bonsai` and `context-bonsai` are
+LogStrip is primarily a CLI tool. Both `logstrip` and `logstrip` are
 registered as bins, so you can call whichever feels natural.
 
 ```text
-Usage: bonsai [INPUT] [options]
+Usage: logstrip [INPUT] [options]
 
 Arguments:
   INPUT                    Path to the raw log. When omitted, reads from stdin.
@@ -239,9 +239,9 @@ Arguments:
 Options:
   -o, --output <path>      Write the compressed log to <path>. Defaults to stdout.
   -a, --aggressiveness <l> Compression preset: low | medium | high | aggressive (default: high).
-      --config <path>      Path to .bonsai.yml config file. Auto-detects from cwd.
+      --config <path>      Path to .logstrip.yml config file. Auto-detects from cwd.
   -s, --stats              Print compression statistics to stderr.
-  -j, --json               Print BonsaiResult as JSON to stdout. Requires --output.
+  -j, --json               Print LogStripResult as JSON to stdout. Requires --output.
   -h, --help               Show help text and exit.
   -v, --version            Print the CLI version and exit.
 ```
@@ -250,26 +250,26 @@ Options:
 
 ```bash
 # 1. File in, file out
-bonsai raw.log -o clean.log
+logstrip raw.log -o clean.log
 
 # 2. Pipe stdin to stdout (Unix-style)
-cat raw.log | bonsai > clean.log
+cat raw.log | logstrip > clean.log
 
 # 3. File in, stats to stderr while content streams to stdout
-bonsai raw.log --stats > clean.log
+logstrip raw.log --stats > clean.log
 
 # 4. Programmatic report - compressed log to file, JSON report to stdout
-bonsai raw.log -o clean.log --json
+logstrip raw.log -o clean.log --json
 
 # 5. Custom config for internal tools
-bonsai raw.log -o clean.log --config .bonsai.yml
+logstrip raw.log -o clean.log --config .logstrip.yml
 ```
 
 PowerShell equivalents:
 
 ```powershell
-Get-Content raw.log | bonsai > clean.log
-bonsai raw.log --stats -o clean.log; Get-Content clean.log -Tail 20
+Get-Content raw.log | logstrip > clean.log
+logstrip raw.log --stats -o clean.log; Get-Content clean.log -Tail 20
 ```
 
 ### Exit codes
@@ -286,9 +286,9 @@ The compiled package also ships the TypeScript core for embedding directly in
 your own Node tooling.
 
 ```ts
-import { processLogFile, type BonsaiResult } from 'context-bonsai';
+import { processLogFile, type LogStripResult } from 'logstrip';
 
-const result: BonsaiResult = await processLogFile('raw.log', 'clean.log', {
+const result: LogStripResult = await processLogFile('raw.log', 'clean.log', {
   aggressiveness: 'high',
 });
 
@@ -306,31 +306,31 @@ It is useful when you want a single step in CI and a tidy Step Summary, but the
 CLI is the primary distribution channel.
 
 ```yaml
-- name: Compress logs with ContextBonsai
-  uses: mrwogu/context-bonsai@v1
-  id: bonsai
+- name: Compress logs with LogStrip
+  uses: mrwogu/logstrip@v1
+  id: logstrip
   with:
     log-path: raw_logs.txt
     aggressiveness: high
 
 - name: Send compact logs to your AI agent
-  run: your-agent analyze --file "${{ steps.bonsai.outputs.output-path }}"
+  run: your-agent analyze --file "${{ steps.logstrip.outputs.output-path }}"
 ```
 
-See the [GitHub Action reference](https://mrwogu.github.io/context-bonsai/reference/action/)
+See the [GitHub Action reference](https://mrwogu.github.io/logstrip/reference/action/)
 for inputs, outputs, and the Step Summary contract.
 
 ## Documentation
 
 | Resource | Description |
 |:---|:---|
-| [Getting Started](https://mrwogu.github.io/context-bonsai/getting-started/) | Install the CLI and trim your first log. |
-| [CLI Reference](https://mrwogu.github.io/context-bonsai/reference/cli/) | Flags, exit codes, recipes, and `--config` docs. |
-| [Core API](https://mrwogu.github.io/context-bonsai/reference/core/) | TypeScript parser API for library use. |
-| [GitHub Action](https://mrwogu.github.io/context-bonsai/reference/action/) | Optional CI wrapper around the CLI core. |
-| [Agent Plugins](https://mrwogu.github.io/context-bonsai/guides/plugins/) | Claude Code, Droid, Copilot, Cursor, Codex, and OpenCode bundles. |
-| [Source Catalogue](https://mrwogu.github.io/context-bonsai/reference/sources/) | All 705+ detected log ecosystem signatures. |
-| [Security](https://mrwogu.github.io/context-bonsai/guides/security/) | Sanitization and safe log handling notes. |
+| [Getting Started](https://mrwogu.github.io/logstrip/getting-started/) | Install the CLI and trim your first log. |
+| [CLI Reference](https://mrwogu.github.io/logstrip/reference/cli/) | Flags, exit codes, recipes, and `--config` docs. |
+| [Core API](https://mrwogu.github.io/logstrip/reference/core/) | TypeScript parser API for library use. |
+| [GitHub Action](https://mrwogu.github.io/logstrip/reference/action/) | Optional CI wrapper around the CLI core. |
+| [Agent Plugins](https://mrwogu.github.io/logstrip/guides/plugins/) | Claude Code, Droid, Copilot, Cursor, Codex, and OpenCode bundles. |
+| [Source Catalogue](https://mrwogu.github.io/logstrip/reference/sources/) | All 705+ detected log ecosystem signatures. |
+| [Security](https://mrwogu.github.io/logstrip/guides/security/) | Sanitization and safe log handling notes. |
 
 ## Local Development
 

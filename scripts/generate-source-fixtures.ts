@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import {
   LOG_SOURCE_SIGNATURES,
   type Aggressiveness,
-} from '../src/core/bonsai-parser';
+} from '../src/core/logstrip-parser';
 
 const FIXTURES_DIR = join(
   import.meta.dirname ?? __dirname,

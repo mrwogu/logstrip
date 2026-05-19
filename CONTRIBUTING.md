@@ -1,4 +1,4 @@
-# Contributing to ContextBonsai
+# Contributing to LogStrip
 
 Thank you for your interest in contributing! This guide covers the rules you must follow when adding features, fixing bugs, or extending source detection.
 
@@ -17,11 +17,11 @@ All three must pass before you open a PR.
 
 ## Adding a New Log Source
 
-ContextBonsai automatically detects the origin of log lines using marker strings. When you add support for a new tool, framework, or service, you must update **three places** and follow the fixture contract below.
+LogStrip automatically detects the origin of log lines using marker strings. When you add support for a new tool, framework, or service, you must update **three places** and follow the fixture contract below.
 
 ### 1. Add the signature to `LOG_SOURCE_SIGNATURES`
 
-In `src/core/bonsai-parser.ts`, add a new entry to the `LOG_SOURCE_SIGNATURES` array:
+In `src/core/logstrip-parser.ts`, add a new entry to the `LOG_SOURCE_SIGNATURES` array:
 
 ```ts
 ['my-tool', ['my-tool', 'my tool error', 'mytool-cli']],
@@ -81,7 +81,7 @@ The test suite includes an **enforcement test** (`'requires a per-source fixture
 
 ### 3. Add detection unit tests
 
-In `tests/bonsai-parser.test.ts`, add a test verifying that `detectLogSources` correctly identifies your new source from a realistic log line:
+In `tests/logstrip-parser.test.ts`, add a test verifying that `detectLogSources` correctly identifies your new source from a realistic log line:
 
 ```ts
 it('detects my-tool sources', () => {

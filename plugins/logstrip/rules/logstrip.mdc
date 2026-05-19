@@ -1,0 +1,18 @@
+---
+description: Compress noisy logs with LogStrip before investigating failures.
+globs: **/*.log,**/*.out,**/*.txt
+alwaysApply: false
+---
+
+# LogStrip log compression
+
+Use this rule when the user asks Cursor to inspect CI, build, test, runtime, scanner, or deployment logs.
+
+1. Identify the raw log path and output path. Use `<input>.logstrip.log` if the user does not provide one.
+2. Check whether `logstrip` or `logstrip` is installed.
+3. If missing, tell the user to install it with `npm i -g logstrip`; do not install automatically.
+4. Run `logstrip <input> -o <output> --stats`, adding `--aggressiveness <level>` only when requested.
+5. Read the compressed output before diagnosing the failure.
+6. Report the LogStrip efficiency stats: token savings, dropped lines, duplicate lines, and hidden internal stack lines.
+
+Never paste full raw logs back into the conversation.

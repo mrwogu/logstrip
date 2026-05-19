@@ -1,4 +1,4 @@
-# ContextBonsai slash commands
+# LogStrip slash commands
 
 @shortcuts {
   "/review": {
@@ -7,7 +7,7 @@
   }
   "/test": {
     prompt: true
-    description: "Add or update vitest tests so coverage stays at 100%. Place unit cases in tests/bonsai-parser.test.ts, tests/cli.test.ts, or tests/action.test.ts; place end-to-end checks in tests/smoke.test.ts."
+    description: "Add or update vitest tests so coverage stays at 100%. Place unit cases in tests/logstrip-parser.test.ts, tests/cli.test.ts, or tests/action.test.ts; place end-to-end checks in tests/smoke.test.ts."
   }
   "/cli": {
     prompt: true
@@ -15,7 +15,7 @@
   }
   "/fixture": {
     prompt: true
-    description: "Create a new realistic CI log in tests/fixtures/<name>.log, profile its parser output, and add a smoke case (case object + snapshot) in tests/smoke.test.ts. Snapshot file is tests/fixtures/__snapshots__/<name>.bonsai.snap."
+    description: "Create a new realistic CI log in tests/fixtures/<name>.log, profile its parser output, and add a smoke case (case object + snapshot) in tests/smoke.test.ts. Snapshot file is tests/fixtures/__snapshots__/<name>.logstrip.snap."
   }
   "/verify": {
     prompt: true
@@ -23,11 +23,11 @@
   }
   "/compress": {
     prompt: true
-    description: "Use the CLI (bonsai or node dist/cli/index.js) to compress a log path the user provides and summarise the resulting BonsaiResult (input/output tokens, savings %, droppedLines, duplicateLines, hiddenInternalStackLines)."
+    description: "Use the CLI (logstrip or node dist/cli/index.js) to compress a log path the user provides and summarise the resulting LogStripResult (input/output tokens, savings %, droppedLines, duplicateLines, hiddenInternalStackLines)."
   }
   "/parser": {
     prompt: true
-    description: "Walk through src/core/bonsai-parser.ts: regex tables, shouldKeepLine flow, processLogStream loop, sanitizeLine, internal-stack collapsing, deduplication. Reference line numbers."
+    description: "Walk through src/core/logstrip-parser.ts: regex tables, shouldKeepLine flow, processLogStream loop, sanitizeLine, internal-stack collapsing, deduplication. Reference line numbers."
   }
   "/limits": {
     prompt: true

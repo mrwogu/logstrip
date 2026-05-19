@@ -84,7 +84,7 @@ jobs:
         if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
         uses: actions/upload-artifact@v4
         with:
-          name: context-bonsai-action
+          name: logstrip-action
           path: |
             action.yml
             package.json
@@ -110,7 +110,7 @@ jobs:
       - name: Download action artifact
         uses: actions/download-artifact@v4
         with:
-          name: context-bonsai-action
+          name: logstrip-action
           path: action-package
 
       - name: Smoke test parser artifact
@@ -122,4 +122,4 @@ jobs:
           log-path: raw.log
 
       - name: Verify action output
-        run: node scripts/ci-assert-smoke-output.js raw.bonsai.log
+        run: node scripts/ci-assert-smoke-output.js raw.logstrip.log

@@ -1,14 +1,14 @@
 {
-  "name": "context-bonsai",
-  "description": "ContextBonsai plugin marketplace for Droid.",
+  "name": "logstrip",
+  "description": "LogStrip plugin marketplace for Droid.",
   "owner": {
     "name": "mrwogu"
   },
   "plugins": [
     {
-      "name": "context-bonsai",
-      "description": "Slash command, skill, and helper droids for compressing noisy CI and build logs with ContextBonsai.",
-      "source": "./plugins/context-bonsai",
+      "name": "logstrip",
+      "description": "Slash command, skill, and helper droids for compressing noisy CI and build logs with LogStrip.",
+      "source": "./plugins/logstrip",
       "category": "developer-tools"
     }
   ]

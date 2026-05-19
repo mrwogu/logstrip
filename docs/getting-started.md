@@ -1,24 +1,24 @@
 # Getting Started
 
-ContextBonsai is primarily distributed as an npm CLI. This page covers the
+LogStrip is primarily distributed as an npm CLI. This page covers the
 fastest path from "I have a noisy log" to "I have a compact, LLM-ready
 artifact".
 
 ## 1. Install the CLI
 
-ContextBonsai requires Node.js 20 or newer.
+LogStrip requires Node.js 20 or newer.
 
 ```bash
-npm install --global context-bonsai
+npm install --global logstrip
 ```
 
-The package registers two binaries: `bonsai` (short) and `context-bonsai`
-(verbose, useful when something else owns the `bonsai` name).
+The package registers two binaries: `logstrip` (short) and `logstrip`
+(verbose, useful when something else owns the `logstrip` name).
 
 Don't want a global install? Use `npx`:
 
 ```bash
-npx -y context-bonsai raw.log -o clean.log
+npx -y logstrip raw.log -o clean.log
 ```
 
 ## 2. Trim your first log
@@ -27,20 +27,20 @@ Three equally valid ways to feed the parser:
 
 ```bash
 # File in, file out
-bonsai raw.log -o clean.log
+logstrip raw.log -o clean.log
 
 # Unix pipe
-cat raw.log | bonsai > clean.log
+cat raw.log | logstrip > clean.log
 
 # File in, compressed log to stdout, stats to stderr
-bonsai raw.log --stats > clean.log
+logstrip raw.log --stats > clean.log
 ```
 
 PowerShell:
 
 ```powershell
-Get-Content raw.log | bonsai > clean.log
-bonsai raw.log --stats > clean.log
+Get-Content raw.log | logstrip > clean.log
+logstrip raw.log --stats > clean.log
 ```
 
 The default aggressiveness is `high`. Override with `-a low|medium|high|aggressive`.
@@ -52,7 +52,7 @@ The default aggressiveness is `high`. Override with `-a low|medium|high|aggressi
 set -euo pipefail
 
 npm test > raw.log 2>&1 || true   # keep the log even on failure
-bonsai raw.log -o clean.log --stats
+logstrip raw.log -o clean.log --stats
 your-ai-agent analyze --file clean.log
 ```
 
@@ -61,7 +61,7 @@ your-ai-agent analyze --file clean.log
 When `--stats` is set the CLI prints a compact report to `stderr`:
 
 ```text
-ContextBonsai compression report
+LogStrip compression report
   input lines     : 4128
   output lines    : 312
   dropped lines   : 3640
@@ -77,7 +77,7 @@ ContextBonsai compression report
 Need the same report machine-readable? Use `--json` (requires `--output`):
 
 ```bash
-bonsai raw.log -o clean.log --json
+logstrip raw.log -o clean.log --json
 ```
 
 ## 5. (Optional) Use it in GitHub Actions
@@ -90,15 +90,15 @@ the full contract.
 - name: Run tests and keep raw logs
   run: npm test > raw_logs.txt 2>&1 || true
 
-- name: Compress logs with ContextBonsai
-  uses: mrwogu/context-bonsai@v1
-  id: bonsai
+- name: Compress logs with LogStrip
+  uses: mrwogu/logstrip@v1
+  id: logstrip
   with:
     log-path: raw_logs.txt
     aggressiveness: high
 
 - name: Analyze compact logs
-  run: your-ai-agent analyze --file "${{ steps.bonsai.outputs.output-path }}"
+  run: your-ai-agent analyze --file "${{ steps.logstrip.outputs.output-path }}"
 ```
 
 ## Verify locally

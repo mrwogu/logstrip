@@ -1,22 +1,22 @@
 {
-  "name": "context-bonsai",
+  "name": "logstrip",
   "version": "1.0.0",
   "description": "Stream-based CLI that trims noisy server logs, build pipelines, vulnerability scanners, and container workloads down to the diagnostic context LLM agents actually need.",
   "private": false,
   "license": "MIT",
   "author": "mrwogu",
   "type": "commonjs",
-  "main": "dist/core/bonsai-parser.js",
-  "types": "dist/core/bonsai-parser.d.ts",
+  "main": "dist/core/logstrip-parser.js",
+  "types": "dist/core/logstrip-parser.d.ts",
   "bin": {
-    "bonsai": "dist/cli/index.js",
-    "context-bonsai": "dist/cli/index.js"
+    "logstrip": "dist/cli/index.js",
+    "logstrip": "dist/cli/index.js"
   },
   "exports": {
     ".": {
-      "types": "./dist/core/bonsai-parser.d.ts",
-      "require": "./dist/core/bonsai-parser.js",
-      "default": "./dist/core/bonsai-parser.js"
+      "types": "./dist/core/logstrip-parser.d.ts",
+      "require": "./dist/core/logstrip-parser.js",
+      "default": "./dist/core/logstrip-parser.js"
     },
     "./cli": {
       "types": "./dist/cli/index.d.ts",
@@ -50,12 +50,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mrwogu/context-bonsai.git"
+    "url": "git+https://github.com/mrwogu/logstrip.git"
   },
   "bugs": {
-    "url": "https://github.com/mrwogu/context-bonsai/issues"
+    "url": "https://github.com/mrwogu/logstrip/issues"
   },
-  "homepage": "https://mrwogu.github.io/context-bonsai/",
+  "homepage": "https://mrwogu.github.io/logstrip/",
   "engines": {
     "node": ">=20"
   },

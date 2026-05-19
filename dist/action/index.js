@@ -25519,17 +25519,17 @@ module.exports = __toCommonJS(index_exports);
 var core = __toESM(require_core());
 var import_node_path3 = __toESM(require("node:path"));
 
-// src/core/bonsai-parser.ts
+// src/core/logstrip-parser.ts
 var import_node_events = require("node:events");
 var import_node_fs2 = require("node:fs");
 var import_node_path2 = __toESM(require("node:path"));
 var import_node_readline = require("node:readline");
 var import_promises = require("node:stream/promises");
 
-// src/core/bonsai-config.ts
+// src/core/logstrip-config.ts
 var import_node_fs = require("node:fs");
 var import_node_path = __toESM(require("node:path"));
-var CONFIG_FILENAME = ".bonsai.yml";
+var CONFIG_FILENAME = ".logstrip.yml";
 var EMPTY_CONFIG = {
   sources: [],
   diagnosticPatterns: [],
@@ -25541,7 +25541,7 @@ function parseBonsaiConfig(content) {
   const parsed = parseMinimalYaml(content);
   return normalizeConfig(parsed);
 }
-function loadBonsaiConfig(explicitPath, startDir) {
+function loadLogStripConfig(explicitPath, startDir) {
   const configPath = resolveConfigPath(explicitPath, startDir);
   if (configPath === void 0) return EMPTY_CONFIG;
   const content = (0, import_node_fs.readFileSync)(configPath, "utf8");
@@ -25583,11 +25583,15 @@ function normalizeSanitizeRules(raw) {
   if (!Array.isArray(raw)) return [];
   return raw.filter(
     (entry) => typeof entry === "object" && entry !== null
-  ).map((entry) => ({
-    pattern: String(entry.pattern ?? ""),
-    replacement: String(entry.replacement ?? ""),
-    flags: entry.flags !== void 0 ? String(entry.flags) : void 0
-  })).filter((entry) => entry.pattern !== "");
+  ).map((entry) => {
+    const flagsRaw = entry.flags;
+    const flags = flagsRaw !== void 0 ? String(flagsRaw) : void 0;
+    return {
+      pattern: String(entry.pattern ?? ""),
+      replacement: String(entry.replacement ?? ""),
+      flags
+    };
+  }).filter((entry) => entry.pattern !== "");
 }
 function parseMinimalYaml(content) {
   const result = {};
@@ -25601,6 +25605,9 @@ function parseMinimalYaml(content) {
   let subArray = null;
   const flushTop = () => {
     if (topKey === "") return;
+    if (subArrayKey !== "" && subArray !== null && currentObj !== null) {
+      currentObj[subArrayKey] = subArray;
+    }
     if (objList !== null) {
       result[topKey] = objList;
     } else if (scalarList !== null) {
@@ -25657,8 +25664,10 @@ function parseMinimalYaml(content) {
     }
     const propMatch = line.match(/^(\s{4,})([\w-]+):\s*(.*)$/u);
     if (propMatch && currentObj !== null) {
-      if (subArrayKey !== "" && subArray !== null) {
-        currentObj[subArrayKey] = subArray;
+      if (subArrayKey !== "") {
+        if (subArray !== null) {
+          currentObj[subArrayKey] = subArray;
+        }
       }
       const propKey = propMatch[2];
       const propVal = propMatch[3].trim();
@@ -25730,7 +25739,7 @@ function splitInlineArray(inner) {
   return result;
 }
 
-// src/core/bonsai-parser.ts
+// src/core/logstrip-parser.ts
 var INTERNAL_STACK_MARKER = "[... hidden internal library frames ...]";
 var AGGRESSIVENESS_LEVELS = [
   "low",
@@ -26691,7 +26700,7 @@ function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
   return score;
 }
 function buildMergedConfig(options = {}) {
-  const config = loadBonsaiConfig(options.configPath);
+  const config = loadLogStripConfig(options.configPath);
   const mergedSources = [
     ...LOG_SOURCE_SIGNATURES
   ];
@@ -26910,7 +26919,7 @@ function buildOutputPath(inputPath) {
   const absoluteInputPath = import_node_path3.default.resolve(inputPath);
   const extension = import_node_path3.default.extname(absoluteInputPath);
   const basename = import_node_path3.default.basename(absoluteInputPath, extension);
-  const outputName = `${basename}.bonsai${extension || ".log"}`;
+  const outputName = `${basename}.logstrip${extension || ".log"}`;
   return import_node_path3.default.join(import_node_path3.default.dirname(absoluteInputPath), outputName);
 }
 async function getRepositorySlug() {
@@ -26920,7 +26929,7 @@ async function getRepositorySlug() {
 async function writeSummary(result, repository) {
   const savings = `${result.savingsPercent.toFixed(2)}%`;
   const repo = repository ?? await getRepositorySlug();
-  await core.summary.addHeading("ContextBonsai Report", 2).addTable([
+  await core.summary.addHeading("LogStrip Report", 2).addTable([
     [
       { data: "Metric", header: true },
       { data: "Value", header: true }

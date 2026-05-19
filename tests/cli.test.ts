@@ -54,7 +54,7 @@ function makeIo(
 let workDir: string;
 
 beforeAll(async () => {
-  workDir = await mkdtemp(join(tmpdir(), 'context-bonsai-cli-'));
+  workDir = await mkdtemp(join(tmpdir(), 'logstrip-cli-'));
 });
 
 afterAll(async () => {
@@ -76,10 +76,10 @@ describe('parseCliOptions', () => {
   });
 
   it('parses --config flag', () => {
-    const opts = parseCliOptions(['raw.log', '--config', '.bonsai.yml']);
+    const opts = parseCliOptions(['raw.log', '--config', '.logstrip.yml']);
 
     expect(opts.input).toBe('raw.log');
-    expect(opts.config).toBe('.bonsai.yml');
+    expect(opts.config).toBe('.logstrip.yml');
   });
 
   it('parses every short flag', () => {
@@ -350,7 +350,7 @@ describe('runCli', () => {
     const code = await runCli([inputPath, '-o', outputPath, '--stats'], io);
 
     expect(code).toBe(0);
-    expect(stderr.value()).toContain('ContextBonsai compression report');
+    expect(stderr.value()).toContain('LogStrip compression report');
     expect(stderr.value()).toContain('savings');
   });
 
@@ -389,7 +389,7 @@ describe('runCli', () => {
     const code = await runCli(['--unknown'], io);
 
     expect(code).toBe(2);
-    expect(stderr.value()).toContain('bonsai:');
+    expect(stderr.value()).toContain('logstrip:');
   });
 
   it('reports unsupported aggressiveness as exit 2', async () => {
@@ -410,7 +410,7 @@ describe('runCli', () => {
     );
 
     expect(code).toBe(1);
-    expect(stderr.value()).toContain('bonsai:');
+    expect(stderr.value()).toContain('logstrip:');
   });
 
   it('reports stdin/stdout pipeline errors as exit 1', async () => {

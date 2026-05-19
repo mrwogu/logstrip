@@ -36,14 +36,14 @@ function assertLine(value, line, label) {
 
 writeFileSync('raw.log', rawLog);
 
-run(['raw.log', '-o', 'bonsai.log', '--stats']);
-assertLine(readFileSync('bonsai.log', 'utf8'), expected, 'file output');
+run(['raw.log', '-o', 'logstrip.log', '--stats']);
+assertLine(readFileSync('logstrip.log', 'utf8'), expected, 'file output');
 
 const stdinRun = run([], { input: rawLog });
-writeFileSync('bonsai-stdin.log', stdinRun.stdout);
+writeFileSync('logstrip-stdin.log', stdinRun.stdout);
 assertLine(stdinRun.stdout, expected, 'stdin output');
 
-const jsonRun = run(['raw.log', '-o', 'bonsai.log', '--json']);
+const jsonRun = run(['raw.log', '-o', 'logstrip.log', '--json']);
 const report = JSON.parse(jsonRun.stdout);
 if (typeof report.savingsPercent !== 'number') {
   console.error('json missing savingsPercent');

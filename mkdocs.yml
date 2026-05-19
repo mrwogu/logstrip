@@ -1,8 +1,8 @@
-site_name: ContextBonsai
-site_url: https://mrwogu.github.io/context-bonsai/
+site_name: LogStrip
+site_url: https://mrwogu.github.io/logstrip/
 site_description: Stream-first CLI that compresses noisy logs into high-signal AI context with automatic source detection across 700+ log ecosystems.
 site_author: mrwogu
-repo_url: https://github.com/mrwogu/context-bonsai
+repo_url: https://github.com/mrwogu/logstrip
 
 copyright: Copyright &copy; 2026 mrwogu
 
@@ -94,18 +94,18 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/mrwogu/context-bonsai
+      link: https://github.com/mrwogu/logstrip
     - icon: fontawesome/brands/npm
-      link: https://www.npmjs.com/package/context-bonsai
+      link: https://www.npmjs.com/package/logstrip
 
 extra_css:
   - assets/stylesheets/extra.css
 
 extra_javascript:
-  - assets/js/bonsai.js
+  - assets/js/logstrip.js
 
 nav:
-  - ContextBonsai: index.md
+  - LogStrip: index.md
   - Getting Started: getting-started.md
   - Supported Sources: reference/sources.md
   - Reference:

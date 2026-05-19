@@ -4,7 +4,7 @@
 
 ## project
 
-You are a senior TypeScript engineer working on **ContextBonsai**, a
+You are a senior TypeScript engineer working on **LogStrip**, a
 zero-dependency Node.js CLI published on npm that trims noisy CI / build
 logs down to the diagnostic context an LLM actually needs. A TypeScript
 library (same package) and a GitHub Action wrapper ship alongside as
@@ -34,26 +34,26 @@ parser, tests, fixtures and CI workflow before proposing code.
 
 ### naming
 
-- Files: kebab-case.ts (bonsai-parser.ts, cli/index.ts, action/index.ts)
+- Files: kebab-case.ts (logstrip-parser.ts, cli/index.ts, action/index.ts)
 - Types and constants: PascalCase / SCREAMING_SNAKE_CASE for regex tables
 - Functions and locals: camelCase
 - Exported regex patterns end in _PATTERN, exported strings end in _MARKER
 
 ### cli
 
-- CLI bins are spelled bonsai (short) and context-bonsai (verbose) - keep both registered
+- CLI bins are spelled logstrip (short) and logstrip (verbose) - keep both registered
 - src/cli/index.ts is the canonical user-facing entry - all UX changes start here
 - Argument parsing uses node:util.parseArgs with allowPositionals + strict, no commander/yargs
 - First positional is the input path; omit to read stdin. -o/--output defaults to stdout
 - Stats (--stats) always go to stderr; JSON (--json) always to stdout and requires --output
 - Exit codes: 0 success, 1 runtime failure, 2 usage error (bad flag, bad aggressiveness, missing input with TTY stdin)
 - Export runCli(argv, io) and parseCliOptions(argv) so tests can drive the CLI with mocked streams
-- Wrap every parser/lib error thrown inside runCli into a friendly bonsai: <message> line on stderr - never leak stack traces
+- Wrap every parser/lib error thrown inside runCli into a friendly logstrip: <message> line on stderr - never leak stack traces
 
 ### parser
 
 - Keep the parser pure and streaming - never buffer the whole log in memory
-- All regex tables live near the top of bonsai-parser.ts as named constants
+- All regex tables live near the top of logstrip-parser.ts as named constants
 - Stats are mutated through a single accumulator object passed by reference
 - Sanitization runs before deduplication so identical events collapse correctly
 - processLogStream is the lower-level entry the CLI uses for stdin/stdout; processLogFile composes it for path-to-path use
@@ -62,7 +62,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 
 - src/action/index.ts is a thin wrapper - delegate to processLogFile + render a Step Summary, nothing else
 - Read inputs via @actions/core.getInput; never read process.env directly
-- Resolve relative outputs through buildOutputPath so default suffix is .bonsai.log
+- Resolve relative outputs through buildOutputPath so default suffix is .logstrip.log
 - @actions/github is imported dynamically to avoid CJS/ESM conflicts in tests
 - Failures must call core.setFailed - never throw out of run()
 
@@ -70,15 +70,15 @@ parser, tests, fixtures and CI workflow before proposing code.
 
 - tsc -p tsconfig.build.json emits to dist/{cli,core,action}
 - scripts/post-build.js stamps the shebang and chmods dist/cli/index.js to 0755 - do not skip it
-- package.json bin map points both bonsai and context-bonsai to dist/cli/index.js
+- package.json bin map points both logstrip and logstrip to dist/cli/index.js
 - files: must include dist/cli alongside dist/core, dist/action, action.yml
 
 ### testing
 
 - Runner: vitest run --coverage (Node v8 provider)
-- Unit tests next to source: tests/bonsai-parser.test.ts, tests/cli.test.ts, tests/action.test.ts
+- Unit tests next to source: tests/logstrip-parser.test.ts, tests/cli.test.ts, tests/action.test.ts
 - E2E smoke tests in tests/smoke.test.ts operate on real fixtures
-- Fixtures in tests/fixtures/\*.log; snapshots in tests/fixtures/\_\_snapshots\_\_/\*.bonsai.snap
+- Fixtures in tests/fixtures/\*.log; snapshots in tests/fixtures/\_\_snapshots\_\_/\*.logstrip.snap
 - Coverage thresholds are 100/100/100/100 (vitest.config.ts) - do not lower them
 - When adding a new fixture, profile it first to set realistic minSavingsPercent and mustContain/mustNotContain assertions
 - Snapshots are committed - regenerate intentionally with vitest -u and review the diff
@@ -121,7 +121,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 - Don't embed indented heredocs in .github/workflows/\*.yml - leading whitespace breaks literal grep assertions
 - Don't publish v1 with breaking changes to the CLI flag set or action.yml schema; bump major version explicitly
 - Don't break the CLI Unix contract: missing INPUT means read stdin, missing --output means write stdout, stats always go to stderr
-- Don't let a parser error escape as a raw stack trace from the CLI - convert to a bonsai: <message> stderr line with a numeric exit code
+- Don't let a parser error escape as a raw stack trace from the CLI - convert to a logstrip: <message> stderr line with a numeric exit code
 - Don't weaken regex strictness without adding a fixture-based smoke test that documents the new behavior
 
 ## Build & test commands
@@ -145,20 +145,20 @@ Dependency overrides in package.json keep `@actions/http-client@^3.0.2` and
 
 ```bash
     # File in, file out (stats reserved for stderr if --stats)
-    bonsai raw.log -o clean.log
+    logstrip raw.log -o clean.log
 
     # Unix pipe (stdin -> stdout)
-    cat raw.log | bonsai > clean.log
+    cat raw.log | logstrip > clean.log
 
     # File in, content to stdout, stats to stderr
-    bonsai raw.log --stats > clean.log
+    logstrip raw.log --stats > clean.log
 
-    # Machine-readable report (BonsaiResult JSON on stdout, compressed log to file)
-    bonsai raw.log -o clean.log --json
+    # Machine-readable report (LogStripResult JSON on stdout, compressed log to file)
+    logstrip raw.log -o clean.log --json
 
     # Help / version
-    bonsai --help
-    bonsai --version
+    logstrip --help
+    logstrip --version
 ```
 
 Exit codes: 0 success, 1 runtime failure, 2 usage error.
@@ -172,9 +172,9 @@ Exit codes: 0 success, 1 runtime failure, 2 usage error.
       '[ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed' \\
       > raw.log
 
-    node dist/cli/index.js raw.log > bonsai.log
+    node dist/cli/index.js raw.log > logstrip.log
 
-    grep -q '^\\[x2\\] \\[ERROR\\] request \\[ID\\] failed$' bonsai.log
+    grep -q '^\\[x2\\] \\[ERROR\\] request \\[ID\\] failed$' logstrip.log
 ```
 
 The literal anchored match is intentional - it catches regressions in
@@ -211,19 +211,19 @@ Exported from `src/cli/index.ts` (used by tests and embedders, do not break):
 
     export function parseCliOptions(argv: readonly string[]): CliOptions;
     export function runCli(argv: readonly string[], io: CliIo): Promise<number>;
-    export function formatStats(result: BonsaiResult): string;
+    export function formatStats(result: LogStripResult): string;
 ```
 
 ## Public library surface
 
-Exported from `src/core/bonsai-parser.ts` (package main):
+Exported from `src/core/logstrip-parser.ts` (package main):
 
 ```ts
     type Aggressiveness = 'low' | 'medium' | 'high' | 'aggressive';
 
-    interface BonsaiOptions { aggressiveness?: Aggressiveness }
+    interface LogStripOptions { aggressiveness?: Aggressiveness }
 
-    interface BonsaiStats {
+    interface LogStripStats {
       droppedLines: number;
       duplicateLines: number;
       hiddenInternalStackLines: number;
@@ -235,17 +235,17 @@ Exported from `src/core/bonsai-parser.ts` (package main):
       outputWords: number;
     }
 
-    interface BonsaiResult {
+    interface LogStripResult {
       inputTokens: number;
       outputTokens: number;
       savedTokens: number;
       savingsPercent: number;
       outputPath?: string;
-      stats: BonsaiStats;
+      stats: LogStripStats;
     }
 
-    function processLogFile(input: string, output: string, options?: BonsaiOptions): Promise<BonsaiResult>;
-    function processLogStream(input: NodeJS.ReadableStream, output: NodeJS.WritableStream, options?: BonsaiOptions): Promise<BonsaiResult>;
+    function processLogFile(input: string, output: string, options?: LogStripOptions): Promise<LogStripResult>;
+    function processLogStream(input: NodeJS.ReadableStream, output: NodeJS.WritableStream, options?: LogStripOptions): Promise<LogStripResult>;
     function parseAggressiveness(value: string): Aggressiveness;
     const INTERNAL_STACK_MARKER: string;
     // plus exported helpers shouldKeepLine, sanitizeLine, looksLikeDiagnosticLine, isInternalStackTraceLine
@@ -257,7 +257,7 @@ Exported from `src/action/index.ts` (used by tests, do not break):
 
 ```ts
     function buildOutputPath(input: string): string;
-    function writeSummary(result: BonsaiResult): Promise<void>;
+    function writeSummary(result: LogStripResult): Promise<void>;
     function run(): Promise<void>;
 ```
 
@@ -268,7 +268,7 @@ Exported from `src/action/index.ts` (used by tests, do not break):
       log-path:        # required; path to the raw log
       aggressiveness:  # optional; low | medium | high | aggressive (default: high)
     outputs:
-      output-path:     # path to the compressed log; defaults to <input>.bonsai.log
+      output-path:     # path to the compressed log; defaults to <input>.logstrip.log
     runs:
       using: node20
       main: dist/action/index.js
@@ -279,15 +279,15 @@ Exported from `src/action/index.ts` (used by tests, do not break):
 | Need                          | Location                                              |
 | ----------------------------- | ----------------------------------------------------- |
 | CLI entry                     | src/cli/index.ts                                      |
-| Parser logic                  | src/core/bonsai-parser.ts                             |
+| Parser logic                  | src/core/logstrip-parser.ts                             |
 | Action wrapper                | src/action/index.ts                                   |
 | Post-build shebang stamping   | scripts/post-build.js                                 |
 | CLI unit tests                | tests/cli.test.ts                                     |
-| Parser unit tests             | tests/bonsai-parser.test.ts                           |
+| Parser unit tests             | tests/logstrip-parser.test.ts                           |
 | Action unit tests             | tests/action.test.ts                                  |
 | E2E smoke tests               | tests/smoke.test.ts                                   |
 | Realistic logs                | tests/fixtures/\*.log                                  |
-| Snapshot baselines            | tests/fixtures/\_\_snapshots\_\_/\*.bonsai.snap            |
+| Snapshot baselines            | tests/fixtures/\_\_snapshots\_\_/\*.logstrip.snap            |
 | CI pipeline                   | .github/workflows/ci.yml                              |
 | Docs source                   | docs/, mkdocs.yml, requirements-docs.txt              |
 | CLI docs                      | docs/reference/cli.md                                 |

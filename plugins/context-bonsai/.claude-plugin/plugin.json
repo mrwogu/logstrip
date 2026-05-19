@@ -1,5 +1,0 @@
-{
-  "name": "context-bonsai",
-  "description": "Adds ContextBonsai slash commands, skills, and helper agents for compressing noisy CI and build logs.",
-  "version": "1.0.0"
-}

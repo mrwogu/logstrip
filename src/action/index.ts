@@ -3,8 +3,8 @@ import path from 'node:path';
 import {
   parseAggressiveness,
   processLogFile,
-  type BonsaiResult,
-} from '../core/bonsai-parser';
+  type LogStripResult,
+} from '../core/logstrip-parser';
 
 export async function run(): Promise<void> {
   try {
@@ -29,7 +29,7 @@ export function buildOutputPath(inputPath: string): string {
   const absoluteInputPath = path.resolve(inputPath);
   const extension = path.extname(absoluteInputPath);
   const basename = path.basename(absoluteInputPath, extension);
-  const outputName = `${basename}.bonsai${extension || '.log'}`;
+  const outputName = `${basename}.logstrip${extension || '.log'}`;
 
   return path.join(path.dirname(absoluteInputPath), outputName);
 }
@@ -41,14 +41,14 @@ export async function getRepositorySlug(): Promise<string> {
 }
 
 export async function writeSummary(
-  result: BonsaiResult,
+  result: LogStripResult,
   repository?: string,
 ): Promise<void> {
   const savings = `${result.savingsPercent.toFixed(2)}%`;
   const repo = repository ?? (await getRepositorySlug());
 
   await core.summary
-    .addHeading('ContextBonsai Report', 2)
+    .addHeading('LogStrip Report', 2)
     .addTable([
       [
         { data: 'Metric', header: true },

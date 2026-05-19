@@ -1,4 +1,4 @@
-name: ContextBonsai
+name: LogStrip
 description: Compress large CI logs before sending them to LLM agents.
 inputs:
   log-path:

@@ -1,4 +1,4 @@
-id: context-bonsai
+id: logstrip
 syntax: "1.2.0"
 description: "Zero-dependency Node.js CLI that trims noisy CI/build logs down to the diagnostic context an LLM needs."
 

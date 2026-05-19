@@ -2,7 +2,7 @@
 
 ## The compressed log is empty
 
-ContextBonsai removes low-value lines. If a log only contains `[INFO]`,
+LogStrip removes low-value lines. If a log only contains `[INFO]`,
 `[DEBUG]`, `[TRACE]`, or `[VERBOSE]` entries, the compressed output can be
 empty.
 
@@ -16,7 +16,7 @@ Add at least one error or warning line to verify the pipeline:
 
 Exit code `2` is a usage error. Common causes:
 
-- Unknown flag - run `bonsai --help` to see the supported options.
+- Unknown flag - run `logstrip --help` to see the supported options.
 - Unsupported `--aggressiveness` value - use one of `low`, `medium`, `high`, `aggressive`.
 - `--json` without `--output` - JSON would collide with the compressed log on stdout.
 - No `INPUT` argument and `stdin` is a terminal - either pass a file path or pipe a log.
@@ -35,12 +35,12 @@ Make sure the previous step writes the file in the workspace and that
 ```yaml
 - run: npm test > raw_logs.txt 2>&1 || true
 
-- uses: mrwogu/context-bonsai@v1
+- uses: mrwogu/logstrip@v1
   with:
     log-path: raw_logs.txt
 ```
 
-## The workflow stops before ContextBonsai runs
+## The workflow stops before LogStrip runs
 
 If the test step exits non-zero, GitHub Actions stops by default. Capture the
 failure and continue:
@@ -67,7 +67,7 @@ planned aggressiveness tuning lands.
 Use `--stats`:
 
 ```bash
-bonsai raw.log -o clean.log --stats
+logstrip raw.log -o clean.log --stats
 ```
 
 `clean.log` receives the compressed content; `stderr` shows the stats block.

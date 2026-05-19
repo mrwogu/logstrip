@@ -3,7 +3,7 @@ const { readFileSync, writeFileSync } = require('node:fs');
 const { resolve } = require('node:path');
 
 const actionPackage = process.argv[2] ?? 'action-package';
-const parserPath = resolve(actionPackage, 'dist', 'core', 'bonsai-parser.js');
+const parserPath = resolve(actionPackage, 'dist', 'core', 'logstrip-parser.js');
 const { processLogFile } = require(parserPath);
 const expected = '[x2] [ERROR] request [ID] failed';
 
@@ -18,8 +18,8 @@ async function main() {
     ].join('\n'),
   );
 
-  await processLogFile('raw.log', 'bonsai.log');
-  const output = readFileSync('bonsai.log', 'utf8');
+  await processLogFile('raw.log', 'logstrip.log');
+  const output = readFileSync('logstrip.log', 'utf8');
 
   if (!output.split(/\r?\n/).includes(expected)) {
     console.error(

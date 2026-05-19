@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { BonsaiResult } from '../src/core/bonsai-parser';
+import type { LogStripResult } from '../src/core/logstrip-parser';
 
 const mocks = vi.hoisted(() => {
   const summary = {
@@ -29,13 +29,13 @@ vi.mock('@actions/github', () => ({
   context: {
     repo: {
       owner: 'mrwogu',
-      repo: 'context-bonsai',
+      repo: 'logstrip',
     },
   },
 }));
 
-vi.mock('../src/core/bonsai-parser', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../src/core/bonsai-parser')>();
+vi.mock('../src/core/logstrip-parser', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/core/logstrip-parser')>();
 
   return {
     ...actual,
@@ -45,7 +45,7 @@ vi.mock('../src/core/bonsai-parser', async (importOriginal) => {
 
 import { buildOutputPath, run, writeSummary } from '../src/action/index';
 
-const result = (outputPath?: string): BonsaiResult => ({
+const result = (outputPath?: string): LogStripResult => ({
   inputTokens: 100,
   outputTokens: 25,
   savedTokens: 75,
@@ -74,16 +74,16 @@ describe('GitHub Action wrapper', () => {
 
   it('builds default output paths', () => {
     expect(buildOutputPath(path.join('logs', 'raw.log'))).toBe(
-      path.join(process.cwd(), 'logs', 'raw.bonsai.log'),
+      path.join(process.cwd(), 'logs', 'raw.logstrip.log'),
     );
     expect(buildOutputPath(path.join('logs', 'raw'))).toBe(
-      path.join(process.cwd(), 'logs', 'raw.bonsai.log'),
+      path.join(process.cwd(), 'logs', 'raw.logstrip.log'),
     );
   });
 
   it('runs parser, sets fallback output and writes summary', async () => {
     const inputPath = 'raw.log';
-    const expectedOutput = path.join(process.cwd(), 'raw.bonsai.log');
+    const expectedOutput = path.join(process.cwd(), 'raw.logstrip.log');
 
     mocks.getInput.mockImplementation((name: string) =>
       name === 'log-path' ? inputPath : '',
@@ -97,12 +97,12 @@ describe('GitHub Action wrapper', () => {
     });
     expect(mocks.setOutput).toHaveBeenCalledWith('output-path', expectedOutput);
     expect(mocks.summary.addHeading).toHaveBeenCalledWith(
-      'ContextBonsai Report',
+      'LogStrip Report',
       2,
     );
     expect(mocks.summary.addTable).toHaveBeenCalledWith(
       expect.arrayContaining([
-        ['Repository', 'mrwogu/context-bonsai'],
+        ['Repository', 'mrwogu/logstrip'],
         ['Savings', '75.00%'],
       ]),
     );
@@ -119,7 +119,7 @@ describe('GitHub Action wrapper', () => {
 
     expect(mocks.processLogFile).toHaveBeenCalledWith(
       'raw',
-      path.join(process.cwd(), 'raw.bonsai.log'),
+      path.join(process.cwd(), 'raw.logstrip.log'),
       { aggressiveness: 'low' },
     );
     expect(mocks.setOutput).toHaveBeenCalledWith(

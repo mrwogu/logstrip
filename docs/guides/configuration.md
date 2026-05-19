@@ -20,16 +20,16 @@ loading the whole file into memory.
 | Surface | How it is provided |
 | :--- | :--- |
 | CLI | `--output <path>`, or `stdout` when omitted. |
-| Action | Written next to the input as `<basename>.bonsai<ext>`. |
+| Action | Written next to the input as `<basename>.logstrip<ext>`. |
 | Library | `outputPath` argument to `processLogFile`, or a `Writable` stream to `processLogStream`. |
 
 Default file naming when running the action or omitting `--output`:
 
 | Input | Output |
 | :--- | :--- |
-| `raw.log` | `raw.bonsai.log` |
-| `test-output.txt` | `test-output.bonsai.txt` |
-| `raw` | `raw.bonsai.log` |
+| `raw.log` | `raw.logstrip.log` |
+| `test-output.txt` | `test-output.logstrip.txt` |
+| `raw` | `raw.logstrip.log` |
 
 ## Aggressiveness
 
@@ -52,7 +52,7 @@ changing the CLI or workflow syntax.
 | :--- | :--- |
 | CLI | `--stats` (human-readable, stderr) or `--json` (machine-readable, stdout, requires `--output`). |
 | Action | Always written as a GitHub Step Summary table. |
-| Library | Returned as a `BonsaiResult` from `processLogFile` / `processLogStream`. |
+| Library | Returned as a `LogStripResult` from `processLogFile` / `processLogStream`. |
 
 ## Package scripts
 

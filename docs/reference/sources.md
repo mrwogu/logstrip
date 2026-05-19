@@ -1,6 +1,6 @@
 # Supported Sources
 
-ContextBonsai automatically detects the source of your logs and provides this information in its JSON report to help AI agents understand the context of the issue.
+LogStrip automatically detects the source of your logs and provides this information in its JSON report to help AI agents understand the context of the issue.
 
 The detection engine supports **700+ log ecosystems** across 30+ categories.
 

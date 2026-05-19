@@ -1,6 +1,6 @@
 # Compression Flow for AI Readiness
 
-ContextBonsai processes raw logs through a multi-step engine to optimize them for AI consumption. This flow ensures high-signal context is preserved while noise is minimized.
+LogStrip processes raw logs through a multi-step engine to optimize them for AI consumption. This flow ensures high-signal context is preserved while noise is minimized.
 
 | Step | What happens | Why it matters for AI |
 | :-- | :-- | :-- |

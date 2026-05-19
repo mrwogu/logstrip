@@ -1,15 +1,15 @@
 # Core API Reference
 
-The core parser lives in `src/core/bonsai-parser.ts`. It is intentionally independent from GitHub Actions and does not import `@actions/*`.
+The core parser lives in `src/core/logstrip-parser.ts`. It is intentionally independent from GitHub Actions and does not import `@actions/*`.
 
 ## `processLogStream`
 
 ```ts
 import { createReadStream, createWriteStream } from 'node:fs';
-import { processLogStream } from 'context-bonsai';
+import { processLogStream } from 'logstrip';
 
 const input = createReadStream('raw.log', { encoding: 'utf8' });
-const output = createWriteStream('raw.bonsai.log', { encoding: 'utf8' });
+const output = createWriteStream('raw.logstrip.log', { encoding: 'utf8' });
 
 const result = await processLogStream(input, output, {
   aggressiveness: 'high',
@@ -19,8 +19,8 @@ const result = await processLogStream(input, output, {
 Returns:
 
 ```ts
-interface BonsaiResult {
-  stats: BonsaiStats;
+interface LogStripResult {
+  stats: LogStripStats;
   inputTokens: number;
   outputTokens: number;
   savedTokens: number;
@@ -39,7 +39,7 @@ folds them into a single `[xN]` line and generalizes volatile fields such as
 
 ## Hybrid detection engine
 
-ContextBonsai no longer treats every line as a simple keep/drop decision. The
+LogStrip no longer treats every line as a simple keep/drop decision. The
 core parser combines four signals:
 
 | Layer | Behavior | Why it matters |
@@ -73,19 +73,19 @@ scoreLineRelevance('containerd failed to create task', 'high'); // >= 40
 ## `processLogFile`
 
 ```ts
-import { processLogFile } from 'context-bonsai';
+import { processLogFile } from 'logstrip';
 
-const result = await processLogFile('raw.log', 'raw.bonsai.log', {
+const result = await processLogFile('raw.log', 'raw.logstrip.log', {
   aggressiveness: 'high',
 });
 ```
 
-This helper creates Node.js file streams and returns the same `BonsaiResult`.
+This helper creates Node.js file streams and returns the same `LogStripResult`.
 
 ## `detectLogSources`
 
 ```ts
-import { detectLogSources } from 'context-bonsai';
+import { detectLogSources } from 'logstrip';
 
 const detected = detectLogSources(`
 npm ERR! code ERESOLVE
@@ -102,7 +102,7 @@ Returns ranked source candidates based on lightweight fingerprint matching.
 ## `KNOWN_LOG_SOURCES`
 
 ```ts
-import { KNOWN_LOG_SOURCES, LOG_SOURCE_SIGNATURES } from 'context-bonsai';
+import { KNOWN_LOG_SOURCES, LOG_SOURCE_SIGNATURES } from 'logstrip';
 
 console.log(KNOWN_LOG_SOURCES.length); // 700+
 console.log(LOG_SOURCE_SIGNATURES[0]); // ['vitest', ['vitest']]
@@ -116,7 +116,7 @@ lists the source-to-marker table used by `detectLogSources` and
 ## `sanitizeLine`
 
 ```ts
-import { sanitizeLine } from 'context-bonsai';
+import { sanitizeLine } from 'logstrip';
 
 sanitizeLine('[ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed');
 // [ERROR] request [ID] failed
@@ -136,7 +136,7 @@ The sanitizer replaces:
 ## `createRepeatSignature`
 
 ```ts
-import { createRepeatSignature } from 'context-bonsai';
+import { createRepeatSignature } from 'logstrip';
 
 createRepeatSignature(
   '[ERROR] charge failed requestId=[ID] amount=99.99 failures=3/5',
@@ -151,7 +151,7 @@ are listed only when adjacent diagnostics fold into an `[xN]` summary.
 ## `shouldKeepLine`
 
 ```ts
-import { shouldKeepLine } from 'context-bonsai';
+import { shouldKeepLine } from 'logstrip';
 
 shouldKeepLine('[INFO] boot ok'); // false
 shouldKeepLine('[ERROR] failure'); // true
@@ -168,4 +168,4 @@ The parser detects **705+ log ecosystems** across 30+ categories.
 See the [Supported Sources](sources.md) page for the full catalogue.
 
 Fixture files live in `tests/fixtures/*.log` and deterministic outputs in
-`tests/fixtures/__snapshots__/*.bonsai.snap`.
+`tests/fixtures/__snapshots__/*.logstrip.snap`.

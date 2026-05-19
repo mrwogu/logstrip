@@ -1,4 +1,4 @@
-# ContextBonsai hard restrictions
+# LogStrip hard restrictions
 
 @restrictions {
   - "Don't lower the coverage thresholds in vitest.config.ts - the 100% gate is the project's hardest contract"
@@ -14,6 +14,6 @@
   - "Don't embed indented heredocs in .github/workflows/*.yml - leading whitespace breaks literal grep assertions"
   - "Don't publish v1 with breaking changes to the CLI flag set or action.yml schema; bump major version explicitly"
   - "Don't break the CLI Unix contract: missing INPUT means read stdin, missing --output means write stdout, stats always go to stderr"
-  - "Don't let a parser error escape as a raw stack trace from the CLI - convert to a bonsai: <message> stderr line with a numeric exit code"
+  - "Don't let a parser error escape as a raw stack trace from the CLI - convert to a logstrip: <message> stderr line with a numeric exit code"
   - "Don't weaken regex strictness without adding a fixture-based smoke test that documents the new behavior"
 }

@@ -1,21 +1,21 @@
 # GitHub Action Reference
 
-The GitHub Action is an **optional, thin wrapper** around the ContextBonsai
+The GitHub Action is an **optional, thin wrapper** around the LogStrip
 CLI / library. The CLI is the canonical distribution channel - the action
-exists so you can drop ContextBonsai into a workflow with one step and get a
+exists so you can drop LogStrip into a workflow with one step and get a
 GitHub Step Summary for free.
 
 If you can call shell from your workflow, prefer the CLI directly:
 
 ```yaml
-- run: npx -y context-bonsai raw_logs.txt -o clean.log --stats
+- run: npx -y logstrip raw_logs.txt -o clean.log --stats
 ```
 
 ## Usage
 
 ```yaml
-- uses: mrwogu/context-bonsai@v1
-  id: bonsai
+- uses: mrwogu/logstrip@v1
+  id: logstrip
   with:
     log-path: raw_logs.txt
     aggressiveness: high
@@ -35,7 +35,7 @@ If you can call shell from your workflow, prefer the CLI directly:
 | `output-path` | Path to the compressed output file. |
 
 For an input named `raw.log`, the output file is written next to it as
-`raw.bonsai.log`. The action sets `steps.<id>.outputs.output-path` accordingly,
+`raw.logstrip.log`. The action sets `steps.<id>.outputs.output-path` accordingly,
 so downstream steps can reference the compressed artifact by ID.
 
 ## Step Summary

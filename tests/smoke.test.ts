@@ -7,8 +7,8 @@ import {
   KNOWN_LOG_SOURCES,
   detectLogSources,
   processLogFile,
-  type BonsaiResult,
-} from '../src/core/bonsai-parser';
+  type LogStripResult,
+} from '../src/core/logstrip-parser';
 
 const FIXTURES_DIR = resolve(__dirname, 'fixtures');
 const SNAPSHOTS_DIR = resolve(__dirname, 'fixtures/__snapshots__');
@@ -670,12 +670,12 @@ const cases: readonly SmokeCase[] = [
 let workDir: string;
 
 async function compress(fixture: string): Promise<{
-  result: BonsaiResult;
+  result: LogStripResult;
   outputContent: string;
   inputContent: string;
 }> {
   const inputPath = join(FIXTURES_DIR, fixture);
-  const outputPath = join(workDir, fixture.replace(/\.log$/u, '.bonsai.log'));
+  const outputPath = join(workDir, fixture.replace(/\.log$/u, '.logstrip.log'));
   const inputContent = await readFile(inputPath, 'utf8');
   const result = await processLogFile(inputPath, outputPath);
   const outputContent = await readFile(outputPath, 'utf8');
@@ -684,7 +684,7 @@ async function compress(fixture: string): Promise<{
 }
 
 beforeAll(async () => {
-  workDir = await mkdtemp(join(tmpdir(), 'context-bonsai-smoke-'));
+  workDir = await mkdtemp(join(tmpdir(), 'logstrip-smoke-'));
 });
 
 afterAll(async () => {
@@ -698,7 +698,7 @@ describe('smoke: realistic CI log fixtures', () => {
         const { outputContent } = await compress(testCase.fixture);
         const snapshotPath = join(
           SNAPSHOTS_DIR,
-          `${testCase.fixture}.bonsai.snap`,
+          `${testCase.fixture}.logstrip.snap`,
         );
 
         await expect(outputContent).toMatchFileSnapshot(snapshotPath);
@@ -771,7 +771,7 @@ describe('smoke: realistic CI log fixtures', () => {
 describe('smoke: stream resilience', () => {
   it('handles a synthetic 50k-line log without exhausting memory', async () => {
     const inputPath = join(workDir, 'synthetic-large.log');
-    const outputPath = join(workDir, 'synthetic-large.bonsai.log');
+    const outputPath = join(workDir, 'synthetic-large.logstrip.log');
 
     const chunks: string[] = [];
     for (let index = 0; index < 50000; index += 1) {
@@ -812,7 +812,7 @@ describe('smoke: stream resilience', () => {
     const inputContent = await readFile(inputPath, 'utf8');
     const lines = inputContent.split('\n');
 
-    // Use detectLogSources directly with a high limit (the BonsaiResult
+    // Use detectLogSources directly with a high limit (the LogStripResult
     // detectedSources is capped at 12 for practical reporting).
     const detected = detectLogSources(lines, KNOWN_LOG_SOURCES.length);
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const { existsSync, readFileSync } = require('node:fs');
 
-const outputPath = process.argv[2] ?? 'raw.bonsai.log';
+const outputPath = process.argv[2] ?? 'raw.logstrip.log';
 const expected = '[x2] [ERROR] request [ID] failed';
 
 if (!existsSync(outputPath)) {

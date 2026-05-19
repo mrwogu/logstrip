@@ -11,7 +11,7 @@
       ],
       "include-component-in-tag": false,
       "initial-version": "1.0.0",
-      "package-name": "context-bonsai",
+      "package-name": "logstrip",
       "release-type": "node"
     }
   }

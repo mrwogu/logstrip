@@ -42,13 +42,13 @@ jobs:
 
           mkdir -p artifacts
           npm pack --pack-destination artifacts
-          tar -czf "artifacts/context-bonsai-action-v${VERSION}.tar.gz" \
+          tar -czf "artifacts/logstrip-action-v${VERSION}.tar.gz" \
             action.yml package.json package-lock.json dist/action dist/cli dist/core
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: context-bonsai-v${{ steps.package.outputs.version }}
+          name: logstrip-v${{ steps.package.outputs.version }}
           path: artifacts/*
           retention-days: 30
 
