@@ -32,6 +32,7 @@ bonsai [INPUT] [options]
 | `-j`, `--json` | Print the `BonsaiResult` as JSON to `stdout`. Requires `--output` so the compressed log does not collide with the report. | off |
 | `-h`, `--help` | Print the help text and exit. | - |
 | `-v`, `--version` | Print the CLI version and exit. | - |
+| `--config <path>` | Path to a `.bonsai.yml` custom config file. When omitted, the CLI auto-detects `.bonsai.yml` in the current working directory. | _(auto)_ |
 
 ## I/O contract
 
@@ -180,3 +181,107 @@ const exitCode = await runCli(['raw.log', '-o', 'clean.log', '--json'], {
 
 For library-style integration that returns a `BonsaiResult` directly, use
 [`processLogFile` / `processLogStream`](core.md) instead.
+
+## Custom configuration (.bonsai.yml)
+
+Corporations and teams running internal tools can extend ContextBonsai
+without modifying the source code. Create a `.bonsai.yml` file in the
+repository root (or pass `--config path/to/config.yml`) to define custom
+log sources, diagnostic patterns, ignore rules, sanitization rules, and
+internal stack patterns that merge with the built-in set at runtime.
+
+### File format
+
+```yaml
+# Custom log sources – markers are case-insensitive substrings
+# matched against every line. If a source name matches a built-in
+# source, the markers are merged (deduplicated).
+sources:
+  - name: acme-gateway
+    markers:
+      - acme-gateway
+      - "[ACME-GW]"
+  - name: acme-auth
+    markers: [acme-auth-service, "[ACME-AUTH]"]
+
+# Lines matching any of these regexes receive a +50 relevance boost,
+# same as built-in DIAGNOSTIC_PATTERN.
+diagnosticPatterns:
+  - "ACME_ERROR_\\d+"
+  - "\\bACME-FATAL\\b"
+
+# Lines matching any of these regexes are dropped early (before
+# sanitization and scoring), similar to built-in IGNORED_LOG_TAG_PATTERN.
+ignorePatterns:
+  - "\\bACME-HEARTBEAT\\b"
+  - "\\bacme-metrics\\b"
+
+# Each rule applies a regex replacement to every line after built-in
+# sanitization. Use "flags" to control regex flags (default: "gu").
+sanitizePatterns:
+  - pattern: "\\bACME-USER-\\d+\\b"
+    replacement: "[ACME-USER]"
+  - pattern: "acme-tenant/[a-z0-9-]+"
+    replacement: "acme-tenant/[ID]"
+    flags: "gi"
+
+# Lines matching any of these regexes are collapsed behind the
+# [internal-stack] marker, same as built-in INTERNAL_STACK patterns.
+internalStackPatterns:
+  - "/opt/acme/lib/"
+```
+
+### How it works
+
+1. **Auto-detection** – When `--config` is not provided, the CLI looks
+   for `.bonsai.yml` in the current working directory. If the file does
+   not exist, processing continues with built-in patterns only.
+2. **Merging** – Custom sources with a name that already exists in the
+   built-in set (e.g. `docker`) have their markers **merged** with the
+   built-in markers. New source names are appended.
+3. **Order of application** – Custom ignore patterns are checked
+   **before** built-in noise-tag filtering. Custom sanitize rules run
+   **after** built-in sanitization. Custom diagnostic patterns add
+   +50 to the relevance score (same weight as built-in diagnostics).
+   Custom internal-stack patterns are checked alongside built-in ones.
+4. **Zero runtime dependencies** – The YAML subset parser is built into
+   `bonsai-config.ts` and handles the constructs shown above (mappings,
+   sequences, inline arrays, quoted and unquoted strings, comments).
+   It does not require `js-yaml` or any external package.
+
+### Example: internal CI platform
+
+```yaml
+# .bonsai.yml – Acme Corp CI extension
+sources:
+  - name: acme-ci
+    markers: [acme-ci-runner, "[ACME-CI]"]
+
+diagnosticPatterns:
+  - "ACME_BUILD_FAILED"
+  - "ACME_TEST_TIMEOUT"
+
+ignorePatterns:
+  - "\\bacme-ci heartbeat\\b"
+  - "\\bacme-ci version check\\b"
+
+sanitizePatterns:
+  - pattern: "ACME-EMP-\\d{6}"
+    replacement: "[ACME-EMP]"
+
+internalStackPatterns:
+  - "/opt/acme/ci-runner/"
+```
+
+Then simply run:
+
+```bash
+bonsai ci-output.log -o clean.log
+# .bonsai.yml is auto-detected from the current directory
+```
+
+Or explicitly:
+
+```bash
+bonsai ci-output.log -o clean.log --config /etc/bonsai/acme.yml
+```
