@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="160" height="28" viewBox="0 0 160 28">
-  <rect width="160" height="28" rx="4" fill="#1a1a2e"/>
-  <rect x="0" y="0" width="95" height="28" rx="4" fill="#16213e"/>
-  <text x="48" y="18" text-anchor="middle" fill="#a0a0b0" font-family="system-ui,sans-serif" font-size="11" font-weight="600">COVERAGE</text>
-  <text x="128" y="18" text-anchor="middle" fill="#4ade80" font-family="system-ui,sans-serif" font-size="12" font-weight="700">100%</text>
+  <rect width="160" height="28" rx="4" fill="#161818"/>
+  <rect x="0" y="0" width="95" height="28" rx="4" fill="#1d1f20"/>
+  <text x="48" y="18" text-anchor="middle" fill="#a4a298" font-family="system-ui,sans-serif" font-size="11" font-weight="600">COVERAGE</text>
+  <text x="128" y="18" text-anchor="middle" fill="#a4ffaf" font-family="system-ui,sans-serif" font-size="12" font-weight="700">100%</text>
 </svg>
