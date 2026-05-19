@@ -543,7 +543,7 @@ body,
   border-radius: 4px;
 }
 
-/* Clean log clips — no scrollbar */
+/* Clean log clips – no scrollbar */
 .logstrip-demo--toggle .logstrip-demo__pre--clean {
   overflow: hidden;
   padding-bottom: 7.8rem;

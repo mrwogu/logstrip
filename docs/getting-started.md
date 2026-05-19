@@ -1,6 +1,6 @@
 ---
 title: Install LogStrip CLI
-description: Install the LogStrip log compression CLI in one command. File, pipe, or stdin — trim noisy logs for AI agents in seconds.
+description: Install the LogStrip log compression CLI in one command. File, pipe, or stdin – trim noisy logs for AI agents in seconds.
 ---
 # Getting Started
 

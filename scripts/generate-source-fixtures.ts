@@ -7,7 +7,7 @@
  * Usage: node scripts/generate-source-fixtures.ts
  *        (or: npx tsx scripts/generate-source-fixtures.ts)
  *
- * The output is deterministic — running the script again produces
+ * The output is deterministic – running the script again produces
  * identical fixtures. Commit the results and regenerate only when
  * adding new sources to LOG_SOURCE_SIGNATURES.
  */

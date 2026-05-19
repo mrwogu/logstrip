@@ -30,7 +30,7 @@ In `src/core/logstrip-parser.ts`, add a new entry to the `LOG_SOURCE_SIGNATURES`
 Rules:
 - Source name: kebab-case (e.g., `openai-api`, `echo-framework`).
 - Markers: lowercase strings that appear in the tool's real log output. Include at least one marker that is **unique enough** to avoid false-positive substring matches. Avoid ultra-short markers (2-3 chars) that appear in unrelated words (e.g., `"sbt"` matches inside `"sveltekit"`).
-- Keep markers specific — prefer `"my-tool error"` over just `"my-tool"` when the bare name is ambiguous.
+- Keep markers specific – prefer `"my-tool error"` over just `"my-tool"` when the bare name is ambiguous.
 - Place the entry under the appropriate category comment (`// ── Category ──`).
 
 ### 2. Create a per-source fixture
@@ -113,7 +113,7 @@ Then create `tests/fixtures/my-category.log` with realistic log content from mul
 
 When you add new parsing, sanitization, or scoring logic:
 
-1. **Do not regress the 100% coverage gate.** Run `npm run test:coverage` — all four thresholds (statements, branches, functions, lines) must stay at 100%.
+1. **Do not regress the 100% coverage gate.** Run `npm run test:coverage` – all four thresholds (statements, branches, functions, lines) must stay at 100%.
 2. **Do not add runtime dependencies** to `src/cli` or `src/core`. The hot path is zero-dependency on purpose.
 3. **Keep the parser streaming.** Never buffer the entire log into memory.
 4. **Add a fixture-based smoke test** that documents the new behavior with a committed snapshot.
