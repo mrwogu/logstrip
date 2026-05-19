@@ -1,6 +1,6 @@
 ---
 name: logstrip
-description: Compress noisy CI, build, runtime, scanner, and test logs before Codex analyzes them. Use when the user asks to inspect, trim, reduce, summarize, or prepare logs for diagnosis.
+description: Compress noisy CI, build, runtime, scanner, and test logs before Codex analyzes them. Use when the user asks to inspect, trim, reduce, summarize, or prepare logs for diagnosis, or when the user pastes log-like output (timestamps, log levels, stack traces, CI markers).
 ---
 
 # LogStrip Log Compression

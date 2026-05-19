@@ -1,13 +1,17 @@
 ---
 mode: agent
-description: Compress a log with LogStrip and report token savings.
+description: Compress a log with LogStrip and report token savings. Auto-detects pasted log output.
 ---
 
 # LogStrip log compression
 
 Use the LogStrip CLI to compress the log described by the user.
 
-Workflow:
+## Auto-detection of pasted logs
+
+When the user pastes content that resembles log output (timestamps, log levels, stack traces, CI markers, repeated line patterns), write it to a temp file and run `logstrip` before analysing.
+
+## Workflow
 
 1. Parse the input log path, optional output path, and optional aggressiveness level from the request.
 2. Verify `logstrip` or `logstrip` is installed.

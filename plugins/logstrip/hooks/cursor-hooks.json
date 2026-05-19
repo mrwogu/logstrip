@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/logstrip-hook.sh",
+        "matcher": "Read",
+        "timeout": 10
+      }
+    ]
+  }
+}

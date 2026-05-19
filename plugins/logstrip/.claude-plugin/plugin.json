@@ -1,5 +1,6 @@
 {
   "name": "logstrip",
-  "description": "Adds LogStrip slash commands, skills, and helper agents for compressing noisy CI and build logs.",
-  "version": "1.0.0"
+  "description": "Adds LogStrip slash commands, skills, helper agents, and auto-activation hooks for compressing noisy CI and build logs.",
+  "version": "1.1.0",
+  "hooks": "./hooks/hooks.json"
 }

@@ -1,8 +1,8 @@
 {
   "name": "logstrip",
   "displayName": "LogStrip",
-  "version": "1.0.0",
-  "description": "Compress noisy CI, build, runtime, scanner, and test logs before Cursor diagnoses them.",
+  "version": "1.1.0",
+  "description": "Compress noisy CI, build, runtime, scanner, and test logs before Cursor diagnoses them. Auto-activates via PreToolUse hook when Cursor reads a log file.",
   "author": {
     "name": "mrwogu"
   },
@@ -24,5 +24,6 @@
   "skills": "./skills/",
   "rules": "./rules/",
   "commands": "./commands/",
-  "agents": "./agents/"
+  "agents": "./agents/",
+  "hooks": "./hooks/cursor-hooks.json"
 }

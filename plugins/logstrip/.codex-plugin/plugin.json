@@ -1,7 +1,7 @@
 {
   "name": "logstrip",
-  "version": "1.0.0",
-  "description": "Compress noisy CI, build, runtime, scanner, and test logs before Codex diagnoses them.",
+  "version": "1.1.0",
+  "description": "Compress noisy CI, build, runtime, scanner, and test logs before Codex diagnoses them. Auto-activates via PreToolUse hook when Codex reads a log file.",
   "author": {
     "name": "mrwogu"
   },
@@ -15,6 +15,7 @@
     "compression"
   ],
   "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "LogStrip",
     "shortDescription": "Compress logs before Codex diagnoses failures.",

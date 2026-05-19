@@ -11,3 +11,7 @@ logstrip <input-log> -o <input-log>.logstrip.log --stats
 ```
 
 Use the compressed `.logstrip.log` file for diagnosis and include the savings stats in the response. If `logstrip` is missing, ask the user to install `logstrip` globally with npm.
+
+## Auto-detection of pasted logs
+
+When the user pastes content that resembles log output (timestamps, log levels, stack traces, CI markers, or repeated line patterns), write it to a temp file and run `logstrip` before analysing. Skip line-by-line analysis of the raw paste.

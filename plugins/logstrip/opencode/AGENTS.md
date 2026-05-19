@@ -1,8 +1,18 @@
 # LogStrip for OpenCode
 
-Use LogStrip whenever the user asks OpenCode to analyze CI, build, test, runtime, scanner, or deployment logs.
+Use LogStrip whenever OpenCode reads or encounters CI, build, test, runtime, scanner, or deployment logs.
 
-## Log workflow
+## Auto-detection of pasted logs
+
+When the user pastes content that resembles log output (2+ of: timestamps, log levels, stack traces, CI/build markers, repeated line patterns across 5+ lines), automatically compress it with LogStrip before analysing:
+
+1. Write the pasted content to a temp file: `mktemp` → `<temp>.log`
+2. Run `logstrip <temp>.log -o <temp>.log.logstrip.log --stats`
+3. If `logstrip` is not installed, suggest: `npm i -g logstrip`
+4. Read and analyse the compressed `.logstrip.log` output — skip line-by-line analysis of the raw paste
+5. Report savings stats alongside the diagnosis
+
+## Log file workflow
 
 1. Locate the raw log path and choose an output path, usually `<input>.logstrip.log`.
 2. Verify `logstrip` or `logstrip` is available.

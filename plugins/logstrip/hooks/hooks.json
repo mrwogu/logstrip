@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/logstrip-hook.sh",
+            "timeout": 10,
+            "statusMessage": "LogStrip: compressing log file..."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/logstrip-hook.sh",
+            "timeout": 5,
+            "statusMessage": "LogStrip: checking for pasted logs..."
+          }
+        ]
+      }
+    ]
+  }
+}
