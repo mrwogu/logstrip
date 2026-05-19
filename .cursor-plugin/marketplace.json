@@ -1,0 +1,19 @@
+{
+  "name": "logstrip",
+  "owner": {
+    "name": "mrwogu"
+  },
+  "metadata": {
+    "description": "LogStrip plugin marketplace for Cursor.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "logstrip",
+      "source": "./plugins/logstrip",
+      "description": "Compress noisy CI, build, runtime, scanner, and test logs before Cursor diagnoses them.",
+      "version": "1.0.0",
+      "category": "developer-tools"
+    }
+  ]
+}

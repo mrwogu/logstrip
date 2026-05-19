@@ -1,0 +1,15 @@
+{
+  "name": "logstrip",
+  "description": "LogStrip plugin marketplace for Droid.",
+  "owner": {
+    "name": "mrwogu"
+  },
+  "plugins": [
+    {
+      "name": "logstrip",
+      "description": "Slash command, skill, and helper droids for compressing noisy CI and build logs with LogStrip.",
+      "source": "./plugins/logstrip",
+      "category": "developer-tools"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "logstrip",
+  "owner": {
+    "name": "mrwogu"
+  },
+  "plugins": [
+    {
+      "name": "logstrip",
+      "source": "./plugins/logstrip",
+      "description": "Slash command, skill, and helper agents for compressing noisy CI and build logs with LogStrip."
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+# LogStrip reference knowledge
+
+@knowledge {
+  """
+  ## Build & test commands
+
+  ```bash
+    npm ci                       # install (CI uses npm ci, dev can use npm install)
+    npm run typecheck            # tsc -p tsconfig.json --noEmit
+    npm run test                 # vitest run --coverage
+    npm run test:unit            # vitest run (no coverage gate)
+    npm run test:coverage        # vitest run --coverage with 100% thresholds
+    npm run build                # tsc -p tsconfig.build.json + scripts/post-build.js
+    npm audit                    # must end with `found 0 vulnerabilities`
+    npm run docs:build           # mkdocs build --strict
+    npm run docs:serve           # local MkDocs preview
+  ```
+
+  Dependency overrides in package.json keep `@actions/http-client@^3.0.2` and
+  `undici@^6.25.0` to clear known advisories - keep them in sync with audit.
+
+  ## CLI usage cheat sheet
+
+  ```bash
+    # File in, file out (stats reserved for stderr if --stats)
+    logstrip raw.log -o clean.log
+
+    # Unix pipe (stdin -> stdout)
+    cat raw.log | logstrip > clean.log
+
+    # File in, content to stdout, stats to stderr
+    logstrip raw.log --stats > clean.log
+
+    # Machine-readable report (LogStripResult JSON on stdout, compressed log to file)
+    logstrip raw.log -o clean.log --json
+
+    # Help / version
+    logstrip --help
+    logstrip --version
+  ```
+
+  Exit codes: 0 success, 1 runtime failure, 2 usage error.
+
+  ## Quick smoke recipe (matches the CLI smoke step in ci.yml)
+
+  ```bash
+    printf '%s\\n' \\
+      '[INFO] boot ok' \\
+      '[ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed' \\
+      '[ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed' \\
+      > raw.log
+
+    node dist/cli/index.js raw.log > logstrip.log
+
+    grep -q '^\\[x2\\] \\[ERROR\\] request \\[ID\\] failed$' logstrip.log
+  ```
+
+  The literal anchored match is intentional - it catches regressions in
+  whitespace handling and Unix-pipe behavior in a single line.
+
+  ## Public CLI surface
+
+  Exported from `src/cli/index.ts` (used by tests and embedders, do not break):
+
+  ```ts
+    export const CLI_VERSION: string;
+    export const HELP_TEXT: string;
+
+    export interface CliOptions {
+      input?: string;
+      output?: string;
+      aggressiveness: 'low' | 'medium' | 'high' | 'aggressive';
+      stats: boolean;
+      json: boolean;
+      help: boolean;
+      version: boolean;
+    }
+
+    export interface CliIo {
+      stdin: NodeJS.ReadableStream;
+      stdout: NodeJS.WritableStream;
+      stderr: NodeJS.WritableStream;
+      stdinIsTTY: boolean;
+    }
+
+    export class CliError extends Error {
+      exitCode: number;
+    }
+
+    export function parseCliOptions(argv: readonly string[]): CliOptions;
+    export function runCli(argv: readonly string[], io: CliIo): Promise<number>;
+    export function formatStats(result: LogStripResult): string;
+  ```
+
+  ## Public library surface
+
+  Exported from `src/core/logstrip-parser.ts` (package main):
+
+  ```ts
+    type Aggressiveness = 'low' | 'medium' | 'high' | 'aggressive';
+
+    interface LogStripOptions { aggressiveness?: Aggressiveness }
+
+    interface LogStripStats {
+      droppedLines: number;
+      duplicateLines: number;
+      hiddenInternalStackLines: number;
+      inputBytes: number;
+      inputLines: number;
+      inputWords: number;
+      outputBytes: number;
+      outputLines: number;
+      outputWords: number;
+    }
+
+    interface LogStripResult {
+      inputTokens: number;
+      outputTokens: number;
+      savedTokens: number;
+      savingsPercent: number;
+      outputPath?: string;
+      stats: LogStripStats;
+    }
+
+    function processLogFile(input: string, output: string, options?: LogStripOptions): Promise<LogStripResult>;
+    function processLogStream(input: NodeJS.ReadableStream, output: NodeJS.WritableStream, options?: LogStripOptions): Promise<LogStripResult>;
+    function parseAggressiveness(value: string): Aggressiveness;
+    const INTERNAL_STACK_MARKER: string;
+    // plus exported helpers shouldKeepLine, sanitizeLine, looksLikeDiagnosticLine, isInternalStackTraceLine
+  ```
+
+  ## Public action surface
+
+  Exported from `src/action/index.ts` (used by tests, do not break):
+
+  ```ts
+    function buildOutputPath(input: string): string;
+    function writeSummary(result: LogStripResult): Promise<void>;
+    function run(): Promise<void>;
+  ```
+
+  ## GitHub Action contract (action.yml)
+
+  ```yaml
+    inputs:
+      log-path:        # required; path to the raw log
+      aggressiveness:  # optional; low | medium | high | aggressive (default: high)
+    outputs:
+      output-path:     # path to the compressed log; defaults to <input>.logstrip.log
+    runs:
+      using: node20
+      main: dist/action/index.js
+  ```
+
+  ## Where to find things
+
+  | Need                          | Location                                              |
+  | ----------------------------- | ----------------------------------------------------- |
+  | CLI entry                     | src/cli/index.ts                                      |
+  | Parser logic                  | src/core/logstrip-parser.ts                             |
+  | Action wrapper                | src/action/index.ts                                   |
+  | Post-build shebang stamping   | scripts/post-build.js                                 |
+  | CLI unit tests                | tests/cli.test.ts                                     |
+  | Parser unit tests             | tests/logstrip-parser.test.ts                           |
+  | Action unit tests             | tests/action.test.ts                                  |
+  | E2E smoke tests               | tests/smoke.test.ts                                   |
+  | Realistic logs                | tests/fixtures/*.log                                  |
+  | Snapshot baselines            | tests/fixtures/__snapshots__/*.logstrip.snap            |
+  | CI pipeline                   | .github/workflows/ci.yml                              |
+  | Docs source                   | docs/, mkdocs.yml, requirements-docs.txt              |
+  | CLI docs                      | docs/reference/cli.md                                 |
+  | Library docs                  | docs/reference/core.md                                |
+  | GHA docs                      | docs/reference/action.md                              |
+  | Build outputs (do not edit)   | dist/, coverage/, site/                               |
+  """
+}

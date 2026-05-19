@@ -1,0 +1,20 @@
+{
+  "name": "logstrip",
+  "interface": {
+    "displayName": "LogStrip"
+  },
+  "plugins": [
+    {
+      "name": "logstrip",
+      "source": {
+        "source": "local",
+        "path": "./plugins/logstrip"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

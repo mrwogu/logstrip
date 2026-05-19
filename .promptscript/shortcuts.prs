@@ -1,0 +1,36 @@
+# LogStrip slash commands
+
+@shortcuts {
+  "/review": {
+    prompt: true
+    description: "Review the staged diff against the rules in @standards and @restrictions, then summarise findings in a markdown table (Severity | File | Finding | Status)."
+  }
+  "/test": {
+    prompt: true
+    description: "Add or update vitest tests so coverage stays at 100%. Place unit cases in tests/logstrip-parser.test.ts, tests/cli.test.ts, or tests/action.test.ts; place end-to-end checks in tests/smoke.test.ts."
+  }
+  "/cli": {
+    prompt: true
+    description: "Walk through src/cli/index.ts: parseCliOptions (flags + aggressiveness), runCli (stdin/stdout/file routing, error mapping), formatStats. Mention the canonical I/O contract: stats on stderr, JSON on stdout, content on stdout-or-output."
+  }
+  "/fixture": {
+    prompt: true
+    description: "Create a new realistic CI log in tests/fixtures/<name>.log, profile its parser output, and add a smoke case (case object + snapshot) in tests/smoke.test.ts. Snapshot file is tests/fixtures/__snapshots__/<name>.logstrip.snap."
+  }
+  "/verify": {
+    prompt: true
+    description: "Run npm run typecheck && npm run test:coverage && npm run build && npm audit && npm run docs:build. Report results in a status line."
+  }
+  "/compress": {
+    prompt: true
+    description: "Use the CLI (logstrip or node dist/cli/index.js) to compress a log path the user provides and summarise the resulting LogStripResult (input/output tokens, savings %, droppedLines, duplicateLines, hiddenInternalStackLines)."
+  }
+  "/parser": {
+    prompt: true
+    description: "Walk through src/core/logstrip-parser.ts: regex tables, shouldKeepLine flow, processLogStream loop, sanitizeLine, internal-stack collapsing, deduplication. Reference line numbers."
+  }
+  "/limits": {
+    prompt: true
+    description: "List the documented limitations from @context (UUID v6+, Java/Python stack patterns, compound exception names, aggressiveness placeholder, internal-stack pattern gaps) so the user can pick one to fix."
+  }
+}

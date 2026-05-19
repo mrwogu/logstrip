@@ -1,0 +1,87 @@
+# LogStrip coding standards
+
+@standards {
+  typescript: [
+    "Strict mode is non-negotiable - tsconfig.json has strict: true",
+    "Target ES2022, module Node16, esModuleInterop on, consistent casing required",
+    "Prefer named exports - default exports are avoided across the codebase"
+  ]
+
+  dependencies: [
+    "Zero new runtime dependencies on the CLI hot path - rely on node:* built-ins (parseArgs, streams, readline)",
+    "Existing @actions/core and @actions/github stay scoped to src/action - never import them from src/cli or src/core"
+  ]
+
+  naming: [
+    "Files: kebab-case.ts (logstrip-parser.ts, cli/index.ts, action/index.ts)",
+    "Types and constants: PascalCase / SCREAMING_SNAKE_CASE for regex tables",
+    "Functions and locals: camelCase",
+    "Exported regex patterns end in _PATTERN, exported strings end in _MARKER"
+  ]
+
+  cli: [
+    "CLI bins are spelled logstrip (short) and logstrip (verbose) - keep both registered",
+    "src/cli/index.ts is the canonical user-facing entry - all UX changes start here",
+    "Argument parsing uses node:util.parseArgs with allowPositionals + strict, no commander/yargs",
+    "First positional is the input path; omit to read stdin. -o/--output defaults to stdout",
+    "Stats (--stats) always go to stderr; JSON (--json) always to stdout and requires --output",
+    "Exit codes: 0 success, 1 runtime failure, 2 usage error (bad flag, bad aggressiveness, missing input with TTY stdin)",
+    "Export runCli(argv, io) and parseCliOptions(argv) so tests can drive the CLI with mocked streams",
+    "Wrap every parser/lib error thrown inside runCli into a friendly logstrip: <message> line on stderr - never leak stack traces"
+  ]
+
+  parser: [
+    "Keep the parser pure and streaming - never buffer the whole log in memory",
+    "All regex tables live near the top of logstrip-parser.ts as named constants",
+    "Stats are mutated through a single accumulator object passed by reference",
+    "Sanitization runs before deduplication so identical events collapse correctly",
+    "processLogStream is the lower-level entry the CLI uses for stdin/stdout; processLogFile composes it for path-to-path use"
+  ]
+
+  action: [
+    "src/action/index.ts is a thin wrapper - delegate to processLogFile + render a Step Summary, nothing else",
+    "Read inputs via @actions/core.getInput; never read process.env directly",
+    "Resolve relative outputs through buildOutputPath so default suffix is .logstrip.log",
+    "@actions/github is imported dynamically to avoid CJS/ESM conflicts in tests",
+    "Failures must call core.setFailed - never throw out of run()"
+  ]
+
+  build: [
+    "tsc -p tsconfig.build.json emits to dist/{cli,core,action}",
+    "scripts/post-build.js stamps the shebang and chmods dist/cli/index.js to 0755 - do not skip it",
+    "package.json bin map points both logstrip and logstrip to dist/cli/index.js",
+    "files: must include dist/cli alongside dist/core, dist/action, action.yml"
+  ]
+
+  testing: [
+    "Runner: vitest run --coverage (Node v8 provider)",
+    "Unit tests next to source: tests/logstrip-parser.test.ts, tests/cli.test.ts, tests/action.test.ts",
+    "E2E smoke tests in tests/smoke.test.ts operate on real fixtures",
+    "Fixtures in tests/fixtures/*.log; snapshots in tests/fixtures/__snapshots__/*.logstrip.snap",
+    "Coverage thresholds are 100/100/100/100 (vitest.config.ts) - do not lower them",
+    "When adding a new fixture, profile it first to set realistic minSavingsPercent and mustContain/mustNotContain assertions",
+    "Snapshots are committed - regenerate intentionally with vitest -u and review the diff",
+    "Mock @actions/core and @actions/github in action tests; never hit the real GitHub API",
+    "Mock CLI IO via the CliIo interface (stdin/stdout/stderr/stdinIsTTY); never touch process.stdout directly in tests"
+  ]
+
+  ci: [
+    "ci.yml runs on Node 20.x / 22.x / 24.x; keep parser and CLI compatible with all three",
+    "The CLI smoke step feeds a printf-built log through node dist/cli/index.js and greps for [x2] [ERROR]",
+    "The action-smoke-test job downloads the published artifact and runs processLogFile against a printf-built fixture",
+    "When adding workflow steps avoid indented heredocs - they preserve leading whitespace and break literal grep assertions"
+  ]
+
+  docs: [
+    "MkDocs Material with mkdocs.yml + docs/**; build with mkdocs build --strict",
+    "CLI reference (docs/reference/cli.md) is the canonical user-facing doc - keep it in sync with src/cli/index.ts flags",
+    "Action reference (docs/reference/action.md) is a wrapper page and must clearly call out 'CLI is preferred'",
+    "Custom CSS lives in docs/assets/stylesheets/extra.css (dark theme, JetBrains Mono, lowercase hero)",
+    "Logo asset is docs/assets/images/logo.svg"
+  ]
+
+  git: {
+    format: "Conventional Commits"
+    types: [feat, fix, docs, refactor, test, chore, ci, build]
+  }
+}
