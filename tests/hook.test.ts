@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, readFile, mkdir, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -15,6 +15,8 @@ const CURSOR_HOOKS_JSON = resolve(
   '../plugins/logstrip/hooks/cursor-hooks.json',
 );
 
+const CLI_PATH = resolve(__dirname, '../dist/cli/index.js');
+
 // ── helpers ──────────────────────────────────────────────────────────
 
 interface HookResult {
@@ -24,6 +26,9 @@ interface HookResult {
   durationMs: number;
 }
 
+let binDir: string;
+let hookEnv: Record<string, string | undefined>;
+
 function runHook(input: object): Promise<HookResult> {
   return new Promise((resolve, reject) => {
     const stdin = JSON.stringify(input);
@@ -31,6 +36,7 @@ function runHook(input: object): Promise<HookResult> {
     const child = spawn('bash', [HOOK_SCRIPT], {
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 30_000,
+      env: hookEnv,
     });
 
     let stdout = '';
@@ -157,6 +163,19 @@ let workDir: string;
 
 beforeAll(async () => {
   workDir = await mkdtemp(join(tmpdir(), 'logstrip-hook-'));
+
+  // Create a wrapper script so `logstrip` is discoverable via PATH
+  binDir = join(workDir, 'bin');
+  await mkdir(binDir, { recursive: true });
+  const wrapper = join(binDir, 'logstrip');
+  await writeFile(wrapper, `#!/bin/sh\nexec node ${CLI_PATH} "$@"\n`);
+  await chmod(wrapper, 0o755);
+
+  // Build env with augmented PATH so the hook script finds `logstrip`
+  hookEnv = {
+    ...process.env,
+    PATH: `${binDir}:${process.env.PATH ?? '/usr/bin:/bin'}`,
+  };
 });
 
 afterAll(async () => {
