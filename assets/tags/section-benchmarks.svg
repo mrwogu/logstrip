@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="32" viewBox="0 0 320 32">
+  <rect width="320" height="32" rx="4" fill="#0f0f1a"/>
+  <text x="16" y="22" fill="#f0c040" font-family="system-ui,sans-serif" font-size="16" font-weight="700">Benchmarks</text>
+  <rect x="130" y="14" width="170" height="3" rx="1.5" fill="#f0c040" opacity="0.25"/>
+</svg>
