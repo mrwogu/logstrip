@@ -5,8 +5,8 @@ import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
 import { finished } from 'node:stream/promises';
 import {
-  type BonsaiCustomConfig,
-  type BonsaiSourceSignature,
+  type LogStripCustomConfig,
+  type LogStripSourceSignature,
   loadLogStripConfig,
 } from './logstrip-config.js';
 
@@ -1256,7 +1256,7 @@ export function scoreLineRelevance(
 
 export function buildMergedConfig(
   options: LogStripOptions = {},
-): BonsaiCustomConfig & { mergedSources: readonly (readonly [string, readonly string[]])[] } {
+): LogStripCustomConfig & { mergedSources: readonly (readonly [string, readonly string[]])[] } {
   const config = loadLogStripConfig(options.configPath);
   const mergedSources: (readonly [string, readonly string[]])[] = [
     ...LOG_SOURCE_SIGNATURES,

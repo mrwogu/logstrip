@@ -1,13 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-export interface BonsaiSourceSignature {
+export interface LogStripSourceSignature {
   name: string;
   markers: readonly string[];
 }
 
-export interface BonsaiCustomConfig {
-  sources: readonly BonsaiSourceSignature[];
+export interface LogStripCustomConfig {
+  sources: readonly LogStripSourceSignature[];
   diagnosticPatterns: readonly string[];
   ignorePatterns: readonly string[];
   sanitizePatterns: readonly SanitizeRule[];
@@ -22,7 +22,7 @@ export interface SanitizeRule {
 
 const CONFIG_FILENAME = '.logstrip.yml';
 
-const EMPTY_CONFIG: BonsaiCustomConfig = {
+const EMPTY_CONFIG: LogStripCustomConfig = {
   sources: [],
   diagnosticPatterns: [],
   ignorePatterns: [],
@@ -30,7 +30,7 @@ const EMPTY_CONFIG: BonsaiCustomConfig = {
   internalStackPatterns: [],
 };
 
-export function parseBonsaiConfig(content: string): BonsaiCustomConfig {
+export function parseLogStripConfig(content: string): LogStripCustomConfig {
   const parsed = parseMinimalYaml(content);
   return normalizeConfig(parsed);
 }
@@ -38,12 +38,12 @@ export function parseBonsaiConfig(content: string): BonsaiCustomConfig {
 export function loadLogStripConfig(
   explicitPath?: string,
   startDir?: string,
-): BonsaiCustomConfig {
+): LogStripCustomConfig {
   const configPath = resolveConfigPath(explicitPath, startDir);
   if (configPath === undefined) return EMPTY_CONFIG;
 
   const content = readFileSync(configPath, 'utf8');
-  return parseBonsaiConfig(content);
+  return parseLogStripConfig(content);
 }
 
 export function resolveConfigPath(
@@ -62,7 +62,7 @@ export function resolveConfigPath(
   return undefined;
 }
 
-function normalizeConfig(raw: Record<string, unknown>): BonsaiCustomConfig {
+function normalizeConfig(raw: Record<string, unknown>): LogStripCustomConfig {
   return {
     sources: normalizeSources(raw.sources),
     diagnosticPatterns: normalizeStringArray(raw.diagnosticPatterns),
@@ -74,7 +74,7 @@ function normalizeConfig(raw: Record<string, unknown>): BonsaiCustomConfig {
 
 function normalizeSources(
   raw: unknown,
-): readonly BonsaiSourceSignature[] {
+): readonly LogStripSourceSignature[] {
   if (!Array.isArray(raw)) return [];
 
   return raw

@@ -25537,7 +25537,7 @@ var EMPTY_CONFIG = {
   sanitizePatterns: [],
   internalStackPatterns: []
 };
-function parseBonsaiConfig(content) {
+function parseLogStripConfig(content) {
   const parsed = parseMinimalYaml(content);
   return normalizeConfig(parsed);
 }
@@ -25545,7 +25545,7 @@ function loadLogStripConfig(explicitPath, startDir) {
   const configPath = resolveConfigPath(explicitPath, startDir);
   if (configPath === void 0) return EMPTY_CONFIG;
   const content = (0, import_node_fs.readFileSync)(configPath, "utf8");
-  return parseBonsaiConfig(content);
+  return parseLogStripConfig(content);
 }
 function resolveConfigPath(explicitPath, startDir) {
   if (explicitPath !== void 0) {

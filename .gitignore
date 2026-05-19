@@ -5,5 +5,5 @@ dist/src/
 dist/tests/
 dist/**/*.d.ts
 .DS_Store
-/assets/
+
 *.tgz

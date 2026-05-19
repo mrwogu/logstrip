@@ -4,9 +4,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   loadLogStripConfig,
-  parseBonsaiConfig,
+  parseLogStripConfig,
   resolveConfigPath,
-  type BonsaiCustomConfig,
+  type LogStripCustomConfig,
 } from '../src/core/logstrip-config';
 
 const VALID_CONFIG_YAML = `# LogStrip custom config for Acme Corp
@@ -44,9 +44,9 @@ const MINIMAL_CONFIG_YAML = `sources:
 `;
 
 describe('logstrip-config', () => {
-  describe('parseBonsaiConfig', () => {
+  describe('parseLogStripConfig', () => {
     it('parses a full config with all sections', () => {
-      const config = parseBonsaiConfig(VALID_CONFIG_YAML);
+      const config = parseLogStripConfig(VALID_CONFIG_YAML);
 
       expect(config.sources).toHaveLength(2);
       expect(config.sources[0].name).toBe('acme-gateway');
@@ -67,7 +67,7 @@ describe('logstrip-config', () => {
     });
 
     it('parses a minimal config with inline markers array', () => {
-      const config = parseBonsaiConfig(MINIMAL_CONFIG_YAML);
+      const config = parseLogStripConfig(MINIMAL_CONFIG_YAML);
 
       expect(config.sources).toHaveLength(1);
       expect(config.sources[0].name).toBe('internal-tool');
@@ -78,14 +78,14 @@ describe('logstrip-config', () => {
     });
 
     it('returns empty config for empty input', () => {
-      const config = parseBonsaiConfig('');
+      const config = parseLogStripConfig('');
 
       expect(config.sources).toHaveLength(0);
       expect(config.diagnosticPatterns).toHaveLength(0);
     });
 
     it('returns empty config for YAML with no recognized keys', () => {
-      const config = parseBonsaiConfig('unknownKey:\n  - foo\n');
+      const config = parseLogStripConfig('unknownKey:\n  - foo\n');
 
       expect(config.sources).toHaveLength(0);
     });
@@ -95,7 +95,7 @@ describe('logstrip-config', () => {
   - name: empty-source
     markers: []
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
 
       expect(config.sources).toHaveLength(0);
     });
@@ -105,7 +105,7 @@ describe('logstrip-config', () => {
   - markers:
       - some-marker
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
 
       expect(config.sources).toHaveLength(0);
     });
@@ -114,7 +114,7 @@ describe('logstrip-config', () => {
       const yaml = `sanitizePatterns:
   - replacement: "[REDACTED]"
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
 
       expect(config.sanitizePatterns).toHaveLength(0);
     });
@@ -123,7 +123,7 @@ describe('logstrip-config', () => {
       const yaml = `sanitizePatterns:
   - pattern: "secret-\\\\d+"
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
 
       expect(config.sanitizePatterns).toHaveLength(1);
       expect(config.sanitizePatterns[0].pattern).toBe('secret-\\d+');
@@ -136,7 +136,7 @@ describe('logstrip-config', () => {
     replacement: "bar"
     flags: "gi"
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
 
       expect(config.sanitizePatterns[0].flags).toBe('gi');
     });
@@ -146,7 +146,7 @@ describe('logstrip-config', () => {
   - pattern: "baz"
     replacement: "qux"
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
 
       expect(config.sanitizePatterns[0].flags).toBeUndefined();
     });
@@ -219,7 +219,7 @@ describe('logstrip-config', () => {
     it('parses inline top-level value', () => {
       const yaml = `version: 2
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       // version is not a recognized config key but parseMinimalYaml should handle it
       expect(config.sources).toHaveLength(0);
     });
@@ -229,7 +229,7 @@ describe('logstrip-config', () => {
   - name: test
     markers: []
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       // markers is empty → source is filtered out
       expect(config.sources).toHaveLength(0);
     });
@@ -237,7 +237,7 @@ describe('logstrip-config', () => {
     it('parses inline array with quoted items', () => {
       const yaml = `ignorePatterns: ["foo", 'bar']
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.ignorePatterns).toEqual(['foo', 'bar']);
     });
 
@@ -249,7 +249,7 @@ describe('logstrip-config', () => {
   - pattern: "bar"
     replacement: "baz"
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.sanitizePatterns).toHaveLength(2);
       expect(config.sanitizePatterns[0].flags).toBe('gi');
       expect(config.sanitizePatterns[1].replacement).toBe('baz');
@@ -261,7 +261,7 @@ describe('logstrip-config', () => {
   - "false"
   - "null"
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.diagnosticPatterns).toEqual(['true', 'false', 'null']);
     });
 
@@ -271,7 +271,7 @@ otherKey: false
 nullKey: null
 tildeKey: ~
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       // These are not config keys but the parser should handle them
       expect(config.sources).toHaveLength(0);
     });
@@ -279,14 +279,14 @@ tildeKey: ~
     it('parses inline top-level value', () => {
       const yaml = `someKey: someValue
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.sources).toHaveLength(0);
     });
 
     it('handles inline array with nested brackets', () => {
       const yaml = `ignorePatterns: ["a[b,c]", "d"]
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.ignorePatterns).toEqual(['a[b,c]', 'd']);
     });
 
@@ -298,7 +298,7 @@ tildeKey: ~
       - m1
     flags: "gi"
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.sanitizePatterns).toHaveLength(1);
       expect(config.sanitizePatterns[0].flags).toBe('gi');
     });
@@ -311,7 +311,7 @@ tildeKey: ~
     emptyProp:
     otherProp: "ghi"
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.sanitizePatterns).toHaveLength(1);
       expect(config.sanitizePatterns[0].replacement).toBe('def');
     });
@@ -322,7 +322,7 @@ tildeKey: ~
     orphanKey: someValue
   - "valid-pattern"
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.diagnosticPatterns).toEqual(['valid-pattern']);
     });
 
@@ -331,7 +331,7 @@ tildeKey: ~
   - name: test
     markers:
       - m1`;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.sources).toHaveLength(1);
       expect(config.sources[0].markers).toEqual(['m1']);
     });
@@ -340,14 +340,14 @@ tildeKey: ~
       const yaml = `diagnosticPatterns:
   - '\\bFOO\\b'
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.diagnosticPatterns).toEqual(['\\bFOO\\b']);
     });
 
     it('handles trailing comma in inline array', () => {
       const yaml = `ignorePatterns: [a, b,]
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       // Trailing comma creates empty string entry which is still a string
       expect(config.ignorePatterns.length).toBeGreaterThanOrEqual(2);
     });
@@ -356,7 +356,7 @@ tildeKey: ~
       // Unquoted nested brackets: [a[b,c], d] — depth tracking needed
       const yaml = `diagnosticPatterns: [a[b,c], d]
 `;
-      const config = parseBonsaiConfig(yaml);
+      const config = parseLogStripConfig(yaml);
       expect(config.diagnosticPatterns.length).toBe(2);
     });
   });

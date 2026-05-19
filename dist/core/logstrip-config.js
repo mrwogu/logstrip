@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseBonsaiConfig = parseBonsaiConfig;
+exports.parseLogStripConfig = parseLogStripConfig;
 exports.loadLogStripConfig = loadLogStripConfig;
 exports.resolveConfigPath = resolveConfigPath;
 const node_fs_1 = require("node:fs");
@@ -16,7 +16,7 @@ const EMPTY_CONFIG = {
     sanitizePatterns: [],
     internalStackPatterns: [],
 };
-function parseBonsaiConfig(content) {
+function parseLogStripConfig(content) {
     const parsed = parseMinimalYaml(content);
     return normalizeConfig(parsed);
 }
@@ -25,7 +25,7 @@ function loadLogStripConfig(explicitPath, startDir) {
     if (configPath === undefined)
         return EMPTY_CONFIG;
     const content = (0, node_fs_1.readFileSync)(configPath, 'utf8');
-    return parseBonsaiConfig(content);
+    return parseLogStripConfig(content);
 }
 function resolveConfigPath(explicitPath, startDir) {
     if (explicitPath !== undefined) {

@@ -523,7 +523,7 @@
           <span class="logstrip-toggle__hint" data-logstrip-hint>try me <span class="logstrip-toggle__arrow">↓</span></span>
           <div class="logstrip-toggle__row">
             <button class="logstrip-toggle__side logstrip-toggle__side--raw is-active" data-logstrip-raw-btn type="button">raw.log</button>
-            <button class="logstrip-toggle__pill" data-logstrip-pill type="button" aria-label="Switch between raw and Bonsai output">
+            <button class="logstrip-toggle__pill" data-logstrip-pill type="button" aria-label="Switch between raw and LogStrip output">
               <span class="logstrip-toggle__knob"></span>
             </button>
             <button class="logstrip-toggle__side logstrip-toggle__side--clean" data-logstrip-clean-btn type="button"><img class="logstrip-toggle__icon logstrip-toggle__icon--logo" src="assets/images/logo2-256.webp" alt="" width="235" height="256">logstrip</button>

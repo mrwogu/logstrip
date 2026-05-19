@@ -20,7 +20,7 @@ description: Free, zero-dependency CLI that compresses noisy logs into high-sign
 </p>
 </div>
 
-<div class="logstrip-demo logstrip-demo--toggle" data-logstrip-compare aria-label="Interactive raw-to-Bonsai terminal comparison">
+<div class="logstrip-demo logstrip-demo--toggle" data-logstrip-compare aria-label="Interactive raw-to-LogStrip terminal comparison">
   <div class="logstrip-demo__bar">
     <span class="logstrip-demo__dot"></span>
     <span class="logstrip-demo__dot"></span>

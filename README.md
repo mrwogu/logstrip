@@ -69,7 +69,7 @@ Raw input:
   [ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed
       at lib (/repo/node_modules/pkg/index.js:1:1)
 
-Bonsai output:
+LogStrip output:
   [x2] [ERROR] request [ID] failed
   [... hidden internal library frames ...]
 ```
