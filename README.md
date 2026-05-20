@@ -61,7 +61,7 @@ cat raw.log | logstrip > clean.log
 logstrip raw.log --stats > clean.log
 ```
 
-### 30-second demo
+### Quick example
 
 ```text
 Raw input:
