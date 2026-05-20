@@ -25751,7 +25751,7 @@ var AGGRESSIVENESS_LEVELS = [
   "auto"
 ];
 function parseAggressiveness(value) {
-  const normalized = (value ?? "high").toLowerCase();
+  const normalized = (value ?? "auto").toLowerCase();
   if (AGGRESSIVENESS_LEVELS.includes(normalized)) {
     return normalized;
   }
@@ -27098,7 +27098,7 @@ async function run() {
   try {
     const inputPath = core.getInput("log-path", { required: true });
     const aggressiveness = parseAggressiveness(
-      core.getInput("aggressiveness") || "high"
+      core.getInput("aggressiveness") || "auto"
     );
     const outputPath = buildOutputPath(inputPath);
     const result = await processLogFile(inputPath, outputPath, {

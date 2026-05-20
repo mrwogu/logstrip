@@ -14,7 +14,7 @@ exports.AGGRESSIVENESS_LEVELS = [
     'auto',
 ];
 function parseAggressiveness(value) {
-    const normalized = (value ?? 'high').toLowerCase();
+    const normalized = (value ?? 'auto').toLowerCase();
     if (exports.AGGRESSIVENESS_LEVELS.includes(normalized)) {
         return normalized;
     }
