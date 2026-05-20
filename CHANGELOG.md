@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0](https://github.com/mrwogu/logstrip/compare/v1.0.0...v1.1.0) (2026-05-19)
+
+
+### Features
+
+* add PreToolUse/UserPromptSubmit hooks for auto-activating LogStrip on log content ([16b8c7c](https://github.com/mrwogu/logstrip/commit/16b8c7c5d1b22affbe8b32dee87d90b4996d309a))
+
+
+### Bug Fixes
+
+* add logstrip wrapper to PATH in hook tests for CI ([3682625](https://github.com/mrwogu/logstrip/commit/368262597eca809f1b61c5c5e456ae2caa4998ee))
+* use POSIX ERE [0-9] instead of \d in hook grep patterns, skip hook tests on Windows ([56e538d](https://github.com/mrwogu/logstrip/commit/56e538d2c80d2eb11c623d8478ad486c85024960))
+
 ## 1.0.0 (2026-05-19)
 
 
