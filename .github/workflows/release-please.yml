@@ -67,10 +67,6 @@ jobs:
           git tag -f "${TAG_NAME}" HEAD
           git push origin "refs/tags/${TAG_NAME}" --force
 
-      - name: Publish to npm
-        if: ${{ steps.release.outputs.release_created }}
-        run: npm publish
-
       - name: Update major action tag
         if: ${{ steps.release.outputs.release_created }}
         env:
@@ -81,3 +77,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -f "$MAJOR_TAG" HEAD
           git push origin "refs/tags/$MAJOR_TAG" --force
+
+      - name: Publish to npm
+        if: ${{ steps.release.outputs.release_created }}
+        run: npm publish
