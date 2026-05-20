@@ -16,7 +16,7 @@ const input = createReadStream('raw.log', { encoding: 'utf8' });
 const output = createWriteStream('raw.logstrip.log', { encoding: 'utf8' });
 
 const result = await processLogStream(input, output, {
-  aggressiveness: 'high',
+  aggressiveness: 'auto',
 });
 ```
 
@@ -40,6 +40,48 @@ stream. When adjacent diagnostic lines share the same stable shape, the parser
 folds them into a single `[xN]` line and generalizes volatile fields such as
 `amount=99.99`, `amount=49.50`, and `amount=12.00` to
 `amount=[99.99 | 49.50 | 12.00]`.
+
+## Aggressiveness
+
+The `aggressiveness` option in `LogStripOptions` accepts five values:
+
+| Value | Behavior |
+| :--- | :--- |
+| `low` | Keeps most lines including `[INFO]` and `[DEBUG]`. Minimal compression. |
+| `medium` | Drops noise tags (`[INFO]`, `[DEBUG]`, `[TRACE]`) but keeps `[WARN]`. |
+| `high` | Drops noise and pure warnings; keeps only diagnostic signals + context window. |
+| `aggressive` | Drops everything except errors, fatals, stack frames, and explicit diagnostic keywords. |
+| `auto` | Starts at `high` and adjusts dynamically (default when `aggressiveness` is omitted). |
+
+### Dynamic aggressiveness (`auto`)
+
+When `aggressiveness` is `'auto'`, the parser creates a `DynamicAggressivenessState`
+that tracks a sliding window of the last 8 line decisions:
+
+- **Decrease** (toward `medium`): when 3+ of the last 8 decisions were hard
+  keeps (errors, stack frames, diagnostic keywords), the effective level drops
+  to preserve more context in signal-rich logs.
+- **Increase** (toward `aggressive`): when 6+ of the last 8 decisions were drops
+  or repeated lines, the effective level rises to filter more aggressively in
+  noisy output.
+- **Stable**: otherwise the effective level stays at `high`.
+
+The transitions use hysteresis — the effective level only changes when the
+window consistently supports the shift, so brief fluctuations do not cause
+oscillation.
+
+```ts
+import { createDynamicAggressivenessState } from 'logstrip';
+
+const state = createDynamicAggressivenessState('auto');
+console.log(state.effective); // 'high'
+
+// After processing lines, the state may shift
+state.recordDecision('keep-hard');
+state.recordDecision('keep-hard');
+state.recordDecision('keep-hard');
+// ... over an 8-line window, effective may shift to 'medium'
+```
 
 ## Hybrid detection engine
 
@@ -80,7 +122,7 @@ scoreLineRelevance('containerd failed to create task', 'high'); // >= 40
 import { processLogFile } from 'logstrip';
 
 const result = await processLogFile('raw.log', 'raw.logstrip.log', {
-  aggressiveness: 'high',
+  aggressiveness: 'auto',
 });
 ```
 

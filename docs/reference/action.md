@@ -24,7 +24,7 @@ If you can call shell from your workflow, prefer the CLI directly:
   id: logstrip
   with:
     log-path: raw_logs.txt
-    aggressiveness: high
+    aggressiveness: auto
 ```
 
 ## Inputs
@@ -32,7 +32,11 @@ If you can call shell from your workflow, prefer the CLI directly:
 | Name | Required | Default | Description |
 | :--- | :---: | :--- | :--- |
 | `log-path` | yes | none | Path to the raw log file. |
-| `aggressiveness` | no | `high` | Compression level. Accepted values: `low`, `medium`, `high`, `aggressive`. |
+| `aggressiveness` | no | `auto` | Compression level. Accepted values: `low`, `medium`, `high`, `aggressive`, `auto`. |
+
+The default `auto` mode starts at `high` and adjusts dynamically based on the
+log content — see the [CLI reference](cli.md#auto-mode-default) for details.
+To use a fixed level, set it explicitly (e.g. `aggressiveness: aggressive`).
 
 ## Outputs
 

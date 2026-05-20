@@ -31,7 +31,7 @@ logstrip [INPUT] [options]
 | Flag | Description | Default |
 | :--- | :--- | :--- |
 | `-o`, `--output <path>` | Write the compressed log to `<path>`. When omitted, the compressed log is written to `stdout`. | _(stdout)_ |
-| `-a`, `--aggressiveness <level>` | Compression preset: `low`, `medium`, `high`, `aggressive`. | `high` |
+| `-a`, `--aggressiveness <level>` | Compression preset: `low`, `medium`, `high`, `aggressive`, `auto`. | `auto` |
 | `-s`, `--stats` | Print compression statistics to `stderr` after the log has been processed. | off |
 | `-j`, `--json` | Print the `LogStripResult` as JSON to `stdout`. Requires `--output` so the compressed log does not collide with the report. | off |
 | `-h`, `--help` | Print the help text and exit. | - |
@@ -134,8 +134,39 @@ The parser uses a hybrid scoring model instead of a single binary filter:
   diagnostic keywords such as `failed`, `timeout`, `refused`, `crashed`,
   `killed`, `terminated`, `unauthorized`, and `unavailable`.
 
-For the most predictable AI-agent input, start with the default `high` preset.
-Use `aggressive` when the input is very noisy and warnings are mostly low-value.
+### Static levels
+
+| Level | Behavior |
+| :--- | :--- |
+| `low` | Keeps most lines including `[INFO]` and `[DEBUG]`. Minimal compression. |
+| `medium` | Drops noise tags (`[INFO]`, `[DEBUG]`, `[TRACE]`) but keeps `[WARN]`. |
+| `high` | Drops noise and pure warnings; keeps only diagnostic signals + context window. |
+| `aggressive` | Drops everything except errors, fatals, stack frames, and explicit diagnostic keywords. Maximum compression. |
+
+### `auto` mode (default)
+
+`auto` starts at the `high` static level and then **adjusts dynamically** based
+on what the parser sees in the stream:
+
+- The parser tracks a sliding window of the last 8 line decisions (kept vs
+  dropped).
+- When the window contains mostly hard-keep signals (3+ errors/diagnostics),
+  the effective level **decreases** toward `medium` — more context is preserved
+  because the log is signal-rich.
+- When the window shows many drops and repeated lines (6+ drops + repeats),
+  the effective level **increases** toward `aggressive` — the log is mostly
+  noise, so stricter filtering recovers more tokens.
+
+This means `auto` is safe to use as the default: it preserves context in
+error-heavy logs and maximizes compression in noisy build output, without
+requiring the user to guess the right level up front.
+
+To pin a specific static level and disable dynamic adjustment, pass it
+explicitly:
+
+```bash
+logstrip raw.log -a high -o clean.log
+```
 
 ### Use inside a shell script
 
