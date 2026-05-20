@@ -17,5 +17,6 @@
   ],
   "skills": "./skills/",
   "commands": "./commands/",
-  "agents": "./agents/"
+  "agents": "./agents/",
+  "hooks": "./hooks/hooks.json"
 }

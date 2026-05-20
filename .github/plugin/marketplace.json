@@ -1,8 +1,8 @@
 {
-  "name": "logstrip",
+  "name": "logstrip-marketplace",
   "metadata": {
-    "description": "LogStrip plugin marketplace for GitHub Copilot.",
-    "version": "1.0.0"
+    "description": "LogStrip plugin marketplace for GitHub Copilot and VS Code.",
+    "version": "1.1.0"
   },
   "owner": {
     "name": "mrwogu"
@@ -10,22 +10,9 @@
   "plugins": [
     {
       "name": "logstrip",
-      "source": "./plugins/logstrip",
-      "description": "Compress noisy CI, build, runtime, scanner, and test logs before Copilot diagnoses them.",
-      "version": "1.0.0",
-      "repository": "https://github.com/mrwogu/logstrip",
-      "keywords": [
-        "logs",
-        "ci",
-        "llm",
-        "compression"
-      ],
-      "license": "MIT",
-      "skills": [
-        "./skills/logstrip"
-      ],
-      "commands": "./commands/",
-      "agents": "./agents/"
+      "description": "Compress noisy CI, build, runtime, scanner, and test logs before Copilot diagnoses them. Auto-detects pasted log output and compresses before analysis.",
+      "version": "1.1.0",
+      "source": "./plugins/logstrip"
     }
   ]
 }

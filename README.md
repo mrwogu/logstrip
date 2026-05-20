@@ -122,7 +122,7 @@ diagnosing them. The workflow is the same everywhere: run `logstrip`, analyze th
 
 | | | | | | |
 |:---:|:---:|:---:|:---:|:---:|:---:|
-| [![Claude Code](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-claudecode-avatar.webp)](https://claude.ai/product/claude-code)<br>**Claude Code**<br>marketplace plugin | [![Codex](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-codex-avatar.webp)](https://github.com/openai/codex)<br>**Codex CLI**<br>skill + command | [![Factory Droid](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-droid.png)](https://factory.ai)<br>**Factory Droid**<br>marketplace plugin | [![Cursor](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-cursor-avatar.webp)](https://cursor.com)<br>**Cursor**<br>rule + command | [![Copilot](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-githubcopilot-avatar.webp)](https://github.com/features/copilot)<br>**GitHub Copilot**<br>skill + command | [![OpenCode](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-opencode-avatar.webp)](https://github.com/opencode-ai/opencode)<br>**OpenCode**<br>skill + `/logstrip` |
+| [![Claude Code](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-claudecode-avatar.webp)](https://claude.ai/product/claude-code)<br>**Claude Code**<br>hooks + agents + skill | [![Codex](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-codex-avatar.webp)](https://github.com/openai/codex)<br>**Codex CLI**<br>hooks + skill + AGENTS.md | [![Factory Droid](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-droid.png)](https://factory.ai)<br>**Factory Droid**<br>droids + skill + command | [![Cursor](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-cursor-avatar.webp)](https://cursor.com)<br>**Cursor**<br>rules + hooks | [![Copilot](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-githubcopilot-avatar.webp)](https://github.com/features/copilot)<br>**GitHub Copilot**<br>marketplace plugin | [![OpenCode](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-opencode-avatar.webp)](https://github.com/opencode-ai/opencode)<br>**OpenCode**<br>skill + `/logstrip` command |
 | [![Aider](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-aider.svg)](https://github.com/Aider-AI/aider)<br>**Aider**<br>CLI pipe | [![Cline](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-cline-avatar.webp)](https://github.com/cline/cline)<br>**Cline**<br>CLI pipe | [![Gemini CLI](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-gemini-cli-avatar.webp)](https://github.com/google-gemini/gemini-cli)<br>**Gemini CLI**<br>CLI pipe | [![Windsurf](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-windsurf-avatar.webp)](https://windsurf.com)<br>**Windsurf**<br>CLI pipe | [![Roo Code](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/logo-roocode-avatar.webp)](https://github.com/RooCodeInc/Roo-Code)<br>**Roo Code**<br>CLI pipe | **Any agent**<br>CLI / `stdin` pipe |
 
 Works with **any** agent that can run a shell command or read a file. One binary, compressed output shared across all of them.
@@ -151,27 +151,59 @@ line-by-line.
 
 **3. Skills, commands, and agents**
 
-| Component | Purpose |
-|:---|:---|
-| `/logstrip` skill | Invoked when the user asks to compress, trim, or prepare a log for analysis. |
-| `/logstrip` command | Slash command: `logstrip <input> [--output ...] [--aggressiveness ...]`. |
-| `logstrip-reviewer` agent | Reviews diffs against LogStrip coding standards and the 100% coverage gate. |
-| `logstrip-fixture-author` agent | Generates realistic CI log fixtures and wires them into smoke tests. |
-| `logstrip.mdc` rule | Cursor rule that activates on `**/*.log` globs. |
-| `logstrip-paste-detect.mdc` rule | Always-on rule that detects pasted log output in Cursor. |
+| Component | Platform(s) | Purpose |
+|:---|:---|:---|
+| `/logstrip` skill | Claude, Codex, Droid, OpenCode | Invoked when the user asks to compress, trim, or prepare a log for analysis. |
+| `/logstrip` command | Droid, OpenCode | Slash command: `logstrip <input> [--output ...] [--aggressiveness ...]`. |
+| `logstrip-reviewer` agent / droid | Claude, Droid | Reviews diffs against LogStrip coding standards and the 100% coverage gate. |
+| `logstrip-fixture-author` agent / droid | Claude, Droid | Generates realistic CI log fixtures and wires them into smoke tests. |
+| `logstrip.mdc` rule | Cursor | Activates on `**/*.log` globs. |
+| `logstrip-paste-detect.mdc` rule | Cursor | Always-on rule that detects pasted log output. |
+| `copilot-instructions.md` | Copilot | Top-level custom instructions for log-aware behaviour. |
+| `logstrip.instructions.md` | Copilot | File-scoped instructions (applyTo: `**/*.log`). |
+| `logstrip.prompt.md` | Copilot | Agent-mode prompt for compress-and-diagnose workflow. |
+| `AGENTS.md` | Codex, OpenCode | Project-level agent instructions for log handling. |
 
 **4. Per-agent plugin manifests**
 
-| Agent | Manifest | Hook format |
+| Agent | Manifest | Components |
 |:---|:---|:---|
-| Claude Code | `plugins/logstrip/.claude-plugin/plugin.json` | `hooks.json` (PreToolUse + UserPromptSubmit) |
-| Factory Droid | `plugins/logstrip/.factory-plugin/plugin.json` | Same hooks as Claude Code |
-| Codex CLI | `plugins/logstrip/.codex-plugin/plugin.json` | `hooks.json` + skill + command |
-| Cursor | `plugins/logstrip/.cursor-plugin/plugin.json` | `cursor-hooks.json` + rules |
-| GitHub Copilot | `plugins/logstrip/copilot/.github/` | Copilot instructions + prompts |
-| OpenCode | `plugins/logstrip/opencode/.opencode/` | AGENTS.md + skill |
+| Claude Code | `plugins/logstrip/.claude-plugin/plugin.json` | `hooks.json` (PreToolUse + UserPromptSubmit), agents, commands, skill |
+| Factory Droid | `plugins/logstrip/.factory-plugin/plugin.json` | Droids, skill, command |
+| Codex CLI | `plugins/logstrip/.codex-plugin/plugin.json` | `hooks.json` (PreToolUse + UserPromptSubmit), skill, AGENTS.md |
+| Cursor | `plugins/logstrip/.cursor-plugin/plugin.json` | `cursor-hooks.json` (PreToolUse + UserPromptSubmit), rules (logstrip + paste-detect) |
+| GitHub Copilot | `plugins/logstrip/.github/plugin.json` | `hooks.json` (PreToolUse + UserPromptSubmit), agents, commands, skill, `copilot-instructions.md`, `instructions/`, `prompts/` |
+| OpenCode | `plugins/logstrip/opencode/.opencode/` | AGENTS.md, skill, `/logstrip` command |
 
 See the [Agent Plugin Installation guide](https://mrwogu.github.io/logstrip/guides/plugins/) for per-agent setup.
+
+### Installing the Copilot marketplace plugin
+
+LogStrip publishes a Copilot agent plugin that bundles hooks, skills, agents,
+instructions, and prompts into a single installable package. It works in both
+VS Code and the GitHub Copilot CLI (`gh copilot`).
+
+**VS Code** — add the LogStrip marketplace to your settings:
+
+```json
+{
+  "chat.plugins.enabled": true,
+  "chat.plugins.marketplaces": ["mrwogu/logstrip"]
+}
+```
+
+Then browse plugins with `@agentPlugins` in the Extensions view, or VS Code
+will discover LogStrip automatically on next startup.
+
+**Copilot CLI** — install directly:
+
+```bash
+gh copilot plugin install mrwogu/logstrip:plugins/logstrip
+```
+
+Once installed, Copilot will auto-compress `.log` files on read and detect
+pasted log output — the same PreToolUse and UserPromptSubmit hooks that work
+in Claude Code and Cursor.
 
 <a id="how-it-works"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-how.svg" alt="How It Works" width="320">
