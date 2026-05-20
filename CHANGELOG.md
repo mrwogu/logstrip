@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/mrwogu/logstrip/compare/v1.1.0...v1.2.0) (2026-05-20)
+
+
+### Features
+
+* add 'auto' aggressiveness to CLI and action, update tests and snapshots ([0ce8265](https://github.com/mrwogu/logstrip/commit/0ce8265309cb463bc00ae8e2abb6810a0a775335))
+* change default aggressiveness from 'high' to 'auto' across all surfaces ([08654f4](https://github.com/mrwogu/logstrip/commit/08654f481dc88e980533de64a028a55ba781dc67))
+
+
+### Bug Fixes
+
+* force forward slashes in architecture test for Windows CI ([172838b](https://github.com/mrwogu/logstrip/commit/172838ba8a708fffa68c5c8f9e73033578e6adb5))
+* normalize path separators in architecture test for Windows CI ([e80f260](https://github.com/mrwogu/logstrip/commit/e80f2604e7d25c15530ef8ad9859d0060e033ac4))
+
 ## [1.1.0](https://github.com/mrwogu/logstrip/compare/v1.0.0...v1.1.0) (2026-05-19)
 
 
