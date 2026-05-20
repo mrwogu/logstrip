@@ -4,6 +4,21 @@ import { join } from 'node:path';
 import { Readable, Writable, type WritableOptions } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 import {
+  createDynamicAggressivenessState,
+  recordLineDecision,
+} from '../src/core/aggressiveness/dynamic';
+import {
+  SOURCE_DIAGNOSTIC_BOOST,
+  collectDetectedSourceHits,
+  createSourceDetectionState,
+  rankDetectedSources,
+  scoreSourceDiagnosticBoost,
+} from '../src/core/detection/source-detector';
+import {
+  createSourceProfiles,
+  sourceMarkerWeight,
+} from '../src/core/sources/source-profile';
+import {
   CONTEXT_WINDOW_AFTER,
   CONTEXT_WINDOW_BEFORE,
   INTERNAL_STACK_MARKER,
@@ -576,9 +591,105 @@ describe('logstrip parser', () => {
   it('parses aggressiveness values', () => {
     expect(parseAggressiveness(undefined)).toBe('high');
     expect(parseAggressiveness('LOW')).toBe('low');
+    expect(parseAggressiveness('auto')).toBe('auto');
     expect(() => parseAggressiveness('extreme')).toThrow(
       'Unsupported aggressiveness',
     );
+  });
+
+  it('weights source profiles and applies confident source diagnostic boosts', () => {
+    expect(sourceMarkerWeight('go')).toBe(6);
+    expect(sourceMarkerWeight('github actions')).toBe(16);
+    expect(sourceMarkerWeight('typescript')).toBe(12);
+
+    const profiles = createSourceProfiles([
+      ['alpha', ['alpha']],
+      ['beta', ['beta tool']],
+    ]);
+    expect(profiles.map((profile) => profile.name)).toEqual(['alpha', 'beta']);
+    expect(profiles[1].markers[0].weight).toBe(16);
+
+    const state = createSourceDetectionState([
+      ['alpha', ['alpha']],
+      ['beta', ['beta tool']],
+    ]);
+    collectDetectedSourceHits('alpha failed', state);
+    collectDetectedSourceHits('beta tool failed', state);
+    expect(rankDetectedSources(state, 2)).toEqual(['alpha', 'beta']);
+    expect(state.hits.get('beta')?.confidence).toBeGreaterThan(
+      state.hits.get('alpha')?.confidence ?? 0,
+    );
+
+    const activeTypeScript = createSourceDetectionState([
+      ['typescript', ['typescript']],
+      ['pytest', ['pytest']],
+    ]);
+    collectDetectedSourceHits('typescript compiler started', activeTypeScript);
+    expect(scoreSourceDiagnosticBoost('TS9999: Type mismatch', activeTypeScript)).toBe(
+      SOURCE_DIAGNOSTIC_BOOST,
+    );
+    expect(scoreSourceDiagnosticBoost('plain compiler output', activeTypeScript)).toBe(0);
+
+    const weakTypeScript = createSourceDetectionState([
+      ['typescript', ['ts']],
+    ]);
+    collectDetectedSourceHits('ts', weakTypeScript);
+    expect(scoreSourceDiagnosticBoost('TS9999: Type mismatch', weakTypeScript)).toBe(0);
+  });
+
+  it('adjusts auto aggressiveness deterministically from recent decisions', () => {
+    const auto = createDynamicAggressivenessState('auto');
+    expect(auto.effective).toBe('high');
+
+    for (let i = 0; i < 8; i += 1) {
+      recordLineDecision(auto, {
+        kept: false,
+        dropped: true,
+        hardKeep: false,
+        repeated: true,
+      });
+    }
+    expect(auto.effective).toBe('aggressive');
+
+    for (let i = 0; i < 8; i += 1) {
+      recordLineDecision(auto, {
+        kept: true,
+        dropped: false,
+        hardKeep: true,
+        repeated: false,
+      });
+    }
+    expect(auto.effective).toBe('high');
+
+    for (let i = 0; i < 8; i += 1) {
+      recordLineDecision(auto, {
+        kept: true,
+        dropped: false,
+        hardKeep: false,
+        repeated: false,
+      });
+    }
+    expect(auto.effective).toBe('high');
+
+    auto.effective = 'low';
+    for (let i = 0; i < 8; i += 1) {
+      recordLineDecision(auto, {
+        kept: true,
+        dropped: false,
+        hardKeep: true,
+        repeated: false,
+      });
+    }
+    expect(auto.effective).toBe('low');
+
+    const fixed = createDynamicAggressivenessState('low');
+    recordLineDecision(fixed, {
+      kept: false,
+      dropped: true,
+      hardKeep: false,
+      repeated: true,
+    });
+    expect(fixed.effective).toBe('low');
   });
 
   it('sanitizes expensive identifiers and timestamps', () => {
@@ -743,6 +854,52 @@ describe('logstrip parser', () => {
     expect(result.detectedSources).toContain('typescript');
   });
 
+  it('uses confident source detection to keep source-specific diagnostics', async () => {
+    const output = new MemoryWritable();
+    const result = await processLogStream(
+      Readable.from([
+        [
+          'typescript compiler started',
+          'TS9999: Type mismatch in generated declaration',
+        ].join('\n'),
+      ]),
+      output,
+    );
+
+    expect(output.content()).toBe(
+      [
+        'typescript compiler started',
+        'TS9999: Type mismatch in generated declaration',
+        '',
+      ].join('\n'),
+    );
+    expect(result.detectedSources).toContain('typescript');
+  });
+
+  it('auto aggressiveness suppresses later warning noise while keeping errors', async () => {
+    const output = new MemoryWritable();
+    await processLogStream(
+      Readable.from([
+        [
+          '[INFO] boot 1',
+          '[INFO] boot 2',
+          '[INFO] boot 3',
+          '[INFO] boot 4',
+          '[INFO] boot 5',
+          '[INFO] boot 6',
+          '[INFO] boot 7',
+          '[INFO] boot 8',
+          '[WARN] cache warmed successfully',
+          '[ERROR] request failed',
+        ].join('\n'),
+      ]),
+      output,
+      { aggressiveness: 'auto' },
+    );
+
+    expect(output.content()).toBe('[ERROR] request failed\n');
+  });
+
   it('folds adjacent diagnostic variants with generic delta values', async () => {
     const repeatedLogs = [
       '[ERROR] 2026-05-15T08:01:12.436Z spring-boot [payments] charge failed requestId=018f23ab-7c1d-7f44-8bfe-0acddaf33456 amount=99.99',
@@ -813,6 +970,8 @@ describe('logstrip parser', () => {
     // Stack frames are exactly at threshold (no other signal)
     expect(scoreLineRelevance('    at app (/repo/src/app.ts:10:5)', 'high')).toBe(SCORE_KEEP_THRESHOLD);
     expect(scoreLineRelevance('goroutine 42 [running]:', 'high')).toBe(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('github.com/acme/service.(*Server).Start(0xc0001212c0)', 'high')).toBe(SCORE_KEEP_THRESHOLD);
+    expect(scoreLineRelevance('/repo/service/main.go:42 +0x20', 'high')).toBe(SCORE_KEEP_THRESHOLD);
 
     // Soft lines: no matching patterns → score 0
     expect(scoreLineRelevance('Connection state: connecting', 'high')).toBe(0);

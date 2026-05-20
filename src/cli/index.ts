@@ -23,7 +23,7 @@ Arguments:
 
 Options:
   -o, --output <path>      Write the compressed log to <path>. Defaults to stdout.
-  -a, --aggressiveness <l> Compression preset: low | medium | high | aggressive.
+  -a, --aggressiveness <l> Compression preset: low | medium | high | aggressive | auto.
                            Default: high.
   -s, --stats              Print compression statistics to stderr.
   -j, --json               Print LogStripResult as JSON to stdout. Requires --output.

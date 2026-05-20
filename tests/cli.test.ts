@@ -124,6 +124,12 @@ describe('parseCliOptions', () => {
     });
   });
 
+  it('parses auto aggressiveness', () => {
+    const opts = parseCliOptions(['raw.log', '--aggressiveness', 'auto']);
+
+    expect(opts.aggressiveness).toBe('auto');
+  });
+
   it('rejects unknown flags via CliError(exitCode=2)', () => {
     const error = (() => {
       try {
