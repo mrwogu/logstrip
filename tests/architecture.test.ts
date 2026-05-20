@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { join, normalize, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT_DIR = resolve(__dirname, '..');
@@ -40,7 +40,7 @@ describe('architecture boundaries', () => {
   it('keeps the action wrapper as the only @actions integration point', () => {
     const actionImports = listTypeScriptFiles(SRC_DIR)
       .filter((file) => readFileSync(file, 'utf8').includes('@actions/'))
-      .map((file) => relative(ROOT_DIR, file));
+      .map((file) => normalize(relative(ROOT_DIR, file)));
 
     expect(actionImports).toEqual(['src/action/index.ts']);
   });
