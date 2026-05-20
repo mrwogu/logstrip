@@ -49,6 +49,18 @@ jobs:
           npm run build
           npm audit
 
+      - name: Commit dist/ into release tag
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/
+          git commit -m "chore: rebuild dist/ for ${TAG_NAME}"
+          git tag -f "${TAG_NAME}" HEAD
+          git push origin "refs/tags/${TAG_NAME}" --force
+
       - name: Publish to npm
         if: ${{ steps.release.outputs.release_created }}
         run: npm publish
@@ -61,5 +73,5 @@ jobs:
           MAJOR_TAG=$(node -e "const tag = process.env.TAG_NAME; const match = /^v(\\d+)\\./.exec(tag); if (!match) process.exit(1); console.log('v' + match[1]);")
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f "$MAJOR_TAG" "$GITHUB_SHA"
+          git tag -f "$MAJOR_TAG" HEAD
           git push origin "refs/tags/$MAJOR_TAG" --force
