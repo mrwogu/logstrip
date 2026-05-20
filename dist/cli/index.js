@@ -11,7 +11,7 @@ exports.runCli = runCli;
 const node_fs_1 = require("node:fs");
 const node_util_1 = require("node:util");
 const logstrip_parser_1 = require("../core/logstrip-parser");
-exports.CLI_VERSION = '1.0.0'; // x-release-please-version
+exports.CLI_VERSION = '1.1.0'; // x-release-please-version
 exports.HELP_TEXT = `Usage: logstrip [INPUT] [options]
 
 Stream-based log compression that trims noisy server logs, build
@@ -23,7 +23,7 @@ Arguments:
 
 Options:
   -o, --output <path>      Write the compressed log to <path>. Defaults to stdout.
-  -a, --aggressiveness <l> Compression preset: low | medium | high | aggressive.
+  -a, --aggressiveness <l> Compression preset: low | medium | high | aggressive | auto.
                            Default: high.
   -s, --stats              Print compression statistics to stderr.
   -j, --json               Print LogStripResult as JSON to stdout. Requires --output.

@@ -25739,55 +25739,86 @@ function splitInlineArray(inner) {
   return result;
 }
 
-// src/core/logstrip-parser.ts
-var INTERNAL_STACK_MARKER = "[... hidden internal library frames ...]";
-var AGGRESSIVENESS_LEVELS = [
+// src/core/aggressiveness/levels.ts
+var STATIC_AGGRESSIVENESS_LEVELS = [
   "low",
   "medium",
   "high",
   "aggressive"
 ];
-var IGNORED_LOG_TAG_PATTERN = /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/i;
-var IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/i;
-var STACK_FRAME_PATTERN = /^\s*at\s+.*(?:\(|\s).+:\d+:\d+\)?$/;
-var JAVA_STACK_FRAME_PATTERN = /^\s*at\s+[\w$_.<>/]+\([^)]+:\d+\)$/;
-var PYTHON_STACK_FRAME_PATTERN = /^\s*File\s+"[^"]+",\s+line\s+\d+,\s+in\s+.+$/;
-var GO_STACK_FRAME_PATTERN = /^\s*(?:(?:[\w.-]+\/)+[\w./-]+|[\w.-]+\.\(\*?[\w.]+\)\.[\w.]+|[\w.-]+\.[A-Z]\w*)\(.*\)$/;
-var GO_FILE_FRAME_PATTERN = /^\s*(?:\/[^\s]+|[A-Za-z]:[\\/][^\s]+):\d+(?:\s+\+\S+)?$/;
-var GO_GOROUTINE_PATTERN = /^\s*goroutine\s+\d+\s+\[.+\]:$/i;
-var PYTHON_TRACEBACK_PATTERN = /^Traceback \(most recent call last\):$/;
-var STACK_MORE_PATTERN = /^\s*\.\.\. \d+ more$/;
-var GITHUB_ACTIONS_ANNOTATION_PATTERN = /^::(?:error|warning|notice)\b/u;
-var GRADLE_FAILURE_PATTERN = /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/i;
-var MAKE_ERROR_PATTERN = /^make[:\s*]+/u;
-var GO_TEST_FAIL_PATTERN = /---\s*FAIL:/u;
-var SYSTEMD_STATUS_PATTERN = /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/i;
-var CIRCLECI_STEP_PATTERN = /\b(?:Spin Cancelled|Step failed|job was not approved)\b/i;
-var JENKINS_MARKER_PATTERN = /\[(?:Pipeline|Checks|FCMaker)\]/u;
-var AZURE_PIPELINE_PATTERN = /^##vso\[task\.(?:LogIssue|Complete)\b/u;
-var TEAMCITY_MARKER_PATTERN = /^##teamcity\[(?:buildProblem|compilationFinished|message)\b/u;
-var DIAGNOSTIC_PATTERN = /\b(?:Error|Exception|AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|NullPointerException|Unhandled|failed|failure|fatal|panic|refused|timeout|timed\s+out|unreachable|unavailable|disconnected|killed|aborted|crashed|terminated|unauthorized)\b/i;
-var JSON_SEVERITY_PATTERN = /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/i;
-var NPM_ERROR_PATTERN = /\b(?:npm|pnpm)\s+ERR!/i;
-var YARN_ERROR_PATTERN = /\byarn\s+error\b/i;
-var SCANNER_FINDING_PATTERN = /\b(?:CVE-\d{4}-\d{4,7}|GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}|vulnerabilit(?:y|ies)|severity:\s*(?:critical|high|medium)|(?:critical|high)\s+severity)\b/i;
-var CONTAINER_FAILURE_PATTERN = /\b(?:CrashLoopBackOff|ImagePullBackOff|ErrImagePull|OOMKilled|Back[- ]off restarting failed container|failed to pull image|(?:containerd|runc).*?(?:failed|error|panic|timeout|refused)|(?:failed|error|panic|timeout|refused).*?(?:containerd|runc)|rpc error: code = Unknown desc = failed to resolve reference)\b/i;
-var INTERNAL_STACK_PATTERN = /(?:node_modules[\\/]|node:internal|internal[\\/]modules|bootstrap_node|[\\/]usr[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]go[\\/]src[\\/]runtime[\\/]|site-packages[\\/]|dist-packages[\\/]|\.venv[\\/]|java\.base[\\/]|jdk\.internal|org\.springframework\.|[\\/]pkg[\\/]mod[\\/]|\.cargo[\\/]registry[\\/])/i;
-var UUID_PATTERN = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
-var ISO_TIME_PATTERN = /\b\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?)?\b/g;
-var UTC_TIME_PATTERN = /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+(?:GMT|UTC)\b/gi;
-var COMMON_LOG_TIME_PATTERN = /\b\d{1,2}\/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}\b/gi;
-var NGINX_ERROR_TIME_PATTERN = /\b\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\b/g;
-var ANSI_ESCAPE_PATTERN = /\u001b\[[0-9;]*m/gu;
-var IPV4_WITH_PORT_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})\b/g;
-var IPV4_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}\b/g;
-var HEX_HASH_PATTERN = /\b(?=[a-f0-9]*\d)(?=[a-f0-9]*[a-f])[a-f0-9]{16,}\b/gi;
-var ALPHANUMERIC_HASH_PATTERN = /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-Za-z0-9]{24,}\b/g;
-var AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/g;
-var AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z]+:[a-z0-9-]+:(\d{12})/g;
-var LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/i;
-var AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/i;
-var AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
+var AGGRESSIVENESS_LEVELS = [
+  ...STATIC_AGGRESSIVENESS_LEVELS,
+  "auto"
+];
+function parseAggressiveness(value) {
+  const normalized = (value ?? "high").toLowerCase();
+  if (AGGRESSIVENESS_LEVELS.includes(normalized)) {
+    return normalized;
+  }
+  throw new Error(
+    `Unsupported aggressiveness "${value}". Expected one of: ${AGGRESSIVENESS_LEVELS.join(", ")}.`
+  );
+}
+function toStaticAggressiveness(aggressiveness) {
+  return aggressiveness === "auto" ? "high" : aggressiveness;
+}
+
+// src/core/aggressiveness/dynamic.ts
+var DYNAMIC_WINDOW_SIZE = 8;
+var AGGRESSIVENESS_ORDER = [
+  "low",
+  "medium",
+  "high",
+  "aggressive"
+];
+function createDynamicAggressivenessState(requested) {
+  return {
+    enabled: requested === "auto",
+    effective: toStaticAggressiveness(requested),
+    windowLines: 0,
+    keptLines: 0,
+    droppedLines: 0,
+    hardKeeps: 0,
+    repeatedLines: 0
+  };
+}
+function recordLineDecision(state, decision) {
+  if (!state.enabled) {
+    return;
+  }
+  state.windowLines += 1;
+  if (decision.kept) state.keptLines += 1;
+  if (decision.dropped) state.droppedLines += 1;
+  if (decision.hardKeep) state.hardKeeps += 1;
+  if (decision.repeated) state.repeatedLines += 1;
+  if (state.windowLines < DYNAMIC_WINDOW_SIZE) {
+    return;
+  }
+  if (state.hardKeeps >= 3) {
+    state.effective = shiftAggressiveness(state.effective, -1);
+  } else if (state.keptLines <= 1 && state.droppedLines + state.repeatedLines >= 6) {
+    state.effective = shiftAggressiveness(state.effective, 1);
+  }
+  resetWindow(state);
+}
+function shiftAggressiveness(current, delta) {
+  const index = AGGRESSIVENESS_ORDER.indexOf(current);
+  const nextIndex = Math.max(
+    0,
+    Math.min(AGGRESSIVENESS_ORDER.length - 1, index + delta)
+  );
+  return AGGRESSIVENESS_ORDER[nextIndex];
+}
+function resetWindow(state) {
+  state.windowLines = 0;
+  state.keptLines = 0;
+  state.droppedLines = 0;
+  state.hardKeeps = 0;
+  state.repeatedLines = 0;
+}
+
+// src/core/constants.ts
+var INTERNAL_STACK_MARKER = "[... hidden internal library frames ...]";
 var CONTEXT_WINDOW_BEFORE = 3;
 var CONTEXT_WINDOW_AFTER = 2;
 var SCORE_KEEP_THRESHOLD = 40;
@@ -25795,6 +25826,105 @@ var TFIDF_REPEAT_THRESHOLD = 3;
 var TFIDF_PENALTY = 8;
 var TFIDF_MAP_LIMIT = 5e4;
 var MAX_REPEAT_DELTA_VALUES = 3;
+
+// src/core/dedupe/repeat-grouper.ts
+function createRepeatSignature(line) {
+  return tokenizeRepeatLine(line).map((token) => {
+    const tokenValue = splitRepeatToken(token);
+    return tokenValue === void 0 ? token : `${tokenValue.prefix}[VALUE]`;
+  }).join(" ");
+}
+function createRepeatGroup(line) {
+  return {
+    firstLine: line,
+    firstTokens: tokenizeRepeatLine(line),
+    signature: createRepeatSignature(line),
+    deltas: /* @__PURE__ */ new Map(),
+    count: 1
+  };
+}
+function addRepeatGroupLine(group, line) {
+  const tokens = tokenizeRepeatLine(line);
+  for (const [index, firstToken] of group.firstTokens.entries()) {
+    const firstValue = splitRepeatToken(firstToken);
+    const nextValue = splitRepeatToken(tokens[index]);
+    if (firstValue === void 0 || nextValue === void 0 || firstValue.prefix !== nextValue.prefix || firstValue.value === nextValue.value) {
+      continue;
+    }
+    const delta = group.deltas.get(index) ?? {
+      prefix: firstValue.prefix,
+      values: [firstValue.value],
+      hasMoreValues: false
+    };
+    if (!group.deltas.has(index)) {
+      group.deltas.set(index, delta);
+    }
+    if (delta.values.includes(nextValue.value)) {
+      continue;
+    }
+    if (delta.values.length < MAX_REPEAT_DELTA_VALUES) {
+      delta.values.push(nextValue.value);
+    } else {
+      delta.hasMoreValues = true;
+    }
+  }
+  group.count += 1;
+}
+function renderRepeatGroup(group) {
+  if (group.deltas.size === 0) {
+    return group.firstLine;
+  }
+  const tokens = [...group.firstTokens];
+  for (const [index, delta] of group.deltas) {
+    const values = delta.hasMoreValues ? [...delta.values, "\u2026"] : delta.values;
+    tokens[index] = `${delta.prefix}[${values.join(" | ")}]`;
+  }
+  return tokens.join(" ");
+}
+function tokenizeRepeatLine(line) {
+  return line.trim().split(/\s+/u);
+}
+function splitRepeatToken(token) {
+  const separator = token.indexOf("=");
+  if (separator <= 0 || separator === token.length - 1) {
+    return void 0;
+  }
+  return {
+    prefix: token.slice(0, separator + 1),
+    value: token.slice(separator + 1)
+  };
+}
+
+// src/core/sources/source-profile.ts
+var SOURCE_DIAGNOSTIC_BOOST_PATTERNS = {
+  typescript: [/\bTS\d{4}\b/u],
+  pytest: [/^E\s+/u, /\bFAILED\b/u],
+  nginx: [/\[(?:error|crit|alert|emerg)\]/iu],
+  kubernetes: [/\b(?:BackOff|Failed|ErrImagePull|CrashLoopBackOff)\b/u],
+  "github-actions": [/^::(?:error|warning)\b/u]
+};
+function createSourceProfiles(signatures) {
+  return signatures.map(([name, markers]) => ({
+    name,
+    markers: markers.map((marker) => ({
+      value: marker.toLowerCase(),
+      weight: sourceMarkerWeight(marker)
+    })),
+    diagnosticBoostPatterns: SOURCE_DIAGNOSTIC_BOOST_PATTERNS[name] ?? []
+  }));
+}
+function sourceMarkerWeight(marker) {
+  const normalized = marker.trim();
+  if (normalized.length <= 3) {
+    return 6;
+  }
+  if (normalized.length >= 12 || /[^a-z0-9]/iu.test(normalized)) {
+    return 16;
+  }
+  return 12;
+}
+
+// src/core/sources/catalog.ts
 var LOG_SOURCE_SIGNATURES = [
   ["vitest", ["vitest"]],
   ["jest", ["jest"]],
@@ -26553,108 +26683,111 @@ var LOG_SOURCE_SIGNATURES = [
 var KNOWN_LOG_SOURCES = LOG_SOURCE_SIGNATURES.map(
   ([source]) => source
 );
-function collectDetectedSourceHits(line, hits, sources = LOG_SOURCE_SIGNATURES) {
+
+// src/core/detection/source-detector.ts
+var SOURCE_ACTIVE_CONFIDENCE = 12;
+var SOURCE_DIAGNOSTIC_BOOST = 40;
+function createSourceDetectionState(sources = LOG_SOURCE_SIGNATURES) {
+  return {
+    hits: /* @__PURE__ */ new Map(),
+    profiles: createSourceProfiles(sources)
+  };
+}
+function collectDetectedSourceHits(line, state) {
   const normalized = line.toLowerCase();
-  for (const [source, markers] of sources) {
-    for (const marker of markers) {
-      if (normalized.includes(marker)) {
-        hits.set(source, (hits.get(source) ?? 0) + 1);
-        break;
+  for (const profile of state.profiles) {
+    for (const marker of profile.markers) {
+      if (!normalized.includes(marker.value)) {
+        continue;
       }
+      const hit = state.hits.get(profile.name) ?? {
+        hits: 0,
+        confidence: 0,
+        matchedMarkers: /* @__PURE__ */ new Set()
+      };
+      hit.hits += 1;
+      hit.confidence += marker.weight;
+      hit.matchedMarkers.add(marker.value);
+      state.hits.set(profile.name, hit);
+      break;
     }
   }
 }
-function rankDetectedSources(hits, limit = 12) {
+function rankDetectedSources(state, limit = 12) {
   if (limit <= 0) {
     return [];
   }
-  return [...hits.entries()].sort((left, right) => {
-    if (right[1] !== left[1]) {
-      return right[1] - left[1];
-    }
+  return [...state.hits.entries()].sort((left, right) => {
+    const hitsDelta = right[1].hits - left[1].hits;
+    if (hitsDelta !== 0) return hitsDelta;
     return left[0].localeCompare(right[0]);
   }).slice(0, limit).map(([source]) => source);
 }
-function parseAggressiveness(value) {
-  const normalized = (value ?? "high").toLowerCase();
-  if (AGGRESSIVENESS_LEVELS.includes(normalized)) {
-    return normalized;
+function scoreSourceDiagnosticBoost(line, state) {
+  for (const profile of state.profiles) {
+    const hit = state.hits.get(profile.name);
+    if (hit === void 0 || hit.confidence < SOURCE_ACTIVE_CONFIDENCE) {
+      continue;
+    }
+    if (profile.diagnosticBoostPatterns.some((pattern) => pattern.test(line))) {
+      return SOURCE_DIAGNOSTIC_BOOST;
+    }
   }
-  throw new Error(
-    `Unsupported aggressiveness "${value}". Expected one of: ${AGGRESSIVENESS_LEVELS.join(", ")}.`
-  );
+  return 0;
 }
+
+// src/core/sanitize/sanitize-line.ts
+var UUID_PATTERN = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+var ISO_TIME_PATTERN = /\b\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?)?\b/g;
+var UTC_TIME_PATTERN = /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+(?:GMT|UTC)\b/gi;
+var COMMON_LOG_TIME_PATTERN = /\b\d{1,2}\/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}\b/gi;
+var NGINX_ERROR_TIME_PATTERN = /\b\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\b/g;
+var ANSI_ESCAPE_PATTERN = /\u001b\[[0-9;]*m/gu;
+var IPV4_WITH_PORT_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})\b/g;
+var IPV4_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}\b/g;
+var HEX_HASH_PATTERN = /\b(?=[a-f0-9]*\d)(?=[a-f0-9]*[a-f])[a-f0-9]{16,}\b/gi;
+var ALPHANUMERIC_HASH_PATTERN = /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-Za-z0-9]{24,}\b/g;
+var AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/g;
+var AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z]+:[a-z0-9-]+:(\d{12})/g;
 function sanitizeLine(line) {
   return line.replace(ANSI_ESCAPE_PATTERN, "").replace(UUID_PATTERN, "[ID]").replace(UTC_TIME_PATTERN, "[TIME]").replace(COMMON_LOG_TIME_PATTERN, "[TIME]").replace(NGINX_ERROR_TIME_PATTERN, "[TIME]").replace(ISO_TIME_PATTERN, "[TIME]").replace(IPV4_WITH_PORT_PATTERN, "[IP]:[PORT]").replace(IPV4_PATTERN, "[IP]").replace(HEX_HASH_PATTERN, "[HASH]").replace(ALPHANUMERIC_HASH_PATTERN, "[HASH]").replace(AWS_ACCESS_KEY_PATTERN, "[REDACTED]").replace(
     AWS_ARN_ACCOUNT_PATTERN,
     (match, accountId) => match.replace(accountId, "[ACCOUNT]")
   ).replace(/[ \t]+$/u, "");
 }
-function createRepeatSignature(line) {
-  return tokenizeRepeatLine(line).map((token) => {
-    const tokenValue = splitRepeatToken(token);
-    return tokenValue === void 0 ? token : `${tokenValue.prefix}[VALUE]`;
-  }).join(" ");
-}
-function tokenizeRepeatLine(line) {
-  return line.trim().split(/\s+/u);
-}
-function splitRepeatToken(token) {
-  const separator = token.indexOf("=");
-  if (separator <= 0 || separator === token.length - 1) {
-    return void 0;
-  }
-  return {
-    prefix: token.slice(0, separator + 1),
-    value: token.slice(separator + 1)
-  };
-}
-function createRepeatGroup(line) {
-  return {
-    firstLine: line,
-    firstTokens: tokenizeRepeatLine(line),
-    signature: createRepeatSignature(line),
-    deltas: /* @__PURE__ */ new Map(),
-    count: 1
-  };
-}
-function addRepeatGroupLine(group, line) {
-  const tokens = tokenizeRepeatLine(line);
-  for (const [index, firstToken] of group.firstTokens.entries()) {
-    const firstValue = splitRepeatToken(firstToken);
-    const nextValue = splitRepeatToken(tokens[index]);
-    if (firstValue === void 0 || nextValue === void 0 || firstValue.prefix !== nextValue.prefix || firstValue.value === nextValue.value) {
-      continue;
-    }
-    const delta = group.deltas.get(index) ?? {
-      prefix: firstValue.prefix,
-      values: [firstValue.value],
-      hasMoreValues: false
-    };
-    if (!group.deltas.has(index)) {
-      group.deltas.set(index, delta);
-    }
-    if (delta.values.includes(nextValue.value)) {
-      continue;
-    }
-    if (delta.values.length < MAX_REPEAT_DELTA_VALUES) {
-      delta.values.push(nextValue.value);
-    } else {
-      delta.hasMoreValues = true;
-    }
-  }
-  group.count += 1;
-}
-function renderRepeatGroup(group) {
-  if (group.deltas.size === 0) {
-    return group.firstLine;
-  }
-  const tokens = [...group.firstTokens];
-  for (const [index, delta] of group.deltas) {
-    const values = delta.hasMoreValues ? [...delta.values, "\u2026"] : delta.values;
-    tokens[index] = `${delta.prefix}[${values.join(" | ")}]`;
-  }
-  return tokens.join(" ");
+
+// src/core/scoring/relevance-score.ts
+var IGNORED_LOG_TAG_PATTERN = /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/i;
+var IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/i;
+var STACK_FRAME_PATTERN = /^\s*at\s+.*(?:\(|\s).+:\d+:\d+\)?$/;
+var JAVA_STACK_FRAME_PATTERN = /^\s*at\s+[\w$_.<>/]+\([^)]+:\d+\)$/;
+var PYTHON_STACK_FRAME_PATTERN = /^\s*File\s+"[^"]+",\s+line\s+\d+,\s+in\s+.+$/;
+var GO_STACK_FRAME_PATTERN = /^\s*(?:(?:[\w.-]+\/)+[\w./-]+|[\w.-]+\.\(\*?[\w.]+\)\.[\w.]+|[\w.-]+\.[A-Z]\w*)\(.*\)$/;
+var GO_FILE_FRAME_PATTERN = /^\s*(?:\/[^\s]+|[A-Za-z]:[\\/][^\s]+):\d+(?:\s+\+\S+)?$/;
+var GO_GOROUTINE_PATTERN = /^\s*goroutine\s+\d+\s+\[.+\]:$/i;
+var PYTHON_TRACEBACK_PATTERN = /^Traceback \(most recent call last\):$/;
+var STACK_MORE_PATTERN = /^\s*\.\.\. \d+ more$/;
+var GITHUB_ACTIONS_ANNOTATION_PATTERN = /^::(?:error|warning|notice)\b/u;
+var GRADLE_FAILURE_PATTERN = /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/i;
+var MAKE_ERROR_PATTERN = /^make[:\s*]+/u;
+var GO_TEST_FAIL_PATTERN = /---\s*FAIL:/u;
+var SYSTEMD_STATUS_PATTERN = /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/i;
+var CIRCLECI_STEP_PATTERN = /\b(?:Spin Cancelled|Step failed|job was not approved)\b/i;
+var JENKINS_MARKER_PATTERN = /\[(?:Pipeline|Checks|FCMaker)\]/u;
+var AZURE_PIPELINE_PATTERN = /^##vso\[task\.(?:LogIssue|Complete)\b/u;
+var TEAMCITY_MARKER_PATTERN = /^##teamcity\[(?:buildProblem|compilationFinished|message)\b/u;
+var DIAGNOSTIC_PATTERN = /\b(?:Error|Exception|AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|NullPointerException|Unhandled|failed|failure|fatal|panic|refused|timeout|timed\s+out|unreachable|unavailable|disconnected|killed|aborted|crashed|terminated|unauthorized)\b/i;
+var JSON_SEVERITY_PATTERN = /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/i;
+var NPM_ERROR_PATTERN = /\b(?:npm|pnpm)\s+ERR!/i;
+var YARN_ERROR_PATTERN = /\byarn\s+error\b/i;
+var SCANNER_FINDING_PATTERN = /\b(?:CVE-\d{4}-\d{4,7}|GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}|vulnerabilit(?:y|ies)|severity:\s*(?:critical|high|medium)|(?:critical|high)\s+severity)\b/i;
+var CONTAINER_FAILURE_PATTERN = /\b(?:CrashLoopBackOff|ImagePullBackOff|ErrImagePull|OOMKilled|Back[- ]off restarting failed container|failed to pull image|(?:containerd|runc).*?(?:failed|error|panic|timeout|refused)|(?:failed|error|panic|timeout|refused).*?(?:containerd|runc)|rpc error: code = Unknown desc = failed to resolve reference)\b/i;
+var INTERNAL_STACK_PATTERN = /(?:node_modules[\\/]|node:internal|internal[\\/]modules|bootstrap_node|[\\/]usr[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]go[\\/]src[\\/]runtime[\\/]|site-packages[\\/]|dist-packages[\\/]|\.venv[\\/]|java\.base[\\/]|jdk\.internal|org\.springframework\.|[\\/]pkg[\\/]mod[\\/]|\.cargo[\\/]registry[\\/])/i;
+var LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/i;
+var AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/i;
+var AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
+function isIgnoredLogLine(line) {
+  return IGNORED_LOG_TAG_PATTERN.test(line);
 }
 function looksLikeDiagnosticLine(line) {
   return STACK_FRAME_PATTERN.test(line) || JAVA_STACK_FRAME_PATTERN.test(line) || PYTHON_STACK_FRAME_PATTERN.test(line) || GO_STACK_FRAME_PATTERN.test(line) || GO_FILE_FRAME_PATTERN.test(line) || GO_GOROUTINE_PATTERN.test(line) || PYTHON_TRACEBACK_PATTERN.test(line) || STACK_MORE_PATTERN.test(line) || DIAGNOSTIC_PATTERN.test(line) || JSON_SEVERITY_PATTERN.test(line) || NPM_ERROR_PATTERN.test(line) || YARN_ERROR_PATTERN.test(line) || SCANNER_FINDING_PATTERN.test(line) || CONTAINER_FAILURE_PATTERN.test(line) || GITHUB_ACTIONS_ANNOTATION_PATTERN.test(line) || GRADLE_FAILURE_PATTERN.test(line) || MAKE_ERROR_PATTERN.test(line) || GO_TEST_FAIL_PATTERN.test(line) || SYSTEMD_STATUS_PATTERN.test(line) || CIRCLECI_STEP_PATTERN.test(line) || JENKINS_MARKER_PATTERN.test(line) || AZURE_PIPELINE_PATTERN.test(line) || TEAMCITY_MARKER_PATTERN.test(line);
@@ -26668,7 +26801,7 @@ function estimateTokens(wordCount) {
 }
 function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
   if (line.trim().length === 0) return -Infinity;
-  if (IGNORED_LOG_TAG_PATTERN.test(line)) return -Infinity;
+  if (isIgnoredLogLine(line)) return -Infinity;
   let score = 0;
   if (IMPORTANT_LOG_TAG_PATTERN.test(line)) score += 100;
   if (JSON_SEVERITY_PATTERN.test(line)) score += 80;
@@ -26685,7 +26818,7 @@ function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
   if (JENKINS_MARKER_PATTERN.test(line)) score += 40;
   if (AZURE_PIPELINE_PATTERN.test(line)) score += 40;
   if (TEAMCITY_MARKER_PATTERN.test(line)) score += 40;
-  if (STACK_FRAME_PATTERN.test(line) || JAVA_STACK_FRAME_PATTERN.test(line) || PYTHON_STACK_FRAME_PATTERN.test(line) || GO_GOROUTINE_PATTERN.test(line) || PYTHON_TRACEBACK_PATTERN.test(line) || STACK_MORE_PATTERN.test(line)) {
+  if (STACK_FRAME_PATTERN.test(line) || JAVA_STACK_FRAME_PATTERN.test(line) || PYTHON_STACK_FRAME_PATTERN.test(line) || GO_STACK_FRAME_PATTERN.test(line) || GO_FILE_FRAME_PATTERN.test(line) || GO_GOROUTINE_PATTERN.test(line) || PYTHON_TRACEBACK_PATTERN.test(line) || STACK_MORE_PATTERN.test(line)) {
     score += 40;
   }
   if (aggressiveness === "aggressive" && AGGRESSIVE_WARN_PATTERN.test(line) && !AGGRESSIVE_WARNING_SIGNAL_PATTERN.test(line)) {
@@ -26699,6 +26832,8 @@ function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
   }
   return score;
 }
+
+// src/core/logstrip-parser.ts
 function buildMergedConfig(options = {}) {
   const config = loadLogStripConfig(options.configPath);
   const mergedSources = [
@@ -26717,7 +26852,8 @@ function buildMergedConfig(options = {}) {
   return { ...config, mergedSources };
 }
 async function processLogStream(input, output, options = {}) {
-  const aggressiveness = parseAggressiveness(options.aggressiveness);
+  const requestedAggressiveness = parseAggressiveness(options.aggressiveness);
+  const dynamicAggressiveness = createDynamicAggressivenessState(requestedAggressiveness);
   const merged = buildMergedConfig(options);
   const customDiagnosticRegexes = merged.diagnosticPatterns.map(
     (p) => new RegExp(p, "u")
@@ -26732,13 +26868,16 @@ async function processLogStream(input, output, options = {}) {
     (r) => ({ regex: new RegExp(r.pattern, r.flags ?? "gu"), replacement: r.replacement })
   );
   const stats = createEmptyStats();
-  const detectedSourceHits = /* @__PURE__ */ new Map();
+  const detectedSourceState = createSourceDetectionState(merged.mergedSources);
   const seenLines = /* @__PURE__ */ new Map();
   const contextBefore = [];
   let afterContextRemaining = 0;
   const lines = (0, import_node_readline.createInterface)({ input, crlfDelay: Infinity });
   let previousGroup;
   let hidingInternalStack = false;
+  const recordDecision = (decision) => {
+    recordLineDecision(dynamicAggressiveness, decision);
+  };
   const flushPreviousLine = async () => {
     if (previousGroup === void 0) {
       return;
@@ -26767,23 +26906,41 @@ async function processLogStream(input, output, options = {}) {
   };
   for await (const rawLine of lines) {
     const line = String(rawLine);
-    collectDetectedSourceHits(line, detectedSourceHits, merged.mergedSources);
+    collectDetectedSourceHits(line, detectedSourceState);
     stats.inputLines += 1;
     stats.inputWords += countWords(line);
     stats.inputBytes += Buffer.byteLength(`${line}
 `, "utf8");
     if (line.trim().length === 0) {
       stats.droppedLines += 1;
+      recordDecision({
+        kept: false,
+        dropped: true,
+        hardKeep: false,
+        repeated: false
+      });
       continue;
     }
     if (customIgnoreRegexes.some((r) => r.test(line))) {
       stats.droppedLines += 1;
       hidingInternalStack = false;
+      recordDecision({
+        kept: false,
+        dropped: true,
+        hardKeep: false,
+        repeated: false
+      });
       continue;
     }
-    if (IGNORED_LOG_TAG_PATTERN.test(line)) {
+    if (isIgnoredLogLine(line)) {
       stats.droppedLines += 1;
       hidingInternalStack = false;
+      recordDecision({
+        kept: false,
+        dropped: true,
+        hardKeep: false,
+        repeated: false
+      });
       continue;
     }
     let sanitized = sanitizeLine(line);
@@ -26799,6 +26956,12 @@ async function processLogStream(input, output, options = {}) {
         hidingInternalStack = true;
         afterContextRemaining = 0;
       }
+      recordDecision({
+        kept: true,
+        dropped: false,
+        hardKeep: false,
+        repeated: false
+      });
       continue;
     }
     hidingInternalStack = false;
@@ -26808,29 +26971,61 @@ async function processLogStream(input, output, options = {}) {
       seenCount = 1;
     }
     seenLines.set(sanitized, seenCount);
-    let score = scoreLineRelevance(sanitized, aggressiveness, seenCount);
+    const effectiveAggressiveness = dynamicAggressiveness.effective;
+    let score = scoreLineRelevance(
+      sanitized,
+      effectiveAggressiveness,
+      seenCount
+    );
     for (const regex of customDiagnosticRegexes) {
       if (regex.test(sanitized)) {
         score += 50;
         break;
       }
     }
+    score += scoreSourceDiagnosticBoost(sanitized, detectedSourceState);
     if (score >= SCORE_KEEP_THRESHOLD) {
       await flushContextBefore();
       await emitCandidate(sanitized);
       afterContextRemaining = CONTEXT_WINDOW_AFTER;
+      recordDecision({
+        kept: true,
+        dropped: false,
+        hardKeep: true,
+        repeated: seenCount > 1
+      });
     } else if (afterContextRemaining > 0) {
       await emitCandidate(sanitized);
       afterContextRemaining -= 1;
+      recordDecision({
+        kept: true,
+        dropped: false,
+        hardKeep: false,
+        repeated: seenCount > 1
+      });
     } else if (score >= 0) {
+      let droppedBufferedLine = false;
       if (contextBefore.length >= CONTEXT_WINDOW_BEFORE) {
         contextBefore.shift();
         stats.droppedLines += 1;
+        droppedBufferedLine = true;
       }
       contextBefore.push(sanitized);
+      recordDecision({
+        kept: false,
+        dropped: droppedBufferedLine,
+        hardKeep: false,
+        repeated: seenCount > 1
+      });
     } else {
       stats.droppedLines += 1;
       afterContextRemaining = 0;
+      recordDecision({
+        kept: false,
+        dropped: true,
+        hardKeep: false,
+        repeated: seenCount > 1
+      });
     }
   }
   stats.droppedLines += contextBefore.length;
@@ -26846,7 +27041,7 @@ async function processLogStream(input, output, options = {}) {
     outputTokens,
     savedTokens,
     savingsPercent,
-    detectedSources: rankDetectedSources(detectedSourceHits)
+    detectedSources: rankDetectedSources(detectedSourceState)
   };
 }
 async function processLogFile(inputPath, outputPath, options = {}) {
