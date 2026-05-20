@@ -13,7 +13,7 @@ export const AGGRESSIVENESS_LEVELS: readonly Aggressiveness[] = [
 ];
 
 export function parseAggressiveness(value: string | undefined): Aggressiveness {
-  const normalized = (value ?? 'high').toLowerCase();
+  const normalized = (value ?? 'auto').toLowerCase();
 
   if ((AGGRESSIVENESS_LEVELS as readonly string[]).includes(normalized)) {
     return normalized as Aggressiveness;

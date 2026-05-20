@@ -1,4 +1,3 @@
-[x2] [WARN] /repo/src/main/java/com/example/checkout/PaymentService.java:[42,16] unchecked cast
 [ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol
 [ERROR]   symbol:   class Logger
 [ERROR]   location: class com.example.checkout.CartService

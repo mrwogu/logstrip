@@ -7,7 +7,7 @@ inputs:
   aggressiveness:
     description: "Compression level: low, medium, high, aggressive, auto."
     required: false
-    default: high
+    default: auto
 outputs:
   output-path:
     description: Path to the compressed log file.

@@ -93,7 +93,7 @@ describe('GitHub Action wrapper', () => {
     await run();
 
     expect(mocks.processLogFile).toHaveBeenCalledWith(inputPath, expectedOutput, {
-      aggressiveness: 'high',
+      aggressiveness: 'auto',
     });
     expect(mocks.setOutput).toHaveBeenCalledWith('output-path', expectedOutput);
     expect(mocks.summary.addHeading).toHaveBeenCalledWith(

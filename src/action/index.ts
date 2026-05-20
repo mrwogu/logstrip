@@ -10,7 +10,7 @@ export async function run(): Promise<void> {
   try {
     const inputPath = core.getInput('log-path', { required: true });
     const aggressiveness = parseAggressiveness(
-      core.getInput('aggressiveness') || 'high',
+      core.getInput('aggressiveness') || 'auto',
     );
     const outputPath = buildOutputPath(inputPath);
 

@@ -67,7 +67,7 @@ describe('parseCliOptions', () => {
 
     expect(opts.input).toBe('raw.log');
     expect(opts.output).toBeUndefined();
-    expect(opts.aggressiveness).toBe('high');
+    expect(opts.aggressiveness).toBe('auto');
     expect(opts.stats).toBe(false);
     expect(opts.json).toBe(false);
     expect(opts.config).toBeUndefined();

@@ -589,7 +589,7 @@ describe('logstrip parser', () => {
   });
 
   it('parses aggressiveness values', () => {
-    expect(parseAggressiveness(undefined)).toBe('high');
+    expect(parseAggressiveness(undefined)).toBe('auto');
     expect(parseAggressiveness('LOW')).toBe('low');
     expect(parseAggressiveness('auto')).toBe('auto');
     expect(() => parseAggressiveness('extreme')).toThrow(

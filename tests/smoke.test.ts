@@ -70,7 +70,7 @@ const cases: readonly SmokeCase[] = [
   {
     fixture: 'maven-failure.log',
     minSavingsPercent: 35,
-    expectDeduplication: true,
+    expectDeduplication: false,
     expectInternalStackHidden: false,
     mustContain: [
       '[ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol',
