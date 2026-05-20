@@ -34,7 +34,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: npm
+          package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
@@ -51,9 +51,7 @@ jobs:
 
       - name: Publish to npm
         if: ${{ steps.release.outputs.release_created }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance --access public
+        run: npm publish
 
       - name: Update major action tag
         if: ${{ steps.release.outputs.release_created }}
