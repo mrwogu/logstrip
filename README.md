@@ -127,6 +127,50 @@ diagnosing them. The workflow is the same everywhere: run `logstrip`, analyze th
 
 Works with **any** agent that can run a shell command or read a file. One binary, compressed output shared across all of them.
 
+### How the agent plugin works
+
+The plugin bundles (`plugins/logstrip/`) ship hooks, skills, and agents for
+each supported platform. The core mechanism is the same everywhere:
+
+**1. PreToolUse hook - auto-compress on Read**
+
+When the agent is about to read a `.log`, `.out`, `.txt`, `.trace`, or `.err`
+file, the hook intercepts the `Read` call, runs `logstrip <file> -o
+<file>.logstrip.log`, and **denies the raw read** - instead redirecting the
+agent to the compressed `.logstrip.log` file. Raw bytes never enter the
+context window. Already-compressed files (`.logstrip.log`) and non-log
+extensions (`.ts`, `.py`, `.json`, etc.) are skipped automatically.
+
+**2. UserPromptSubmit hook - detect pasted logs**
+
+When the user pastes log-like output into the chat (timestamps, log levels,
+stack traces, CI markers - needs 2+ heuristic matches across 5+ lines), the
+hook injects `additionalContext` telling the agent to write the paste to a temp
+file and run `logstrip` before analysing, rather than reading the raw paste
+line-by-line.
+
+**3. Skills, commands, and agents**
+
+| Component | Purpose |
+|:---|:---|
+| `/logstrip` skill | Invoked when the user asks to compress, trim, or prepare a log for analysis. |
+| `/logstrip` command | Slash command: `logstrip <input> [--output ...] [--aggressiveness ...]`. |
+| `logstrip-reviewer` agent | Reviews diffs against LogStrip coding standards and the 100% coverage gate. |
+| `logstrip-fixture-author` agent | Generates realistic CI log fixtures and wires them into smoke tests. |
+| `logstrip.mdc` rule | Cursor rule that activates on `**/*.log` globs. |
+| `logstrip-paste-detect.mdc` rule | Always-on rule that detects pasted log output in Cursor. |
+
+**4. Per-agent plugin manifests**
+
+| Agent | Manifest | Hook format |
+|:---|:---|:---|
+| Claude Code | `plugins/logstrip/.claude-plugin/plugin.json` | `hooks.json` (PreToolUse + UserPromptSubmit) |
+| Factory Droid | `plugins/logstrip/.factory-plugin/plugin.json` | Same hooks as Claude Code |
+| Codex CLI | `plugins/logstrip/.codex-plugin/plugin.json` | `hooks.json` + skill + command |
+| Cursor | `plugins/logstrip/.cursor-plugin/plugin.json` | `cursor-hooks.json` + rules |
+| GitHub Copilot | `plugins/logstrip/copilot/.github/` | Copilot instructions + prompts |
+| OpenCode | `plugins/logstrip/opencode/.opencode/` | AGENTS.md + skill |
+
 See the [Agent Plugin Installation guide](https://mrwogu.github.io/logstrip/guides/plugins/) for per-agent setup.
 
 <a id="how-it-works"></a>
