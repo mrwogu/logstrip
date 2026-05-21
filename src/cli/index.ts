@@ -13,6 +13,11 @@ import {
   type MultilineMode,
   type SeverityLevel,
 } from '../core/logstrip-parser';
+import {
+  formatTelemetrySummary,
+  loadTelemetry,
+  recordTelemetry,
+} from '../core/telemetry/telemetry-store';
 
 export const CLI_VERSION = '1.3.0'; // x-release-please-version
 
@@ -41,6 +46,7 @@ Options:
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
       --config <path>      Path to .logstrip.yml config file. Auto-detects from cwd.
+      --telemetry          Show cumulative telemetry summary on stderr and exit.
   -h, --help               Show this help text and exit.
   -v, --version            Print the CLI version and exit.
 
@@ -73,6 +79,7 @@ export interface CliOptions {
   timeout?: number;
   progress: boolean;
   config?: string;
+  telemetry: boolean;
   help: boolean;
   version: boolean;
 }
@@ -130,6 +137,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         timeout: { type: 'string' },
         progress: { type: 'boolean', default: false },
         config: { type: 'string' },
+        telemetry: { type: 'boolean', default: false },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', short: 'v', default: false },
       },
@@ -230,6 +238,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
       typeof parsed.values.config === 'string'
         ? parsed.values.config
         : undefined,
+    telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
   };
@@ -306,6 +315,12 @@ export async function runCli(
     return 0;
   }
 
+  if (options.telemetry) {
+    const store = loadTelemetry();
+    await writeAll(io.stderr, formatTelemetrySummary(store));
+    return 0;
+  }
+
   if (options.json && options.output === undefined) {
     await writeAll(
       io.stderr,
@@ -372,6 +387,8 @@ export async function runCli(
     result = { ...result, outputPath: options.output };
     await endStream(output as Writable);
   }
+
+  try { recordTelemetry(result); } catch { /* non-critical, ignore write failures */ }
 
   if (options.json) {
     await writeAll(io.stdout, `${JSON.stringify(result, null, 2)}\n`);

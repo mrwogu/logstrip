@@ -366,3 +366,40 @@ See the [Supported Sources](sources.md) page for the full catalogue.
 
 Fixture files live in `tests/fixtures/*.log` and deterministic outputs in
 `tests/fixtures/__snapshots__/*.logstrip.snap`.
+
+## Telemetry
+
+The library exports a local telemetry store that records cumulative
+token savings across runs. Data is stored in `~/.logstrip/telemetry.json`
+(or the directory specified by `LOGSTRIP_TELEMETRY_DIR`). Nothing is sent
+to any server.
+
+### `recordTelemetry`
+
+```ts
+import { recordTelemetry, type LogStripResult } from 'logstrip';
+
+const result: LogStripResult = await processLogFile('raw.log', 'clean.log');
+recordTelemetry(result); // appends entry, updates totals
+```
+
+### `loadTelemetry` / `saveTelemetry`
+
+```ts
+import { loadTelemetry, saveTelemetry, type TelemetryStore } from 'logstrip';
+
+const store: TelemetryStore = loadTelemetry();
+console.log(store.totalSavedTokens);
+```
+
+### `formatTelemetrySummary`
+
+```ts
+import { formatTelemetrySummary } from 'logstrip';
+
+const text = formatTelemetrySummary(loadTelemetry());
+process.stderr.write(text);
+```
+
+The store keeps at most 1,000 entries; older entries are pruned
+automatically by `recordTelemetry`.

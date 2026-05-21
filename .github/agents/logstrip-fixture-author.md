@@ -1,5 +1,5 @@
 ---
-# promptscript-generated: 2026-05-21T20:36:23.653Z | source: .promptscript/project.prs | target: github
+# promptscript-generated: 2026-05-21T20:41:42.965Z | source: .promptscript/project.prs | target: github
 name: logstrip-fixture-author
 description: Generates new realistic CI log fixtures (Node, Python, Docker, Java, etc.) and wires them into tests/smoke.test.ts with grounded thresholds.
 tools: ['read', 'search', 'execute']

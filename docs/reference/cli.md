@@ -44,6 +44,7 @@ logstrip [INPUT] [options]
 | `-h`, `--help` | Print the help text and exit. | - |
 | `-v`, `--version` | Print the CLI version and exit. | - |
 | `--config <path>` | Path to a `.logstrip.yml` custom config file. When omitted, the CLI auto-detects `.logstrip.yml` in the current working directory. | _(auto)_ |
+| `--telemetry` | Print cumulative telemetry summary to `stderr` and exit. No compression is performed. | off |
 
 ## I/O contract
 
@@ -294,6 +295,39 @@ LogStrip compression report
 
 This format is stable across patch releases. If you need to parse it from
 shell, prefer `--json` instead.
+
+## Telemetry
+
+LogStrip automatically records cumulative token-savings telemetry after
+every successful run. The data is stored locally in
+`~/.logstrip/telemetry.json` and never sent anywhere. To override the
+storage directory, set the `LOGSTRIP_TELEMETRY_DIR` environment variable.
+
+### View the summary
+
+```bash
+logstrip --telemetry
+```
+
+Output (written to `stderr`):
+
+```text
+LogStrip Telemetry
+  total runs       : 42
+  input tokens     : 2,145,000
+  output tokens    : 413,800
+  saved tokens     : 1,731,200
+  average savings  : 80.71%
+  last run         : 2026-05-21T14:30:00.000Z
+
+  Last 5 runs:
+    2026-05-21T14:30:00  saved=52,000  (80.0%)
+    2026-05-21T14:15:00  saved=48,000  (78.5%)
+    ...
+```
+
+The store keeps at most 1,000 entries; older entries are pruned
+automatically.
 
 ## Embedding in Node
 

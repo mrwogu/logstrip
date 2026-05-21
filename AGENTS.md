@@ -1,4 +1,4 @@
-<!-- PromptScript 2026-05-21T20:36:23.656Z | source: .promptscript/project.prs | target: codex - do not edit -->
+<!-- PromptScript 2026-05-21T20:41:42.969Z | source: .promptscript/project.prs | target: codex - do not edit -->
 
 
 
@@ -158,6 +158,7 @@ Exported from `src/cli/index.ts` (used by tests and embedders, do not break):
       aggressiveness: 'low' | 'medium' | 'high' | 'aggressive';
       stats: boolean;
       json: boolean;
+      telemetry: boolean;
       help: boolean;
       version: boolean;
     }
@@ -213,6 +214,32 @@ Exported from `src/core/logstrip-parser.ts` (package main):
     function parseAggressiveness(value: string): Aggressiveness;
     const INTERNAL_STACK_MARKER: string;
     // plus exported helpers shouldKeepLine, sanitizeLine, looksLikeDiagnosticLine, isInternalStackTraceLine
+
+    interface TelemetryEntry {
+      timestamp: string;
+      inputLines: number;
+      outputLines: number;
+      inputTokens: number;
+      outputTokens: number;
+      savedTokens: number;
+      savingsPercent: number;
+      detectedSources?: readonly string[];
+    }
+
+    interface TelemetryStore {
+      version: number;
+      totalRuns: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+      totalSavedTokens: number;
+      lastRun: string;
+      entries: TelemetryEntry[];
+    }
+
+    function recordTelemetry(result: LogStripResult): TelemetryStore;
+    function loadTelemetry(): TelemetryStore;
+    function saveTelemetry(store: TelemetryStore): void;
+    function formatTelemetrySummary(store: TelemetryStore): string;
 ```
 
 ## Public action surface

@@ -323,6 +323,7 @@ Options:
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
       --config <path>      Path to .logstrip.yml config file. Auto-detects from cwd.
+      --telemetry          Show cumulative telemetry summary on stderr and exit.
   -s, --stats              Print compression statistics to stderr.
   -j, --json               Print LogStripResult as JSON to stdout. Requires --output.
   -h, --help               Show help text and exit.

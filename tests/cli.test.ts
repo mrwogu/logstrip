@@ -52,13 +52,17 @@ function makeIo(
 }
 
 let workDir: string;
+const telemetryDir = join(tmpdir(), 'logstrip-cli-telemetry');
 
 beforeAll(async () => {
   workDir = await mkdtemp(join(tmpdir(), 'logstrip-cli-'));
+  process.env.LOGSTRIP_TELEMETRY_DIR = telemetryDir;
 });
 
 afterAll(async () => {
   await rm(workDir, { force: true, recursive: true });
+  try { await rm(telemetryDir, { force: true, recursive: true }); } catch {}
+  delete process.env.LOGSTRIP_TELEMETRY_DIR;
 });
 
 describe('parseCliOptions', () => {
@@ -80,6 +84,18 @@ describe('parseCliOptions', () => {
 
     expect(opts.input).toBe('raw.log');
     expect(opts.config).toBe('.logstrip.yml');
+  });
+
+  it('parses --telemetry flag', () => {
+    const opts = parseCliOptions(['--telemetry']);
+
+    expect(opts.telemetry).toBe(true);
+  });
+
+  it('defaults telemetry to false', () => {
+    const opts = parseCliOptions(['raw.log']);
+
+    expect(opts.telemetry).toBe(false);
   });
 
   it('parses every short flag', () => {
@@ -579,5 +595,28 @@ describe('runCli', () => {
 
     expect(code).toBe(2);
     expect(stderr.value()).toContain('--progress requires a file input');
+  });
+
+  it('shows telemetry summary with --telemetry and exits', async () => {
+    const { io, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli(['--telemetry'], io);
+
+    expect(code).toBe(0);
+    expect(stderr.value()).toContain('LogStrip Telemetry');
+  });
+
+  it('records telemetry after a successful run', async () => {
+    const { io, stdout } = makeIo(new PassThrough());
+
+    const code = await runCli([inputPath], io);
+
+    expect(code).toBe(0);
+    expect(stdout.value()).toContain('[ERROR]');
+
+    const { loadTelemetry: load } = await import('../src/core/telemetry/telemetry-store');
+    const store = load();
+    expect(store.totalRuns).toBeGreaterThanOrEqual(1);
+    expect(store.totalSavedTokens).toBeGreaterThan(0);
   });
 });

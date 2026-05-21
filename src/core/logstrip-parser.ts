@@ -101,6 +101,14 @@ export type {
   LogStripStats,
   StaticAggressiveness,
 } from './types.js';
+export {
+  type TelemetryEntry,
+  type TelemetryStore,
+  formatTelemetrySummary,
+  loadTelemetry,
+  recordTelemetry,
+  saveTelemetry,
+} from './telemetry/telemetry-store';
 
 
 // ---- Multiline-aware line reader ----
