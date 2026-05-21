@@ -75,3 +75,9 @@ jobs:
       - name: Publish to npm
         if: ${{ steps.release.outputs.release_created }}
         run: npm publish
+
+      - name: Publish action to GitHub Marketplace
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/publish-action@v0.3.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
