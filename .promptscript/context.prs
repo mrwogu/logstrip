@@ -7,9 +7,9 @@
   packageManager: "npm"
 
   priority: [
-    "CLI (logstrip, logstrip) — canonical user-facing entry. Unix conventions: stdin/stdout by default, -o/--output, -a/--aggressiveness, --stats on stderr, --json on stdout (requires --output).",
-    "Library (import { processLogFile } from 'logstrip') — embed entry for custom Node tooling.",
-    "GitHub Action — optional thin wrapper for one-step CI integration. Prefer the CLI in run: steps when possible."
+    "CLI (logstrip) - canonical user-facing entry. Unix conventions: stdin/stdout by default, -o/--output, -a/--aggressiveness, --stats on stderr, --json on stdout (requires --output).",
+    "Library (import { processLogFile } from 'logstrip') - embed entry for custom Node tooling.",
+    "GitHub Action - optional thin wrapper for one-step CI integration. Prefer the CLI in run: steps when possible."
   ]
 
   architecture: """

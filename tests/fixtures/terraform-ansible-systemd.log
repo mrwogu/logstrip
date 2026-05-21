@@ -1,8 +1,8 @@
-2026-05-19T12:00:01Z [INFO] terraform plan — creating infrastructure plan
+2026-05-19T12:00:01Z [INFO] terraform plan - creating infrastructure plan
 2026-05-19T12:00:02Z [DEBUG] Initializing provider plugins...
 2026-05-19T12:00:05Z [INFO] Provider aws initializing...
 2026-05-19T12:00:10Z [INFO] Plan: 3 to add, 1 to change, 0 to destroy
-2026-05-19T12:00:15Z [INFO] terraform apply — applying infrastructure changes
+2026-05-19T12:00:15Z [INFO] terraform apply - applying infrastructure changes
 2026-05-19T12:00:20Z [DEBUG] aws_ecs_service.checkout-api: Modifying...
 [ERROR] Error: UPGRADE FAILED: cannot patch "checkout-api-deployment" with kind Deployment: Deployment.apps "checkout-api-deployment" is invalid
 [ERROR] Error: UPGRADE FAILED: cannot patch "checkout-api-deployment" with kind Deployment: Deployment.apps "checkout-api-deployment" is invalid
@@ -13,7 +13,7 @@
 [ERROR] Error: waiting for ECS Service (checkout-api) stable: timeout while waiting for state to become 'tfSTABLE'
 2026-05-19T12:00:25Z [FATAL] terraform apply failed: 3 errors occurred
 2026-05-19T12:00:26Z [INFO] Rolling back state...
-2026-05-19T12:01:01Z [INFO] ansible-playbook — running checkout-deploy.yml
+2026-05-19T12:01:01Z [INFO] ansible-playbook - running checkout-deploy.yml
 2026-05-19T12:01:02Z [DEBUG] Loading callback plugins
 2026-05-19T12:01:03Z [INFO] PLAY [Deploy checkout service to production] ***
 2026-05-19T12:01:04Z [INFO] TASK [Gathering Facts] ***
@@ -24,7 +24,7 @@
 2026-05-19T12:01:15Z [ERROR] fatal: [checkout-prod-01]: FAILED! => {"changed": false, "msg": "Container checkout-api failed to start: OCI runtime create failed"}
 2026-05-19T12:01:16Z [ERROR] fatal: [checkout-prod-01]: FAILED! => {"changed": false, "msg": "Container checkout-api failed to start: OCI runtime create failed"}
 2026-05-19T12:01:17Z [FATAL] PLAY RECAP *** checkout-prod-01: ok=2  changed=1  unreachable=0  failed=1
-2026-05-19T12:02:01Z [INFO] systemd — starting checkout-api service
+2026-05-19T12:02:01Z [INFO] systemd - starting checkout-api service
 2026-05-19T12:02:02Z [DEBUG] Loading unit file checkout-api.service
 2026-05-19T12:02:03Z [ERROR] Failed to start checkout-api.service: Unit checkout-api.service is not loaded properly: Exec format error
 2026-05-19T12:02:04Z [ERROR] Failed to start checkout-api.service: Unit checkout-api.service is not loaded properly: Exec format error
@@ -33,9 +33,9 @@
 2026-05-19T12:02:07Z [INFO] systemd[1]: Started checkout-api.service.
 2026-05-19T12:02:08Z [INFO] checkout-api[1842]: Starting server on 0.0.0.0:8080
 2026-05-19T12:02:09Z [ERROR] checkout-api[1842]: FATAL: password authentication failed for user "checkout_admin"
-2026-05-19T12:02:10Z [ERROR] checkout-api[1842]: Connection refused to 10.42.7.18:5432 — retrying in 2s
-2026-05-19T12:02:11Z [FATAL] checkout-api[1842]: status=1 FAILURE — exiting
-2026-05-19T12:03:01Z [INFO] terraform plan — destroy infrastructure
+2026-05-19T12:02:10Z [ERROR] checkout-api[1842]: Connection refused to 10.42.7.18:5432 - retrying in 2s
+2026-05-19T12:02:11Z [FATAL] checkout-api[1842]: status=1 FAILURE - exiting
+2026-05-19T12:03:01Z [INFO] terraform plan - destroy infrastructure
 2026-05-19T12:03:02Z [DEBUG] Refreshing state...
 2026-05-19T12:03:05Z [ERROR] Error: resource aws_rds_cluster.checkout-db not found (may have been manually deleted)
 2026-05-19T12:03:06Z [FATAL] terraform destroy failed: state lock inconsistency

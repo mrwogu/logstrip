@@ -8,23 +8,23 @@ START RequestId: 9f4b8b55-3756-4a15-8a8a-5da6bf44c923 Version: $LATEST
 END RequestId: 9f4b8b55-3756-4a15-8a8a-5da6bf44c923
 REPORT RequestId: 9f4b8b55-3756-4a15-8a8a-5da6bf44c923 Duration: 5001.23ms Billed Duration: 5002ms Memory Size: 256 MB Max Memory Used: 128 MB
 2026-05-19T13:00:05.456Z [INFO] Lambda execution completed
-2026-05-19T13:01:01Z [INFO] CloudWatch Logs — streaming logs for checkout-prod
+2026-05-19T13:01:01Z [INFO] CloudWatch Logs - streaming logs for checkout-prod
 2026-05-19T13:01:02Z [DEBUG] Log group: /aws/lambda/checkout-handler
 2026-05-19T13:01:03Z {"timestamp":"2026-05-19T13:01:03.456Z","level":"info","msg":"Processing checkout request","requestId":"a1b2c3d4-e5f6-7890-abcd-ef1234567890"}
 2026-05-19T13:01:04Z {"timestamp":"2026-05-19T13:01:04.567Z","level":"error","msg":"database timeout","requestId":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","error":"connect ECONNREFUSED 10.42.7.18:5432"}
 2026-05-19T13:01:05Z {"timestamp":"2026-05-19T13:01:05.678Z","level":"error","msg":"database timeout","requestId":"b2c3d4e5-f6a7-8901-bcde-f12345678901","error":"connect ECONNREFUSED 10.44.2.19:5432"}
 2026-05-19T13:01:06Z {"timestamp":"2026-05-19T13:01:06.789Z","level":"fatal","msg":"worker crashed with exit code 1","service":"checkout-api","env":"prod"}
 2026-05-19T13:01:07Z [INFO] CloudWatch metric: CheckoutAPI5xx breaching threshold
-2026-05-19T13:02:01Z [INFO] GCP Cloud Run — deploying checkout-api revision
+2026-05-19T13:02:01Z [INFO] GCP Cloud Run - deploying checkout-api revision
 2026-05-19T13:02:02Z [DEBUG] Building container image at gcr.io/checkout-prod/api:1e2f3a4b5c6d
 2026-05-19T13:02:05Z [INFO] Service checkout-api revision creation started
 2026-05-19T13:02:10Z [ERROR] [ERROR] Container failed to start. Failed to start and then listen on the port defined by the PORT environment variable.
 2026-05-19T13:02:11Z [ERROR] [ERROR] Container failed to start. Failed to start and then listen on the port defined by the PORT environment variable.
 2026-05-19T13:02:12Z [FATAL] Cloud Run deployment failed: revision checkout-api-00042-hey failed with Health: Unhealthy
 2026-05-19T13:02:13Z [WARN] Rolling back to previous revision checkout-api-00041
-2026-05-19T13:03:01Z [INFO] Azure Functions — executing checkout-process function
+2026-05-19T13:03:01Z [INFO] Azure Functions - executing checkout-process function
 2026-05-19T13:03:02Z [DEBUG] Function App: checkout-prod-func
-2026-05-19T13:03:03Z [INFO] Executing 'Functions.CheckoutProcess' — Reason: ServiceBus trigger
+2026-05-19T13:03:03Z [INFO] Executing 'Functions.CheckoutProcess' - Reason: ServiceBus trigger
 2026-05-19T13:03:04Z [ERROR] Microsoft.Azure.WebJobs.Host: Exception while executing function: CheckoutProcess
 2026-05-19T13:03:05Z [ERROR] System.TimeoutException: The request timed out after 30 seconds waiting for a response from the payment gateway at 10.90.12.41:443
 2026-05-19T13:03:06Z [ERROR] System.TimeoutException: The request timed out after 30 seconds waiting for a response from the payment gateway at 10.90.12.41:443

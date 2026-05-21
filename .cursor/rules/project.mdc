@@ -1,5 +1,4 @@
 ---
-# promptscript-generated: 2026-05-21T20:23:43.924Z | source: .promptscript/project.prs | target: cursor
 description: "Project-specific rules"
 alwaysApply: true
 ---
@@ -284,6 +283,8 @@ Never:
 
 # AI Writing Detection
 
+<!-- PromptScript 2026-05-21T20:23:43.925Z | source: .promptscript/project.prs | target: codex - do not edit -->
+
 Words, phrases, and punctuation patterns commonly associated with AI-generated text. Avoid these to ensure writing sounds natural and human.
 
 Sources: Grammarly (2025), Microsoft 365 Life Hacks (2025), GPTHuman (2025), Walter Writes (2025), Textero (2025), Plagiarism Today (2025), Rolling Stone (2025), MDPI Blog (2025)
@@ -489,6 +490,8 @@ These words often add nothing to meaning. Remove them or find specific alternati
 ### international-seo.md (from seo-audit)
 
 # International SEO: Evidence & Sources
+
+<!-- PromptScript 2026-05-21T20:23:43.925Z | source: .promptscript/project.prs | target: codex - do not edit -->
 
 Detailed evidence backing the International SEO & Localization section of the SEO Audit skill. Organized by topic with source URLs and key quotes.
 

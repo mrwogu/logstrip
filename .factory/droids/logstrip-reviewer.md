@@ -1,5 +1,5 @@
 ---
-# promptscript-generated: 2026-05-21T20:23:43.925Z | source: .promptscript/project.prs | target: factory
+# promptscript-generated: 2026-05-21T20:36:23.656Z | source: .promptscript/project.prs | target: factory
 name: logstrip-reviewer
 description: Reviews diffs against LogStrip standards and restrictions, with a focus on CLI Unix correctness, parser streaming, and the 100% coverage gate.
 model: inherit

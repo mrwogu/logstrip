@@ -143,7 +143,7 @@ const cases: readonly SmokeCase[] = [
       'ErrImagePull',
       'panic: runtime error: invalid memory address or nil pointer dereference',
       INTERNAL_STACK_MARKER,
-      // "Normal Pulled" is kept as context before the BackOff event – correct behaviour
+      // "Normal Pulled" is kept as context before the BackOff event - correct behaviour
       'Normal Pulled',
     ],
     mustNotContain: ['[INFO]', 'Normal Scheduled', 'Normal Pulling'],

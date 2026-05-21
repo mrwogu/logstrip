@@ -35,7 +35,7 @@ If you can call shell from your workflow, prefer the CLI directly:
 | `aggressiveness` | no | `auto` | Compression level. Accepted values: `low`, `medium`, `high`, `aggressive`, `auto`. |
 
 The default `auto` mode starts at `high` and adjusts dynamically based on the
-log content — see the [CLI reference](cli.md#auto-mode-default) for details.
+log content - see the [CLI reference](cli.md#auto-mode-default) for details.
 To use a fixed level, set it explicitly (e.g. `aggressiveness: aggressive`).
 
 ## Outputs

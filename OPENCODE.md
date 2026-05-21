@@ -1,6 +1,6 @@
 # OPENCODE.md
 
-<!-- PromptScript 2026-05-21T20:23:43.926Z | source: .promptscript/project.prs | target: opencode - do not edit -->
+<!-- PromptScript 2026-05-21T20:36:23.657Z | source: .promptscript/project.prs | target: opencode - do not edit -->
 
 ## Project
 

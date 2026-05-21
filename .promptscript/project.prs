@@ -1,5 +1,5 @@
 # LogStrip PromptScript Entry
-# This is the single source of truth — compile with `prs compile`
+# This is the single source of truth - compile with `prs compile`
 
 @meta {
   id: "logstrip"

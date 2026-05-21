@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# logstrip-hook.sh — Auto-activates LogStrip on log content.
+# logstrip-hook.sh - Auto-activates LogStrip on log content.
 #
 # Handles two hook events:
 #   PreToolUse (Read on .log/.out/.txt/.trace/.err files):
 #     Runs `logstrip <file> -o <file>.logstrip.log`, then denies the raw
-#     Read and redirects the agent to the compressed file — raw bytes never
+#     Read and redirects the agent to the compressed file - raw bytes never
 #     enter the context window.
 #
 #   UserPromptSubmit (pasted log-like output in the user prompt):
@@ -52,7 +52,7 @@ case "$EVENT" in
             }
           }'
       else
-        # Compression failed — allow the raw read with a note
+        # Compression failed - allow the raw read with a note
         jq -nc '{
           hookSpecificOutput: {
             hookEventName: "PreToolUse",
@@ -61,7 +61,7 @@ case "$EVENT" in
         }'
       fi
     else
-      # logstrip not installed — allow the read but suggest installation
+      # logstrip not installed - allow the read but suggest installation
       jq -nc '{
         hookSpecificOutput: {
           hookEventName: "PreToolUse",
@@ -76,7 +76,7 @@ case "$EVENT" in
     PROMPT=$(echo "$INPUT" | jq -r '.prompt // empty' 2>/dev/null || true)
     [ -z "$PROMPT" ] && exit 0
 
-    # Pasted logs are multi-line — skip short messages
+    # Pasted logs are multi-line - skip short messages
     LINES=$(printf '%s\n' "$PROMPT" | wc -l | tr -d '[:space:]')
     [ "$LINES" -lt 5 ] && exit 0
 
@@ -111,7 +111,7 @@ case "$EVENT" in
 
     [ "$SCORE" -lt 2 ] && exit 0
 
-    # Log-like content detected — inject auto-activation context
+    # Log-like content detected - inject auto-activation context
     jq -nc '{
       hookSpecificOutput: {
         hookEventName: "UserPromptSubmit",

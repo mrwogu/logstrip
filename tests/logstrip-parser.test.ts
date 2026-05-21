@@ -1366,7 +1366,7 @@ describe('logstrip parser', () => {
     // Create a stream that never emits data
     const slowInput = new Readable({
       read() {
-        // Never push data, never end — the stream just hangs
+        // Never push data, never end - the stream just hangs
       },
     });
 

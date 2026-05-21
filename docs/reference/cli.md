@@ -1,6 +1,6 @@
 ---
 title: Log Compression CLI Reference
-description: Complete CLI reference for LogStrip – flags, exit codes, I/O contract, stats, JSON output, multiline joining, severity filtering, include/exclude, timeout, progress. Extend with .logstrip.yml.
+description: Complete CLI reference for LogStrip - flags, exit codes, I/O contract, stats, JSON output, multiline joining, severity filtering, include/exclude, timeout, progress. Extend with .logstrip.yml.
 ---
 # CLI Reference
 
@@ -9,7 +9,7 @@ to npm as `logstrip` and exposes one binary:
 
 | Binary | Purpose |
 | :--- | :--- |
-| `logstrip` | Log compression CLI — the sole entry point. |
+| `logstrip` | Log compression CLI - the sole entry point. |
 
 The binary points at the compiled entry: `dist/cli/index.js`.
 
@@ -248,10 +248,10 @@ on what the parser sees in the stream:
 - The parser tracks a sliding window of the last 8 line decisions (kept vs
   dropped).
 - When the window contains mostly hard-keep signals (3+ errors/diagnostics),
-  the effective level **decreases** toward `medium` — more context is preserved
+  the effective level **decreases** toward `medium` - more context is preserved
   because the log is signal-rich.
 - When the window shows many drops and repeated lines (6+ drops + repeats),
-  the effective level **increases** toward `aggressive` — the log is mostly
+  the effective level **increases** toward `aggressive` - the log is mostly
   noise, so stricter filtering recovers more tokens.
 
 This means `auto` is safe to use as the default: it preserves context in
@@ -325,7 +325,7 @@ internal stack patterns that merge with the built-in set at runtime.
 ### File format
 
 ```yaml
-# Custom log sources – markers are case-insensitive substrings
+# Custom log sources - markers are case-insensitive substrings
 # matched against every line. If a source name matches a built-in
 # source, the markers are merged (deduplicated).
 sources:
@@ -365,18 +365,18 @@ internalStackPatterns:
 
 ### How it works
 
-1. **Auto-detection** – When `--config` is not provided, the CLI looks
+1. **Auto-detection** - When `--config` is not provided, the CLI looks
    for `.logstrip.yml` in the current working directory. If the file does
    not exist, processing continues with built-in patterns only.
-2. **Merging** – Custom sources with a name that already exists in the
+2. **Merging** - Custom sources with a name that already exists in the
    built-in set (e.g. `docker`) have their markers **merged** with the
    built-in markers. New source names are appended.
-3. **Order of application** – Custom ignore patterns are checked
+3. **Order of application** - Custom ignore patterns are checked
    **before** built-in noise-tag filtering. Custom sanitize rules run
    **after** built-in sanitization. Custom diagnostic patterns add
    +50 to the relevance score (same weight as built-in diagnostics).
    Custom internal-stack patterns are checked alongside built-in ones.
-4. **Zero runtime dependencies** – The YAML subset parser is built into
+4. **Zero runtime dependencies** - The YAML subset parser is built into
    `logstrip-config.ts` and handles the constructs shown above (mappings,
    sequences, inline arrays, quoted and unquoted strings, comments).
    It does not require `js-yaml` or any external package.
@@ -384,7 +384,7 @@ internalStackPatterns:
 ### Example: internal CI platform
 
 ```yaml
-# .logstrip.yml – Acme Corp CI extension
+# .logstrip.yml - Acme Corp CI extension
 sources:
   - name: acme-ci
     markers: [acme-ci-runner, "[ACME-CI]"]

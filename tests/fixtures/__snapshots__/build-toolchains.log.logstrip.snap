@@ -36,4 +36,4 @@ make: *** [build] Error 2
 [x2] [TIME] [ERROR] error MSB3073: The command "dotnet publish --configuration Release" exited with code 1
 [TIME] [ERROR] Controllers/PaymentController.cs(42,9): error CS1061: 'PaymentService' does not contain a definition for 'ProcessRefund'
 [TIME] [FATAL] Build FAILED. 2 Error(s)
-[TIME] [WARN] NuGet cache may be corrupted — run dotnet nuget locals --clear all
+[TIME] [WARN] NuGet cache may be corrupted - run dotnet nuget locals --clear all

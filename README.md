@@ -30,7 +30,7 @@ _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub
 
 </div>
 
-You paste a 50k-line CI log into your agent. It chews 200k+ tokens on noise – health checks, framework internals, repeated stack frames, UUIDs – and still misses the one `[ERROR]` line that matters. LogStrip trims that to the diagnostic context an LLM actually needs. One command. Zero dependencies. Streaming – never loads the full log into memory.
+You paste a 50k-line CI log into your agent. It chews 200k+ tokens on noise - health checks, framework internals, repeated stack frames, UUIDs - and still misses the one `[ERROR]` line that matters. LogStrip trims that to the diagnostic context an LLM actually needs. One command. Zero dependencies. Streaming - never loads the full log into memory.
 
 **What changes:** Session 1 your build fails with a flaky test. You feed the log through `logstrip`. Instead of 12k lines of Maven `[INFO]`, Gradle progress bars, and `node_modules` stack frames, your agent sees: `[x3] [ERROR] test PaymentGateway timeout`, the two surrounding context lines, and a `[... hidden internal library frames ...]` marker. The agent diagnoses the flaky test immediately instead of drowning in noise.
 
@@ -95,7 +95,7 @@ Compression ratios from the 38 fixture test suite across real-world log sources:
 
 Production logs with millions of lines routinely hit **80%+** token savings because noise ratios scale with log size.
 
-> Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) – 38 `.log` files covering 705+ ecosystem signatures. Each fixture has a committed snapshot baseline.
+> Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) - 38 `.log` files covering 705+ ecosystem signatures. Each fixture has a committed snapshot baseline.
 
 <a id="vs-alternatives"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-competitors.svg" alt="vs Alternatives" width="320">
@@ -103,13 +103,13 @@ Production logs with millions of lines routinely hit **80%+** token savings beca
 | | **LogStrip** | `grep -v` / `awk` | LLM summarization | logreduce |
 |:---|:---|:---|:---|:---|
 | **Type** | Streaming log compressor | Line filter | API call + prompt | ML-based anomaly detector |
-| **Token savings** | **80%+** (typical CI logs) | 20–40% (fragile patterns) | 60–80% (expensive, lossy) | ~50% (anomaly-only) |
+| **Token savings** | **80%+** (typical CI logs) | 20-40% (fragile patterns) | 60-80% (expensive, lossy) | ~50% (anomaly-only) |
 | **Streaming** | Yes (readline, bounded memory) | Yes (pipe) | No (buffer entire log) | No (batch) |
 | **Deduplication** | Smart `[xN]` folding with delta values | No | Approximate | No |
 | **Sanitization** | UUIDs, IPs, timestamps, AWS keys, JWTs, GitHub tokens, Slack tokens, connection strings, `Authorization:` headers | Manual regex | Unreliable | Partial |
 | **Stacktrace collapse** | Internal `node_modules` → single marker | No | Often drops context | No |
 | **Runtime deps** | **0** (node:\* built-ins only) | 0 | Heavy (API + tokens) | Python + ML stack |
-| **LLM cost** | **$0** (pure computation) | $0 | $0.01–$1.00+ per log | $0 (compute only) |
+| **LLM cost** | **$0** (pure computation) | $0 | $0.01-$1.00+ per log | $0 (compute only) |
 | **Extensible** | `.logstrip.yml` custom config | Shell scripts | Prompt engineering | Plugin system |
 | **CI integration** | CLI + GitHub Action | Shell scripts | API wrapper | CLI |
 
@@ -183,7 +183,7 @@ LogStrip publishes a Copilot agent plugin that bundles hooks, skills, agents,
 instructions, and prompts into a single installable package. It works in both
 VS Code and the GitHub Copilot CLI (`gh copilot`).
 
-**VS Code** — add the LogStrip marketplace to your settings:
+**VS Code** - add the LogStrip marketplace to your settings:
 
 ```json
 {
@@ -195,14 +195,14 @@ VS Code and the GitHub Copilot CLI (`gh copilot`).
 Then browse plugins with `@agentPlugins` in the Extensions view, or VS Code
 will discover LogStrip automatically on next startup.
 
-**Copilot CLI** — install directly:
+**Copilot CLI** - install directly:
 
 ```bash
 gh copilot plugin install mrwogu/logstrip:plugins/logstrip
 ```
 
 Once installed, Copilot will auto-compress `.log` files on read and detect
-pasted log output — the same PreToolUse and UserPromptSubmit hooks that work
+pasted log output - the same PreToolUse and UserPromptSubmit hooks that work
 in Claude Code and Cursor.
 
 <a id="how-it-works"></a>
@@ -251,7 +251,7 @@ patterns, ignore rules, sanitization rules, and internal stack patterns
 that merge with the built-in set at runtime.
 
 ```yaml
-# .logstrip.yml – Acme Corp CI extension
+# .logstrip.yml - Acme Corp CI extension
 sources:
   - name: acme-ci
     markers: [acme-ci-runner, "[ACME-CI]"]
@@ -276,17 +276,17 @@ internalStackPatterns:
 
 **How it works:**
 
-1. **Auto-detection** – When `--config` is not provided, the CLI looks
+1. **Auto-detection** - When `--config` is not provided, the CLI looks
    for `.logstrip.yml` in the current working directory.
-2. **Merging** – Custom sources with a name that already exists in the
+2. **Merging** - Custom sources with a name that already exists in the
    built-in set (e.g. `docker`) have their markers **merged**. New
    names are appended.
-3. **Order of application** – Custom ignore patterns are checked
+3. **Order of application** - Custom ignore patterns are checked
    **before** built-in noise-tag filtering. Custom sanitize rules run
    **after** built-in sanitization. Custom diagnostic patterns add
    +50 to the relevance score. Custom internal-stack patterns are
    checked alongside built-in ones.
-4. **Zero new runtime dependencies** – The YAML subset parser is
+4. **Zero new runtime dependencies** - The YAML subset parser is
    built into `logstrip-config.ts` and handles mappings, sequences,
    inline arrays, quoted and unquoted strings, and comments. It does
    not require `js-yaml` or any external package.
@@ -298,12 +298,12 @@ logstrip ci-output.log -o clean.log            # .logstrip.yml auto-detected
 logstrip ci-output.log -o clean.log --config /etc/logstrip/acme.yml  # explicit
 ```
 
-Full config reference: [CLI docs – Custom configuration](https://mrwogu.github.io/logstrip/reference/cli/#custom-configuration-logstripyml)
+Full config reference: [CLI docs - Custom configuration](https://mrwogu.github.io/logstrip/reference/cli/#custom-configuration-logstripyml)
 
 ## CLI <a id="cli"></a>
 
 LogStrip is primarily a CLI tool. The `logstrip` binary is the sole
-entry point — install globally and call it directly.
+entry point - install globally and call it directly.
 
 ```text
 Usage: logstrip [INPUT] [options]
@@ -399,7 +399,7 @@ console.log(`saved ${result.savedTokens} tokens (${result.savingsPercent}%)`);
 (stdin, network sockets, custom transforms). Pass `configPath` in options for
 custom config integration. Additional options: `include`, `exclude`,
 `sampleSize`, `maxLineLength`. Use `processLogStreamWithTimeout` for time-bounded
-processing — it sets `result.timedOut = true` when the deadline is reached.
+processing - it sets `result.timedOut = true` when the deadline is reached.
 
 ## GitHub Action <a id="github-action"></a>
 

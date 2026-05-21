@@ -9,7 +9,7 @@ When the user pastes content that resembles log output (2+ of: timestamps, log l
 1. Write the pasted content to a temp file: `mktemp` → `<temp>.log`
 2. Run `logstrip <temp>.log -o <temp>.log.logstrip.log --stats`
 3. If `logstrip` is not installed, suggest: `npm i -g logstrip`
-4. Read and analyse the compressed `.logstrip.log` output — skip line-by-line analysis of the raw paste
+4. Read and analyse the compressed `.logstrip.log` output - skip line-by-line analysis of the raw paste
 5. Report savings stats alongside the diagnosis
 
 ## Log file workflow

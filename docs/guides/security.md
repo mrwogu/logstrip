@@ -1,6 +1,6 @@
 ---
 title: Log Sanitization and Security
-description: How LogStrip sanitizes UUIDs, timestamps, hashes, and IPs before logs reach AI agents. Not a secret scanner – recommended security posture for CI workflows.
+description: How LogStrip sanitizes UUIDs, timestamps, hashes, and IPs before logs reach AI agents. Not a secret scanner - recommended security posture for CI workflows.
 ---
 # Security
 

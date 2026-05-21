@@ -353,7 +353,7 @@ tildeKey: ~
     });
 
     it('handles inline array with nested brackets inside', () => {
-      // Unquoted nested brackets: [a[b,c], d] – depth tracking needed
+      // Unquoted nested brackets: [a[b,c], d] - depth tracking needed
       const yaml = `diagnosticPatterns: [a[b,c], d]
 `;
       const config = parseLogStripConfig(yaml);

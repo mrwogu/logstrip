@@ -87,7 +87,7 @@ that tracks a sliding window of the last 8 line decisions:
   noisy output.
 - **Stable**: otherwise the effective level stays at `high`.
 
-The transitions use hysteresis — the effective level only changes when the
+The transitions use hysteresis - the effective level only changes when the
 window consistently supports the shift, so brief fluctuations do not cause
 oscillation.
 
@@ -139,7 +139,7 @@ scoreLineRelevance('containerd failed to create task', 'high'); // >= 40
 
 ## Multiline log joining
 
-Many log formats span multiple lines — Python tracebacks, Node.js stack traces,
+Many log formats span multiple lines - Python tracebacks, Node.js stack traces,
 Java `Caused by:` chains, Go goroutine dumps. By default (`multiline: 'off'`)
 each physical line is processed independently. Enable multiline mode to join
 continuation lines with their parent into a single logical line before scoring:

@@ -37,7 +37,7 @@ BUILD FAILED
 2026-05-19T10:02:16.345Z [ERROR] error: could not compile `checkout-service` due to previous error
 2026-05-19T10:02:17.456Z [FATAL] cargo build failed with exit code 101
 2026-05-19T10:02:18.567Z [DEBUG] Build artifacts cleaned up
-2026-05-19T10:03:01.234Z [INFO] go test ./... — running checkout-service tests
+2026-05-19T10:03:01.234Z [INFO] go test ./... - running checkout-service tests
 2026-05-19T10:03:02.456Z [DEBUG] Building test binaries
 2026-05-19T10:03:05.789Z [INFO] === RUN   TestCheckout
 --- FAIL: TestCheckout (0.12s)
@@ -66,5 +66,5 @@ make: *** [build] Error 2
 2026-05-19T10:05:06.123Z [ERROR] error MSB3073: The command "dotnet publish --configuration Release" exited with code 1
 2026-05-19T10:05:07.234Z [ERROR] Controllers/PaymentController.cs(42,9): error CS1061: 'PaymentService' does not contain a definition for 'ProcessRefund'
 2026-05-19T10:05:08.345Z [FATAL] Build FAILED. 2 Error(s)
-2026-05-19T10:05:09.456Z [WARN] NuGet cache may be corrupted — run dotnet nuget locals --clear all
+2026-05-19T10:05:09.456Z [WARN] NuGet cache may be corrupted - run dotnet nuget locals --clear all
 2026-05-19T10:05:10.567Z [INFO] Build completed with exit code 1

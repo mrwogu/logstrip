@@ -12,7 +12,7 @@
 ::warning file=src/api/checkout.ts,line=52::Deprecated API usage detected
 2026-05-19T08:12:30.678Z [INFO] Step 5/8: Build production bundle
 2026-05-19T08:12:35.901Z [ERROR] Build step failed with exit code 1
-2026-05-19T08:12:36.012Z [FATAL] Workflow run cancelled — critical failure in deploy step
+2026-05-19T08:12:36.012Z [FATAL] Workflow run cancelled - critical failure in deploy step
 2026-05-19T08:12:36.234Z [ERROR] Error: Process completed with exit code 1.
 2026-05-19T08:12:36.456Z [ERROR] Error: Process completed with exit code 1.
 Running with gitlab-runner 16.7.0 (a1b2c3d4) on gitlab-runner-prod-01
@@ -31,11 +31,11 @@ Running with gitlab-runner 16.7.0 (a1b2c3d4) on gitlab-runner-prod-01
 [Pipeline] [INFO] Started by user admin@checkout-team
 [Pipeline] [DEBUG] Obtained Jenkinsfile from git https://git.internal/checkout-service.git
 [Pipeline] [INFO] Running in Durability level: MAX_SURVIVABILITY
-[Pipeline] [INFO] [checkout-service] Agent none — using master executor
-[Pipeline] [INFO] Stage "Install" — npm ci
-[Pipeline] [INFO] Stage "Lint" — npm run lint
-[Pipeline] [ERROR] Stage "Deploy" failed — timeout after 300s
-[Pipeline] [ERROR] Stage "Deploy" failed — timeout after 300s
+[Pipeline] [INFO] [checkout-service] Agent none - using master executor
+[Pipeline] [INFO] Stage "Install" - npm ci
+[Pipeline] [INFO] Stage "Lint" - npm run lint
+[Pipeline] [ERROR] Stage "Deploy" failed - timeout after 300s
+[Pipeline] [ERROR] Stage "Deploy" failed - timeout after 300s
 [Pipeline] [FATAL] Pipeline aborted: deploy stage exceeded timeout
 [Pipeline] [ERROR] org.jenkinsci.plugins.workflow.steps.FlowInterruptedException: Pipeline execution cancelled
   at org.jenkinsci.plugins.workflow.cps.CpsFlowExecution.interrupt(CpsFlowExecution.java:123)
@@ -49,9 +49,9 @@ Spin Up: starting container checkout-api-test
 2026-05-19T09:01:15.012Z [INFO] Run step 2/6: Compile TypeScript
 2026-05-19T09:01:20.345Z [INFO] Run step 3/6: Run unit tests
 Spin Cancelled
-2026-05-19T09:01:25.567Z [ERROR] Step failed — Sidecar container exited with code 137
-2026-05-19T09:01:25.678Z [ERROR] Step failed — Sidecar container exited with code 137
-2026-05-19T09:01:26.890Z [ERROR] job was not approved — requires manual approval from #checkout-ops
+2026-05-19T09:01:25.567Z [ERROR] Step failed - Sidecar container exited with code 137
+2026-05-19T09:01:25.678Z [ERROR] Step failed - Sidecar container exited with code 137
+2026-05-19T09:01:26.890Z [ERROR] job was not approved - requires manual approval from #checkout-ops
 2026-05-19T09:01:28.123Z [FATAL] CircleCI workflow halted: approval required
 2026-05-19T09:01:29.345Z [WARN] Uploading build artifacts for debugging
 2026-05-19T09:01:30.567Z [INFO] Cleanup: removing temporary containers

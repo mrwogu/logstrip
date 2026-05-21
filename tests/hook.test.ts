@@ -7,7 +7,7 @@ import * as process from 'node:process';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const IS_WINDOWS = process.platform === 'win32';
-// Hook script requires bash + jq — skip on Windows where they're unavailable
+// Hook script requires bash + jq - skip on Windows where they're unavailable
 const describeBash = describe.skipIf(IS_WINDOWS);
 
 const HOOK_SCRIPT = resolve(
@@ -167,7 +167,7 @@ const SINGLE_HEURISTIC = [
 let workDir: string;
 
 beforeAll(async () => {
-  // Hook script is bash-only — skip all hook tests on Windows
+  // Hook script is bash-only - skip all hook tests on Windows
   if (IS_WINDOWS) return;
 
   workDir = await mkdtemp(join(tmpdir(), 'logstrip-hook-'));
@@ -192,10 +192,10 @@ afterAll(async () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// PreToolUse — file extension matching
+// PreToolUse - file extension matching
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse — extension matching', () => {
+describeBash('PreToolUse - extension matching', () => {
   const logExtensions = ['.log', '.out', '.txt', '.trace', '.err'];
 
   it.each(logExtensions)('denies Read on %s file and redirects', async (ext) => {
@@ -236,10 +236,10 @@ describeBash('PreToolUse — extension matching', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// PreToolUse — skip already-compressed files
+// PreToolUse - skip already-compressed files
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse — skip already-compressed files', () => {
+describeBash('PreToolUse - skip already-compressed files', () => {
   it('skips .logstrip.log files', async () => {
     const filePath = join(workDir, 'already.logstrip.log');
     await writeFile(filePath, 'compressed content');
@@ -260,10 +260,10 @@ describeBash('PreToolUse — skip already-compressed files', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// PreToolUse — non-existent files
+// PreToolUse - non-existent files
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse — non-existent files', () => {
+describeBash('PreToolUse - non-existent files', () => {
   it('skips non-existent .log file', async () => {
     const filePath = join(workDir, 'nonexistent.log');
 
@@ -274,10 +274,10 @@ describeBash('PreToolUse — non-existent files', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// PreToolUse — non-Read tools
+// PreToolUse - non-Read tools
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse — non-Read tools', () => {
+describeBash('PreToolUse - non-Read tools', () => {
   it('skips Write tool even on .log file', async () => {
     const filePath = join(workDir, 'target.log');
     await writeFile(filePath, CI_LOG_PASTE);
@@ -308,10 +308,10 @@ describeBash('PreToolUse — non-Read tools', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// PreToolUse — empty file_path
+// PreToolUse - empty file_path
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse — missing file_path', () => {
+describeBash('PreToolUse - missing file_path', () => {
   it('skips when tool_input has no file_path', async () => {
     const result = await runHook({
       hook_event_name: 'PreToolUse',
@@ -324,10 +324,10 @@ describeBash('PreToolUse — missing file_path', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// PreToolUse — compression output
+// PreToolUse - compression output
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse — compression output', () => {
+describeBash('PreToolUse - compression output', () => {
   it('creates .logstrip.log output file on disk', async () => {
     const filePath = join(workDir, 'compress-me.log');
     await writeFile(filePath, CI_LOG_PASTE);
@@ -362,10 +362,10 @@ describeBash('PreToolUse — compression output', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// PreToolUse — logstrip unavailable
+// PreToolUse - logstrip unavailable
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse — logstrip not in PATH', () => {
+describeBash('PreToolUse - logstrip not in PATH', () => {
   it('returns additionalContext suggesting install when logstrip missing', async () => {
     const filePath = join(workDir, 'no-cli.log');
     await writeFile(filePath, CI_LOG_PASTE);
@@ -416,10 +416,10 @@ describeBash('PreToolUse — logstrip not in PATH', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// UserPromptSubmit — log detection
+// UserPromptSubmit - log detection
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('UserPromptSubmit — positive detection', () => {
+describeBash('UserPromptSubmit - positive detection', () => {
   it('detects CI log paste (timestamps + log levels)', async () => {
     const result = await runHook(makeUserPromptSubmitInput(CI_LOG_PASTE));
     expect(result.exitCode).toBe(0);
@@ -478,10 +478,10 @@ describeBash('UserPromptSubmit — positive detection', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// UserPromptSubmit — negative cases
+// UserPromptSubmit - negative cases
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('UserPromptSubmit — negative cases', () => {
+describeBash('UserPromptSubmit - negative cases', () => {
   it('skips short messages (< 5 lines)', async () => {
     const result = await runHook(
       makeUserPromptSubmitInput(SHORT_NON_LOG),
@@ -531,10 +531,10 @@ describeBash('UserPromptSubmit — negative cases', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// UserPromptSubmit — boundary conditions
+// UserPromptSubmit - boundary conditions
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('UserPromptSubmit — boundary conditions', () => {
+describeBash('UserPromptSubmit - boundary conditions', () => {
   const boundaryLogLines = [
     '2024-01-15 10:23:45 [ERROR] line 1',
     '2024-01-15 10:23:46 [ERROR] line 2',
@@ -688,10 +688,10 @@ describe('hook config files', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// Performance — latency budgets
+// Performance - latency budgets
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('performance — latency budgets', () => {
+describeBash('performance - latency budgets', () => {
   it('negative path (non-log .ts file) completes under 100ms', async () => {
     const filePath = join(workDir, 'perf-skip.ts');
     await writeFile(filePath, 'const x = 1;');
@@ -765,10 +765,10 @@ describeBash('performance — latency budgets', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// Performance — throughput (sequential)
+// Performance - throughput (sequential)
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('performance — sequential throughput', () => {
+describeBash('performance - sequential throughput', () => {
   it('processes 100 negative UserPromptSubmit calls under 10s', async () => {
     const start = performance.now();
     for (let i = 0; i < 100; i++) {
@@ -795,10 +795,10 @@ describeBash('performance — sequential throughput', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// Integration — end-to-end flow
+// Integration - end-to-end flow
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('integration — end-to-end compression flow', () => {
+describeBash('integration - end-to-end compression flow', () => {
   it('compressed file contains diagnostic signal from original', async () => {
     const filePath = join(workDir, 'e2e-signal.log');
     await writeFile(filePath, CI_LOG_PASTE);
@@ -809,7 +809,7 @@ describeBash('integration — end-to-end compression flow', () => {
       `${filePath}.logstrip.log`,
       'utf8',
     );
-    // Original has [ERROR] lines — those must survive compression
+    // Original has [ERROR] lines - those must survive compression
     expect(compressed).toContain('[ERROR]');
   });
 
