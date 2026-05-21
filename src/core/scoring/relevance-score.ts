@@ -167,3 +167,39 @@ export function scoreLineRelevance(
 
   return score;
 }
+
+// ---- CI noise patterns ----
+
+const TIMESTAMP_ONLY_PATTERN =
+  /^\s*(?:\d{4}[-\/]\d{2}[-\/]\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?\s*)$/u;
+
+const PROGRESS_SEPARATOR_PATTERN = /^[=\-#]{20,}$/u;
+
+const PROGRESS_INDICATOR_PATTERN =
+  /(?:(?:Downloading|Extracting|Pulling|Pushing|Fetching|Installing|Building|Receiving|Sending)[^\n]*?\d{1,3}%|\d{1,3}%\s*(?:[|][=#>-]+|(?:\d+\.?\d*\s*(?:[A-Za-z]+(?:\/s)?|ETA|s\b))))/u;
+
+const PROGRESS_BAR_VISUAL_PATTERN = /[|[]\s*[=#>-]{5,}[>\s]*[|\]]/u;
+
+const K8S_NORMAL_EVENT_PATTERN =
+  /\b(?:type:\s*'?Normal'?|Normal\s+\d+[smhd])\b/iu;
+
+const RATE_LIMITED_MESSAGE_PATTERN =
+  /\b(?:(?:message|last message)\s+repeated\s+\d+\s+times?|\[\s*\d+\s*times?\s*\])/iu;
+
+export function isCiNoiseLine(line: string): boolean {
+  if (TIMESTAMP_ONLY_PATTERN.test(line)) return true;
+  if (K8S_NORMAL_EVENT_PATTERN.test(line)) return true;
+  if (RATE_LIMITED_MESSAGE_PATTERN.test(line)) return true;
+  return false;
+}
+
+export function isProgressBarLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (trimmed.length === 0) return false;
+  if (/\b(?:Error|error|fail|FAIL|crashed|timeout)\b/u.test(line)) return false;
+  if (PROGRESS_SEPARATOR_PATTERN.test(trimmed)) return true;
+  if (PROGRESS_INDICATOR_PATTERN.test(line)) return true;
+  if (PROGRESS_BAR_VISUAL_PATTERN.test(line)) return true;
+  return false;
+}
+

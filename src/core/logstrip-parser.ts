@@ -48,8 +48,10 @@ import { passesSeverityFilter } from './severity/severity-filter.js';
 import type { SeverityLevel } from './severity/severity-filter.js';
 import {
   estimateTokens,
+  isCiNoiseLine,
   isIgnoredLogLine,
   isInternalStackTraceLine,
+  isProgressBarLine,
   scoreLineRelevance,
 } from './scoring/relevance-score.js';
 import { LOG_SOURCE_SIGNATURES } from './sources/catalog.js';
@@ -85,6 +87,8 @@ export { sanitizeLine } from './sanitize/sanitize-line.js';
 export {
   estimateTokens,
   isInternalStackTraceLine,
+  isCiNoiseLine,
+  isProgressBarLine,
   looksLikeDiagnosticLine,
   scoreLineRelevance,
   shouldKeepLine,
@@ -283,6 +287,26 @@ export async function processLogStream(
 
     // Severity filter (Phase 1.4): drop lines below threshold
     if (severityLevel !== undefined && !passesSeverityFilter(line, severityLevel)) {
+      stats.droppedLines += physicalLineCount;
+      hidingInternalStack = false;
+      recordDecision({
+        kept: false, dropped: true, hardKeep: false, repeated: false,
+      });
+      continue;
+    }
+
+    // CI noise: timestamp-only, K8s Normal, rate-limited
+    if (isCiNoiseLine(line)) {
+      stats.droppedLines += physicalLineCount;
+      hidingInternalStack = false;
+      recordDecision({
+        kept: false, dropped: true, hardKeep: false, repeated: false,
+      });
+      continue;
+    }
+
+    // CI noise: progress bars
+    if (isProgressBarLine(line)) {
       stats.droppedLines += physicalLineCount;
       hidingInternalStack = false;
       recordDecision({
