@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough, Readable, Writable } from 'node:stream';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CLI_VERSION,
   CliError,
@@ -52,17 +52,21 @@ function makeIo(
 }
 
 let workDir: string;
-const telemetryDir = join(tmpdir(), 'logstrip-cli-telemetry');
+const telemetryDir = vi.hoisted(() => {
+  const { join: pJoin } = require('node:path');
+  const { tmpdir } = require('node:os');
+  const dir = pJoin(tmpdir(), 'logstrip-cli-telemetry');
+  process.env.LOGSTRIP_TELEMETRY_DIR = dir;
+  return dir;
+});
 
 beforeAll(async () => {
   workDir = await mkdtemp(join(tmpdir(), 'logstrip-cli-'));
-  process.env.LOGSTRIP_TELEMETRY_DIR = telemetryDir;
 });
 
 afterAll(async () => {
   await rm(workDir, { force: true, recursive: true });
   try { await rm(telemetryDir, { force: true, recursive: true }); } catch {}
-  delete process.env.LOGSTRIP_TELEMETRY_DIR;
 });
 
 describe('parseCliOptions', () => {
