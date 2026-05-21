@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/mrwogu/logstrip/compare/v1.3.0...v1.4.0) (2026-05-21)
+
+
+### Features
+
+* wire telemetry into CLI, add --telemetry flag, export from library, add docs ([4eabc64](https://github.com/mrwogu/logstrip/commit/4eabc64c0307c15e340eeff609c6249cd8c3418f))
+
+
+### Bug Fixes
+
+* add .js extension to dynamic import in cli test for node16 moduleResolution ([c01cd46](https://github.com/mrwogu/logstrip/commit/c01cd468af3168c8a8e7a0284ea01526c51378fa))
+* use vi.hoisted for telemetry env var in CLI tests ([d09f482](https://github.com/mrwogu/logstrip/commit/d09f4827f26cc5d6c74094dcd56c139cda008e70))
+
 ## [1.3.0](https://github.com/mrwogu/logstrip/compare/v1.2.0...v1.3.0) (2026-05-21)
 
 
