@@ -1,6 +1,6 @@
 ---
 title: Log Compression CLI Reference
-description: Complete CLI reference for LogStrip – flags, exit codes, I/O contract, stats, JSON output. Extend with .logstrip.yml: custom sources, diagnostic patterns, ignore rules, sanitization, and internal stack patterns.
+description: Complete CLI reference for LogStrip – flags, exit codes, I/O contract, stats, JSON output, multiline joining, severity filtering, include/exclude, timeout, progress. Extend with .logstrip.yml.
 ---
 # CLI Reference
 
@@ -32,6 +32,14 @@ logstrip [INPUT] [options]
 | :--- | :--- | :--- |
 | `-o`, `--output <path>` | Write the compressed log to `<path>`. When omitted, the compressed log is written to `stdout`. | _(stdout)_ |
 | `-a`, `--aggressiveness <level>` | Compression preset: `low`, `medium`, `high`, `aggressive`, `auto`. | `auto` |
+| `-m`, `--multiline <mode>` | Multiline log joining: `auto`, `python`, `node`, `java`, `go`, `rust`, `off`. Joins continuation lines (indented tracebacks, stack frames) with their parent into a single logical line before processing. | `off` |
+| `--severity <level>` | Minimum severity to keep: `fatal`, `error`, `warn`, `info`, `debug`, `trace`. Lines below the given level are dropped. | _(off)_ |
+| `--include <regex>` | Keep only lines matching this regex. All non-matching lines are dropped. | _(off)_ |
+| `--exclude <regex>` | Drop lines matching this regex. Useful for suppressing known noise patterns like `Downloading\|Extracting`. | _(off)_ |
+| `--sample <N>` | Limit output to the first _N_ kept lines. Useful for previewing large logs. | _(off)_ |
+| `--max-line-length <n>` | Truncate lines longer than _n_ characters. Very long lines (e.g. minified bundles) are replaced with `[TRUNCATED]`. | `100000` |
+| `--timeout <s>` | Stop processing after _s_ seconds. The output is flushed and `timedOut: true` is set in the result. | _(off)_ |
+| `--progress` | Show a progress bar on stderr (file input only, requires `--output`). | off |
 | `-s`, `--stats` | Print compression statistics to `stderr` after the log has been processed. | off |
 | `-j`, `--json` | Print the `LogStripResult` as JSON to `stdout`. Requires `--output` so the compressed log does not collide with the report. | off |
 | `-h`, `--help` | Print the help text and exit. | - |
@@ -103,19 +111,109 @@ logstrip raw.log -o clean.log --json
     "outputBytes": 31200,
     "droppedLines": 3640,
     "duplicateLines": 87,
-    "hiddenInternalStackLines": 89
+    "hiddenInternalStackLines": 89,
+    "truncatedLines": 3
   },
   "inputTokens": 27885,
   "outputTokens": 5379,
   "savedTokens": 22506,
   "savingsPercent": 80.71,
   "detectedSources": ["webpack", "npm", "kubernetes"],
+  "detectedFormat": "node",
+  "timedOut": false,
   "outputPath": "clean.log"
 }
 ```
 
 `detectedSources` is ranked by lightweight source fingerprints gathered during
 streaming. It is informational and does not change the compressed log output.
+`detectedFormat` indicates the inferred log format (e.g. `node`, `python`,
+`java`, `go`). `timedOut` is `true` when `--timeout` was reached before the
+full stream was processed.
+
+### Multiline traceback joining
+
+Python tracebacks and Node.js stack traces span multiple indented lines.
+Use `-m` to join continuation lines with their parent into a single logical
+line before scoring and deduplication:
+
+```bash
+logstrip traceback.log -m python -o clean.log
+logstrip crash.log -m node -o clean.log
+logstrip mixed.log -m auto -o clean.log
+```
+
+Supported modes:
+
+| Mode | Continuation detection |
+| :--- | :--- |
+| `python` | Indented lines (e.g. `  File "app.py", line 42`) |
+| `node` | Indented lines (e.g. `    at app (/src/app.ts:10:5)`) |
+| `java` | Indented lines + `Caused by:` headers |
+| `go` | Tab-indented lines + `goroutine N [status]:` headers |
+| `rust` | Indented lines |
+| `auto` | Combines all of the above; best for mixed-language logs |
+| `off` | No joining (default) |
+
+Groups are bounded at 200 lines / 200 KB to prevent unbounded memory growth
+from pathological input.
+
+### Severity filtering
+
+Keep only lines at or above a given severity level:
+
+```bash
+logstrip raw.log --severity error -o clean.log   # errors + fatals only
+logstrip raw.log --severity warn -o clean.log     # warnings + errors + fatals
+```
+
+| Level | What passes |
+| :--- | :--- |
+| `fatal` | `FATAL`, `CRITICAL`, `EMERG`, `ALERT` |
+| `error` | Above + `ERROR`, `ERR`, `SEV2` |
+| `warn` | Above + `WARN`, `WARNING` |
+| `info` | Above + `INFO` |
+| `debug` | Above + `DEBUG` |
+| `trace` | All levels pass |
+
+Severity is inferred from log-level tags, JSON `level` fields, and common
+abbreviations. Lines with no detectable severity always pass the filter.
+
+### Include / exclude patterns
+
+```bash
+# Keep only lines mentioning "timeout" or "refused"
+logstrip raw.log --include 'timeout|refused' -o clean.log
+
+# Drop download/extract progress noise
+logstrip build.log --exclude 'Downloading|Extracting|Progress' -o clean.log
+```
+
+Both flags accept JavaScript-compatible regex patterns. When `--include` is
+set, any line that does not match is dropped. When `--exclude` is set, any
+line that matches is dropped. They can be combined.
+
+### Sampling and timeouts
+
+```bash
+# Preview the first 50 significant lines of a huge log
+logstrip huge.log --sample 50 -o preview.log
+
+# Stop processing after 30 seconds (CI time budgets)
+logstrip raw.log --timeout 30 -o clean.log
+```
+
+When `--timeout` fires, the output is flushed and the result includes
+`timedOut: true`. The compressed output is still valid and usable.
+
+### Progress bar
+
+```bash
+logstrip huge.log --progress -o clean.log
+```
+
+Shows a live progress bar on stderr (file input only, requires `--output`).
+Useful when compressing multi-gigabyte logs locally.
 
 ## Aggressiveness and context retention
 

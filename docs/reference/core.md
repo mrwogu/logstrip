@@ -1,6 +1,6 @@
 ---
 title: Core TypeScript API Reference
-description: Process logs in Node.js with processLogStream and processLogFile. Stream-based, deterministic, zero external dependencies. Sanitization, scoring, and deduplication API.
+description: Process logs in Node.js with processLogStream and processLogFile. Stream-based, deterministic, zero external dependencies. Sanitization, scoring, dedup, multiline joining, severity filtering, format detection, and timeout API.
 ---
 # Core API Reference
 
@@ -30,7 +30,22 @@ interface LogStripResult {
   savedTokens: number;
   savingsPercent: number;
   detectedSources?: readonly string[];
+  detectedFormat?: string;
+  timedOut?: boolean;
   outputPath?: string;
+}
+
+interface LogStripStats {
+  inputLines: number;
+  outputLines: number;
+  inputWords: number;
+  outputWords: number;
+  inputBytes: number;
+  outputBytes: number;
+  droppedLines: number;
+  duplicateLines: number;
+  hiddenInternalStackLines: number;
+  truncatedLines?: number;
 }
 ```
 
@@ -40,6 +55,12 @@ stream. When adjacent diagnostic lines share the same stable shape, the parser
 folds them into a single `[xN]` line and generalizes volatile fields such as
 `amount=99.99`, `amount=49.50`, and `amount=12.00` to
 `amount=[99.99 | 49.50 | 12.00]`.
+
+`detectedFormat` is set when the parser infers a log format (e.g. `node`,
+`python`, `java`, `go`) from markers in the stream. `timedOut` is `true` when
+`processLogStreamWithTimeout` was used and the deadline was reached.
+`truncatedLines` counts lines that exceeded `maxLineLength` and were replaced
+with `[TRUNCATED]`.
 
 ## Aggressiveness
 
@@ -116,7 +137,128 @@ scoreLineRelevance('containerd v1.7.0 started', 'high');       // 0
 scoreLineRelevance('containerd failed to create task', 'high'); // >= 40
 ```
 
-## `processLogFile`
+## Multiline log joining
+
+Many log formats span multiple lines — Python tracebacks, Node.js stack traces,
+Java `Caused by:` chains, Go goroutine dumps. By default (`multiline: 'off'`)
+each physical line is processed independently. Enable multiline mode to join
+continuation lines with their parent into a single logical line before scoring:
+
+```ts
+import { processLogStream } from 'logstrip';
+
+const result = await processLogStream(input, output, {
+  multiline: 'python',  // 'auto' | 'python' | 'node' | 'java' | 'go' | 'rust' | 'off'
+});
+```
+
+Groups are bounded at 200 lines / 200 KB to prevent unbounded memory growth.
+
+The `MultilineMode` type and `isContinuationLine` helper are exported:
+
+```ts
+import { isContinuationLine, createContinuationContext, type MultilineMode } from 'logstrip';
+
+const ctx = createContinuationContext('python');
+isContinuationLine('    File "app.py", line 42', ctx); // true
+```
+
+## Severity filtering
+
+```ts
+import { processLogStream, parseSeverityLevel, type SeverityLevel } from 'logstrip';
+
+const result = await processLogStream(input, output, {
+  severity: 'error',  // keep only error + fatal lines
+});
+```
+
+| Level | What passes |
+| :--- | :--- |
+| `fatal` | `FATAL`, `CRITICAL`, `EMERG`, `ALERT` |
+| `error` | Above + `ERROR`, `ERR`, `SEV2` |
+| `warn` | Above + `WARN`, `WARNING` |
+| `info` | Above + `INFO` |
+| `debug` | Above + `DEBUG` |
+| `trace` | All levels pass |
+
+Severity is inferred from log-level tags, JSON `level` fields, and common
+abbreviations. Lines with no detectable severity always pass.
+
+`inferSeverity` and `passesSeverityFilter` are also exported for direct use:
+
+```ts
+import { inferSeverity, passesSeverityFilter } from 'logstrip';
+
+inferSeverity('[ERROR] timeout');       // 'error'
+passesSeverityFilter('[WARN] slow', 'error');  // false
+passesSeverityFilter('[ERROR] fail', 'error');  // true
+```
+
+## Log format detection
+
+The parser can infer the dominant log format from stream markers:
+
+```ts
+import { detectFormat } from 'logstrip';
+
+detectFormat('npm ERR! code ERESOLVE\n    at module (app.js:1:1)');
+// 'node'
+```
+
+When `multiline` is not `'off'`, `processLogStream` sets `detectedFormat` on
+the result. The `detectFormat` function checks for Python (`Traceback`),
+Node.js (`at ` stack frames), Java (`Exception in thread`), Go (`goroutine`),
+and other format markers.
+
+## HTTP status code grouping
+
+The sanitizer groups HTTP status codes into classes:
+
+```ts
+import { sanitizeLine } from 'logstrip';
+
+sanitizeLine('GET /api 503 Service Unavailable');
+// 'GET /api [5xx] Service Unavailable'
+
+sanitizeLine('responded 200 OK');
+// 'responded [2xx] OK'
+```
+
+This prevents status code variations from breaking deduplication.
+
+## Timeout wrapper
+
+For CI time budgets, use `processLogStreamWithTimeout`:
+
+```ts
+import { processLogStreamWithTimeout } from 'logstrip';
+
+const result = await processLogStreamWithTimeout(input, output, { aggressiveness: 'auto' }, 30_000);
+if (result.timedOut) {
+  console.warn('Processing timed out after 30s; output may be partial');
+}
+```
+
+The function flushes the output and returns a valid `LogStripResult` with
+`timedOut: true` when the deadline is reached.
+
+## Include / exclude / sample
+
+These options provide fine-grained filtering at the library level:
+
+```ts
+const result = await processLogStream(input, output, {
+  include: /timeout|refused/,   // keep only matching lines
+  exclude: /Downloading/,       // drop matching lines
+  sampleSize: 50,              // limit to first 50 kept lines
+  maxLineLength: 10_000,       // truncate very long lines
+});
+```
+
+`include` and `exclude` accept `RegExp` objects. `sampleSize` caps the total
+kept lines. `maxLineLength` replaces lines exceeding the limit with
+`[TRUNCATED]` and increments `stats.truncatedLines`.
 
 ```ts
 import { processLogFile } from 'logstrip';
@@ -176,7 +318,16 @@ The sanitizer replaces:
 | ISO and UTC timestamps | `[TIME]` |
 | IPv4 addresses | `[IP]` |
 | IPv4 address + port | `[IP]:[PORT]` |
+| GitHub tokens (`ghp_`, `gho_`, `ghu_`, etc.) | `[REDACTED]` |
+| JWT tokens (`eyJ...`) | `[JWT]` |
+| Slack tokens (`xoxb-...`, `xoxp-...`) | `[REDACTED]` |
+| Connection strings (`postgres://user:pass@`) | password → `[REDACTED]` |
+| `Authorization:` headers | `Authorization: [REDACTED]` |
+| Secret field values (`password=`, `token=`, `api_key=`, etc.) | value → `[REDACTED]` |
+| AWS access keys (`AKIA...`) | `[REDACTED]` |
+| AWS ARN account IDs | `[ACCOUNT]` |
 | long hexadecimal or alphanumeric hashes | `[HASH]` |
+| HTTP status codes | `[2xx]`, `[4xx]`, `[5xx]`, etc. |
 | ANSI color escapes | removed |
 
 ## `createRepeatSignature`

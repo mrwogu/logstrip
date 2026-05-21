@@ -14,7 +14,7 @@ _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub
 [![Coverage](https://codecov.io/gh/mrwogu/logstrip/branch/main/graph/badge.svg)](https://codecov.io/gh/mrwogu/logstrip)
 [![License: MIT](https://img.shields.io/badge/license-MIT-white.svg)](https://opensource.org/licenses/MIT)
 
-![80%+ token savings](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-savings.svg)![705+ ecosystems](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-ecosystems.svg)![0 runtime deps](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-deps.svg)![100% coverage](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-coverage.svg)![38 fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-fixtures.svg)![357+ tests](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-tests.svg)
+![80%+ token savings](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-savings.svg)![705+ ecosystems](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-ecosystems.svg)![0 runtime deps](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-deps.svg)![100% coverage](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-coverage.svg)![38 fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-fixtures.svg)![557+ tests](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-tests.svg)
 
 [Install](#install) ·
 [Quick Start](#quick-start) ·
@@ -106,7 +106,7 @@ Production logs with millions of lines routinely hit **80%+** token savings beca
 | **Token savings** | **80%+** (typical CI logs) | 20–40% (fragile patterns) | 60–80% (expensive, lossy) | ~50% (anomaly-only) |
 | **Streaming** | Yes (readline, bounded memory) | Yes (pipe) | No (buffer entire log) | No (batch) |
 | **Deduplication** | Smart `[xN]` folding with delta values | No | Approximate | No |
-| **Sanitization** | UUIDs, IPs, timestamps, AWS keys, JWTs | Manual regex | Unreliable | Partial |
+| **Sanitization** | UUIDs, IPs, timestamps, AWS keys, JWTs, GitHub tokens, Slack tokens, connection strings, `Authorization:` headers | Manual regex | Unreliable | Partial |
 | **Stacktrace collapse** | Internal `node_modules` → single marker | No | Often drops context | No |
 | **Runtime deps** | **0** (node:\* built-ins only) | 0 | Heavy (API + tokens) | Python + ML stack |
 | **LLM cost** | **$0** (pure computation) | $0 | $0.01–$1.00+ per log | $0 (compute only) |
@@ -213,10 +213,13 @@ LogStrip detects **705+ log ecosystems** and applies several cuts to every strea
 | Cut | What it does |
 |:---|:---|
 | **Defoliation** | Drops `[INFO]`, `[DEBUG]`, `[TRACE]`, and `[VERBOSE]` lines. |
-| **Sanitization** | Replaces UUIDs, timestamps, IPs, AWS keys, and long hashes with compact placeholders. |
+| **Sanitization** | Replaces UUIDs, timestamps, IPs, AWS keys, GitHub tokens, JWTs, Slack tokens, connection string passwords, `Authorization:` headers, and long hashes with compact placeholders. Groups HTTP status codes (`503` → `[5xx]`). |
 | **Context scoring** | Keeps high-signal diagnostics and nearby context while dampening repeated spam (TF-IDF). |
 | **Smart dedup** | Folds repeated sanitized lines, including same-shape variants, into `[xN] message` with only differing values listed. |
 | **Stack collapse** | Replaces internal `node_modules/` and runtime frames with one marker line. |
+| **Multiline joining** | Joins indented continuation lines (Python tracebacks, Node stack frames, Java `Caused by:` chains, Go goroutine dumps) with their parent into a single logical line. |
+| **Severity filtering** | Drops lines below a configurable minimum severity (`fatal` / `error` / `warn` / `info` / `debug` / `trace`). |
+| **CI noise filters** | Drops progress bars, timestamp-only lines, K8s `Normal` events, and rate-limited repetition messages. |
 
 ```text
 [INFO] boot ok                                           ← dropped (noise tag)
@@ -310,7 +313,15 @@ Arguments:
 
 Options:
   -o, --output <path>      Write the compressed log to <path>. Defaults to stdout.
-  -a, --aggressiveness <l> Compression preset: low | medium | high | aggressive (default: high).
+  -a, --aggressiveness <l> Compression preset: low | medium | high | aggressive | auto (default: auto).
+  -m, --multiline <mode>   Join multiline logs: auto | python | node | java | go | rust | off (default: off).
+      --severity <level>   Minimum severity: fatal | error | warn | info | debug | trace.
+      --include <regex>    Keep only lines matching this regex.
+      --exclude <regex>    Drop lines matching this regex.
+      --sample <N>         Limit output to first N kept lines.
+      --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
+      --timeout <s>        Stop processing after s seconds.
+      --progress           Show progress bar (file input only, requires --output).
       --config <path>      Path to .logstrip.yml config file. Auto-detects from cwd.
   -s, --stats              Print compression statistics to stderr.
   -j, --json               Print LogStripResult as JSON to stdout. Requires --output.
@@ -335,6 +346,21 @@ logstrip raw.log -o clean.log --json
 
 # 5. Custom config for internal tools
 logstrip raw.log -o clean.log --config .logstrip.yml
+
+# 6. Join Python tracebacks into logical lines
+logstrip traceback.log -m python -o clean.log
+
+# 7. Keep only error+fatal lines
+logstrip raw.log --severity error -o clean.log
+
+# 8. Suppress download noise in build logs
+logstrip build.log --exclude 'Downloading|Extracting' -o clean.log
+
+# 9. Preview first 50 significant lines of a huge log
+logstrip huge.log --sample 50 -o preview.log
+
+# 10. CI time budget - stop after 30 seconds
+logstrip raw.log --timeout 30 -o clean.log
 ```
 
 PowerShell equivalents:
@@ -361,7 +387,9 @@ your own Node tooling.
 import { processLogFile, type LogStripResult } from 'logstrip';
 
 const result: LogStripResult = await processLogFile('raw.log', 'clean.log', {
-  aggressiveness: 'high',
+  aggressiveness: 'auto',
+  multiline: 'python',
+  severity: 'error',
 });
 
 console.log(`saved ${result.savedTokens} tokens (${result.savingsPercent}%)`);
@@ -369,7 +397,9 @@ console.log(`saved ${result.savedTokens} tokens (${result.savingsPercent}%)`);
 
 `processLogStream(input, output, options)` is also exported for non-file streams
 (stdin, network sockets, custom transforms). Pass `configPath` in options for
-custom config integration.
+custom config integration. Additional options: `include`, `exclude`,
+`sampleSize`, `maxLineLength`. Use `processLogStreamWithTimeout` for time-bounded
+processing — it sets `result.timedOut = true` when the deadline is reached.
 
 ## GitHub Action <a id="github-action"></a>
 
