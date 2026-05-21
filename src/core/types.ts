@@ -1,9 +1,11 @@
 export type StaticAggressiveness = 'low' | 'medium' | 'high' | 'aggressive';
 export type Aggressiveness = StaticAggressiveness | 'auto';
+export type MultilineMode = 'auto' | 'python' | 'node' | 'java' | 'go' | 'rust' | 'off';
 
 export interface LogStripOptions {
   aggressiveness?: Aggressiveness;
   configPath?: string;
+  multiline?: MultilineMode;
 }
 
 export interface LogStripStats {

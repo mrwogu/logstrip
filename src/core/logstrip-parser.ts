@@ -37,6 +37,11 @@ import {
   rankDetectedSources,
   scoreSourceDiagnosticBoost,
 } from './detection/source-detector.js';
+import {
+  type MultilineMode,
+  createContinuationContext,
+  isContinuationLine,
+} from './multiline/multiline-buffer.js';
 import { sanitizeLine } from './sanitize/sanitize-line.js';
 import {
   estimateTokens,
@@ -66,6 +71,10 @@ export {
 } from './constants.js';
 export { createRepeatSignature } from './dedupe/repeat-grouper.js';
 export { detectLogSources } from './detection/source-detector.js';
+export {
+  type MultilineMode,
+  isContinuationLine,
+} from './multiline/multiline-buffer.js';
 export { sanitizeLine } from './sanitize/sanitize-line.js';
 export {
   estimateTokens,
@@ -82,6 +91,44 @@ export type {
   LogStripStats,
   StaticAggressiveness,
 } from './types.js';
+
+
+// ---- Multiline-aware line reader ----
+
+async function* readLogicalLines(
+  lines: AsyncIterable<string>,
+  multilineMode: MultilineMode,
+): AsyncIterable<string> {
+  if (multilineMode === 'off') {
+    yield* lines;
+    return;
+  }
+
+  const ctx = createContinuationContext(multilineMode);
+  let buffer: string[] = [];
+
+  for await (const line of lines) {
+    if (buffer.length > 0 && isContinuationLine(line, ctx)) {
+      buffer.push(line);
+      ctx.groupLineCount += 1;
+      ctx.groupByteCount += Buffer.byteLength(line, 'utf8');
+      continue;
+    }
+
+    if (buffer.length > 0) {
+      yield buffer.join('\n');
+    }
+
+    ctx.previousLine = line;
+    ctx.groupLineCount = 1;
+    ctx.groupByteCount = Buffer.byteLength(line, 'utf8');
+    buffer = [line];
+  }
+
+  if (buffer.length > 0) {
+    yield buffer.join('\n');
+  }
+}
 
 export function buildMergedConfig(
   options: LogStripOptions = {},
@@ -114,6 +161,7 @@ export async function processLogStream(
   const dynamicAggressiveness =
     createDynamicAggressivenessState(requestedAggressiveness);
   const merged = buildMergedConfig(options);
+  const multilineMode = options.multiline ?? 'off';
 
   // Compile custom patterns once per stream
   const customDiagnosticRegexes = merged.diagnosticPatterns.map(
@@ -139,7 +187,8 @@ export async function processLogStream(
   const contextBefore: string[] = [];
   let afterContextRemaining = 0;
 
-  const lines = createInterface({ input, crlfDelay: Infinity });
+  const rawLines = createInterface({ input, crlfDelay: Infinity });
+  const lines = readLogicalLines(rawLines, multilineMode);
   let previousGroup: RepeatGroup | undefined;
   let hidingInternalStack = false;
 
@@ -188,14 +237,15 @@ export async function processLogStream(
 
   for await (const rawLine of lines) {
     const line = String(rawLine);
+    const physicalLineCount = line.split('\n').length;
     collectDetectedSourceHits(line, detectedSourceState);
-    stats.inputLines += 1;
+    stats.inputLines += physicalLineCount;
     stats.inputWords += countWords(line);
     stats.inputBytes += Buffer.byteLength(`${line}\n`, 'utf8');
 
     // Empty lines always dropped; don't disturb context state
     if (line.trim().length === 0) {
-      stats.droppedLines += 1;
+      stats.droppedLines += physicalLineCount;
       recordDecision({
         kept: false,
         dropped: true,
@@ -207,7 +257,7 @@ export async function processLogStream(
 
     // Custom ignore patterns (drop matching lines early)
     if (customIgnoreRegexes.some((r) => r.test(line))) {
-      stats.droppedLines += 1;
+      stats.droppedLines += physicalLineCount;
       hidingInternalStack = false;
       recordDecision({
         kept: false,
@@ -222,7 +272,7 @@ export async function processLogStream(
     // disturbing afterContextRemaining so that sparse INFO lines between
     // errors do not close the context window prematurely.
     if (isIgnoredLogLine(line)) {
-      stats.droppedLines += 1;
+      stats.droppedLines += physicalLineCount;
       hidingInternalStack = false;
       recordDecision({
         kept: false,
@@ -245,7 +295,7 @@ export async function processLogStream(
       customInternalStackRegexes.length > 0 &&
       customInternalStackRegexes.some((r) => r.test(sanitized));
     if (isInternalStackTraceLine(sanitized) || isCustomInternalStack) {
-      stats.hiddenInternalStackLines += 1;
+      stats.hiddenInternalStackLines += physicalLineCount;
 
       if (!hidingInternalStack) {
         await flushContextBefore();
@@ -331,7 +381,7 @@ export async function processLogStream(
       });
     } else {
       // Hard drop (score < 0): negative TF-IDF or aggressive WARN suppression
-      stats.droppedLines += 1;
+      stats.droppedLines += physicalLineCount;
       afterContextRemaining = 0;
       recordDecision({
         kept: false,

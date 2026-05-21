@@ -8,6 +8,7 @@ import {
   processLogStream,
   type Aggressiveness,
   type LogStripResult,
+  type MultilineMode,
 } from '../core/logstrip-parser';
 
 export const CLI_VERSION = '1.2.0'; // x-release-please-version
@@ -26,7 +27,9 @@ Options:
   -a, --aggressiveness <l> Compression preset: low | medium | high | aggressive | auto.
                            Default: auto.
   -s, --stats              Print compression statistics to stderr.
-  -j, --json               Print LogStripResult as JSON to stdout. Requires --output.
+  -j, --json               Print LogStripResult JSON to stdout. Requires --output.
+  -m, --multiline <mode>   Multiline handling: auto | python | node | java | go | rust | off.
+                           Default: off.
       --config <path>      Path to .logstrip.yml config file. Auto-detects from cwd.
   -h, --help               Show this help text and exit.
   -v, --version            Print the CLI version and exit.
@@ -36,7 +39,12 @@ Examples:
   cat raw.log | logstrip > clean.log
   logstrip raw.log --stats > clean.log
   logstrip raw.log -o clean.log --json
+  logstrip traceback.log -m python -o clean.log
 `;
+
+const VALID_MULTILINE_MODES: readonly string[] = [
+  'auto', 'python', 'node', 'java', 'go', 'rust', 'off',
+];
 
 export interface CliOptions {
   input?: string;
@@ -44,6 +52,7 @@ export interface CliOptions {
   aggressiveness: Aggressiveness;
   stats: boolean;
   json: boolean;
+  multiline: MultilineMode;
   config?: string;
   help: boolean;
   version: boolean;
@@ -66,6 +75,17 @@ export class CliError extends Error {
   }
 }
 
+export function parseMultilineMode(value: string): MultilineMode {
+  const normalized = value.toLowerCase();
+  if (VALID_MULTILINE_MODES.includes(normalized)) {
+    return normalized as MultilineMode;
+  }
+  throw new CliError(
+    `Unsupported multiline mode: ${value}. Valid values: ${VALID_MULTILINE_MODES.join(', ')}`,
+    2,
+  );
+}
+
 export function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -82,6 +102,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         aggressiveness: { type: 'string', short: 'a' },
         stats: { type: 'boolean', short: 's', default: false },
         json: { type: 'boolean', short: 'j', default: false },
+        multiline: { type: 'string', short: 'm' },
         config: { type: 'string' },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', short: 'v', default: false },
@@ -110,6 +131,18 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     throw new CliError(messageOf(error), 2);
   }
 
+  const multilineInput =
+    typeof parsed.values.multiline === 'string'
+      ? parsed.values.multiline
+      : 'off';
+
+  let multiline: MultilineMode;
+  try {
+    multiline = parseMultilineMode(multilineInput);
+  } catch (error) {
+    throw new CliError(messageOf(error), 2);
+  }
+
   return {
     input: parsed.positionals[0],
     output:
@@ -117,6 +150,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     aggressiveness,
     stats: parsed.values.stats === true,
     json: parsed.values.json === true,
+    multiline,
     config:
       typeof parsed.values.config === 'string'
         ? parsed.values.config
@@ -240,6 +274,7 @@ export async function runCli(
     result = await processLogStream(input, output as Writable, {
       aggressiveness: options.aggressiveness,
       configPath: options.config,
+      multiline: options.multiline,
     });
   } catch (error) {
     if (options.input !== undefined) {
