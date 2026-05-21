@@ -14,7 +14,7 @@ import {
   type SeverityLevel,
 } from '../core/logstrip-parser';
 
-export const CLI_VERSION = '1.2.0'; // x-release-please-version
+export const CLI_VERSION = '1.3.0'; // x-release-please-version
 
 export const HELP_TEXT = `Usage: logstrip [INPUT] [options]
 
