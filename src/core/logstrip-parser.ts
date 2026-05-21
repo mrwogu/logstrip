@@ -1,5 +1,5 @@
 import { once } from 'node:events';
-import { createReadStream, createWriteStream } from 'node:fs';
+import { createReadStream, createWriteStream, statSync } from 'node:fs';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
@@ -173,6 +173,10 @@ export async function processLogStream(
   const merged = buildMergedConfig(options);
   const multilineMode = options.multiline ?? 'off';
   const severityLevel: SeverityLevel | undefined = options.severity;
+  const maxLineLength = options.maxLineLength ?? 100_000;
+  const includePattern = options.include;
+  const excludePattern = options.exclude;
+  const sampleSize = options.sampleSize;
 
   // Compile custom patterns once per stream
   const customDiagnosticRegexes = merged.diagnosticPatterns.map(
@@ -203,6 +207,7 @@ export async function processLogStream(
   let previousGroup: RepeatGroup | undefined;
   let hidingInternalStack = false;
   let detectedFormat: string | undefined;
+  let outputLineCount = 0;
 
   const recordDecision = (decision: LineDecision): void => {
     recordLineDecision(dynamicAggressiveness, decision);
@@ -222,6 +227,11 @@ export async function processLogStream(
       stats.duplicateLines += previousGroup.count - 1;
     }
 
+    if (sampleSize !== undefined && outputLineCount >= sampleSize) {
+      previousGroup = undefined;
+      return;
+    }
+    outputLineCount += 1;
     await writeOutputLine(output, line, stats);
     previousGroup = undefined;
   };
@@ -528,5 +538,23 @@ async function writeOutputLine(
 
   if (!output.write(rendered)) {
     await once(output, 'drain');
+  }
+}
+
+// ---- Timeout wrapper ----
+
+export async function processLogStreamWithTimeout(
+  input: NodeJS.ReadableStream,
+  output: Writable,
+  options: LogStripOptions = {},
+  timeoutMs?: number,
+): Promise<LogStripResult> {
+  if (timeoutMs === undefined) return processLogStream(input, output, options);
+  const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Processing timed out')), timeoutMs));
+  try { return await Promise.race([processLogStream(input, output, options), timeoutPromise]); }
+  catch (error) {
+    if (error instanceof Error && error.message === 'Processing timed out')
+      return { stats: createEmptyStats(), inputTokens: 0, outputTokens: 0, savedTokens: 0, savingsPercent: 0, timedOut: true };
+    throw error;
   }
 }

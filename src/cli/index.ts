@@ -7,6 +7,7 @@ import {
   parseSeverityLevel,
   pathsReferToSameFile,
   processLogStream,
+  processLogStreamWithTimeout,
   type Aggressiveness,
   type LogStripResult,
   type MultilineMode,
@@ -33,6 +34,12 @@ Options:
   -m, --multiline <mode>   Multiline handling: auto | python | node | java | go | rust | off.
                            Default: off.
       --severity <level>   Minimum severity: fatal | error | warn | info | debug | trace.
+      --include <regex>    Keep only lines matching this regex.
+      --exclude <regex>    Drop lines matching this regex.
+      --sample <N>         Limit output to first N kept lines.
+      --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
+      --timeout <s>        Stop processing after s seconds.
+      --progress           Show progress bar (file input only, requires --output).
       --config <path>      Path to .logstrip.yml config file. Auto-detects from cwd.
   -h, --help               Show this help text and exit.
   -v, --version            Print the CLI version and exit.
@@ -43,6 +50,8 @@ Examples:
   logstrip raw.log --stats > clean.log
   logstrip raw.log -o clean.log --json
   logstrip traceback.log -m python -o clean.log
+  logstrip build.log --exclude 'Downloading|Extracting' -o clean.log
+  logstrip huge.log --progress --timeout 30 -o clean.log
 `;
 
 const VALID_MULTILINE_MODES: readonly string[] = [
@@ -57,6 +66,12 @@ export interface CliOptions {
   json: boolean;
   multiline: MultilineMode;
   severity?: SeverityLevel;
+  include?: RegExp;
+  exclude?: RegExp;
+  sample?: number;
+  maxLineLength?: number;
+  timeout?: number;
+  progress: boolean;
   config?: string;
   help: boolean;
   version: boolean;
@@ -108,6 +123,12 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         json: { type: 'boolean', short: 'j', default: false },
         multiline: { type: 'string', short: 'm' },
         severity: { type: 'string' },
+        include: { type: 'string' },
+        exclude: { type: 'string' },
+        sample: { type: 'string' },
+        'max-line-length': { type: 'string' },
+        timeout: { type: 'string' },
+        progress: { type: 'boolean', default: false },
         config: { type: 'string' },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', short: 'v', default: false },
@@ -157,6 +178,39 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     }
   }
 
+  let include: RegExp | undefined;
+  if (typeof parsed.values.include === 'string') {
+    try { include = new RegExp(parsed.values.include, 'u'); }
+    catch { throw new CliError(`Invalid --include regex: ${parsed.values.include}`, 2); }
+  }
+
+  let exclude: RegExp | undefined;
+  if (typeof parsed.values.exclude === 'string') {
+    try { exclude = new RegExp(parsed.values.exclude, 'u'); }
+    catch { throw new CliError(`Invalid --exclude regex: ${parsed.values.exclude}`, 2); }
+  }
+
+  let sample: number | undefined;
+  if (typeof parsed.values.sample === 'string') {
+    sample = parseInt(parsed.values.sample, 10);
+    if (isNaN(sample) || sample < 1) throw new CliError(`Invalid --sample: ${parsed.values.sample}. Must be a positive integer.`, 2);
+  }
+
+  let maxLineLength: number | undefined;
+  if (typeof parsed.values['max-line-length'] === 'string') {
+    maxLineLength = parseInt(parsed.values['max-line-length'], 10);
+    if (isNaN(maxLineLength) || maxLineLength < 100) throw new CliError(`Invalid --max-line-length. Must be >= 100.`, 2);
+  }
+
+  let timeout: number | undefined;
+  if (typeof parsed.values.timeout === 'string') {
+    timeout = parseFloat(parsed.values.timeout);
+    if (isNaN(timeout) || timeout < 0.1) throw new CliError(`Invalid --timeout. Must be a positive number.`, 2);
+    timeout = Math.round(timeout * 1000);
+  }
+
+  const progress = parsed.values.progress === true;
+
   return {
     input: parsed.positionals[0],
     output:
@@ -166,6 +220,12 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     json: parsed.values.json === true,
     multiline,
     severity,
+    include,
+    exclude,
+    sample,
+    maxLineLength,
+    timeout,
+    progress,
     config:
       typeof parsed.values.config === 'string'
         ? parsed.values.config
@@ -251,6 +311,11 @@ export async function runCli(
       io.stderr,
       'logstrip: --json requires --output so the compressed log does not collide with the JSON report on stdout\n',
     );
+    return 2;
+  }
+
+  if (options.progress && options.input === undefined) {
+    await writeAll(io.stderr, 'logstrip: --progress requires a file input (not stdin)\n');
     return 2;
   }
 

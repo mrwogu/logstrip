@@ -9,6 +9,10 @@ export interface LogStripOptions {
   configPath?: string;
   multiline?: MultilineMode;
   severity?: SeverityLevel;
+  maxLineLength?: number;
+  include?: RegExp;
+  exclude?: RegExp;
+  sampleSize?: number;
 }
 
 export interface LogStripStats {
@@ -21,6 +25,7 @@ export interface LogStripStats {
   droppedLines: number;
   duplicateLines: number;
   hiddenInternalStackLines: number;
+  truncatedLines?: number;
 }
 
 export interface LogStripResult {
@@ -32,4 +37,5 @@ export interface LogStripResult {
   detectedSources?: readonly string[];
   outputPath?: string;
   detectedFormat?: string;
+  timedOut?: boolean;
 }
