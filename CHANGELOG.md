@@ -57,8 +57,13 @@
 
 ## 1.0.0 (2026-05-19)
 
+Initial release: streaming log compressor CLI, TypeScript library, and GitHub Action.
 
 ### Features
 
-* add brand assets, agent logos, and stat badges ([186fad0](https://github.com/mrwogu/logstrip/commit/186fad0d3847b59bc7ce0d27406001513e79fe42))
-* add streaming log parser, CLI, GitHub Action, and custom config engine ([9c42150](https://github.com/mrwogu/logstrip/commit/9c42150f3796619a1a056765e6b996a50a552649))
+* Streaming log parser with line scoring, deduplication, sanitization, and internal stack collapsing
+* CLI (`logstrip`) with stdin/stdout pipe support, `--aggressiveness`, `--stats`, `--json` flags
+* GitHub Action wrapper (`mrwogu/logstrip@v1`) with `log-path` and `aggressiveness` inputs
+* Custom config engine (`.logstrip.yml`) for extending built-in log sources and patterns
+* MkDocs documentation site with CLI reference, guides, and contributing guide
+* Brand assets, agent logos, and stat badges
