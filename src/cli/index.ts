@@ -4,11 +4,13 @@ import { Readable, Writable } from 'node:stream';
 import { parseArgs } from 'node:util';
 import {
   parseAggressiveness,
+  parseSeverityLevel,
   pathsReferToSameFile,
   processLogStream,
   type Aggressiveness,
   type LogStripResult,
   type MultilineMode,
+  type SeverityLevel,
 } from '../core/logstrip-parser';
 
 export const CLI_VERSION = '1.2.0'; // x-release-please-version
@@ -30,6 +32,7 @@ Options:
   -j, --json               Print LogStripResult JSON to stdout. Requires --output.
   -m, --multiline <mode>   Multiline handling: auto | python | node | java | go | rust | off.
                            Default: off.
+      --severity <level>   Minimum severity: fatal | error | warn | info | debug | trace.
       --config <path>      Path to .logstrip.yml config file. Auto-detects from cwd.
   -h, --help               Show this help text and exit.
   -v, --version            Print the CLI version and exit.
@@ -53,6 +56,7 @@ export interface CliOptions {
   stats: boolean;
   json: boolean;
   multiline: MultilineMode;
+  severity?: SeverityLevel;
   config?: string;
   help: boolean;
   version: boolean;
@@ -103,6 +107,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         stats: { type: 'boolean', short: 's', default: false },
         json: { type: 'boolean', short: 'j', default: false },
         multiline: { type: 'string', short: 'm' },
+        severity: { type: 'string' },
         config: { type: 'string' },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', short: 'v', default: false },
@@ -143,6 +148,15 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     throw new CliError(messageOf(error), 2);
   }
 
+  let severity: SeverityLevel | undefined;
+  if (typeof parsed.values.severity === 'string') {
+    try {
+      severity = parseSeverityLevel(parsed.values.severity);
+    } catch (error) {
+      throw new CliError(messageOf(error), 2);
+    }
+  }
+
   return {
     input: parsed.positionals[0],
     output:
@@ -151,6 +165,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     stats: parsed.values.stats === true,
     json: parsed.values.json === true,
     multiline,
+    severity,
     config:
       typeof parsed.values.config === 'string'
         ? parsed.values.config
@@ -275,6 +290,7 @@ export async function runCli(
       aggressiveness: options.aggressiveness,
       configPath: options.config,
       multiline: options.multiline,
+      severity: options.severity,
     });
   } catch (error) {
     if (options.input !== undefined) {

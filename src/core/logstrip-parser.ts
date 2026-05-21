@@ -43,6 +43,8 @@ import {
   isContinuationLine,
 } from './multiline/multiline-buffer.js';
 import { sanitizeLine } from './sanitize/sanitize-line.js';
+import { passesSeverityFilter } from './severity/severity-filter.js';
+import type { SeverityLevel } from './severity/severity-filter.js';
 import {
   estimateTokens,
   isIgnoredLogLine,
@@ -58,6 +60,8 @@ import type {
   StaticAggressiveness,
 } from './types.js';
 
+export { inferSeverity, parseSeverityLevel, passesSeverityFilter } from './severity/severity-filter.js';
+export type { SeverityLevel } from './severity/severity-filter.js';
 export { parseAggressiveness } from './aggressiveness/levels.js';
 export {
   CONTEXT_WINDOW_AFTER,
@@ -162,6 +166,7 @@ export async function processLogStream(
     createDynamicAggressivenessState(requestedAggressiveness);
   const merged = buildMergedConfig(options);
   const multilineMode = options.multiline ?? 'off';
+  const severityLevel: SeverityLevel | undefined = options.severity;
 
   // Compile custom patterns once per stream
   const customDiagnosticRegexes = merged.diagnosticPatterns.map(
@@ -264,6 +269,16 @@ export async function processLogStream(
         dropped: true,
         hardKeep: false,
         repeated: false,
+      });
+      continue;
+    }
+
+    // Severity filter (Phase 1.4): drop lines below threshold
+    if (severityLevel !== undefined && !passesSeverityFilter(line, severityLevel)) {
+      stats.droppedLines += physicalLineCount;
+      hidingInternalStack = false;
+      recordDecision({
+        kept: false, dropped: true, hardKeep: false, repeated: false,
       });
       continue;
     }
