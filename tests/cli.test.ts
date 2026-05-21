@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import {
   CLI_VERSION,
   CliError,
+  attachProgress,
   endStream,
   formatStats,
   HELP_TEXT,
@@ -237,6 +238,17 @@ describe('endStream', () => {
   });
 });
 
+describe('attachProgress', () => {
+  it('renders completion for empty inputs', async () => {
+    const stderr = bufferWritable();
+    const finish = attachProgress(new PassThrough(), stderr, 0);
+
+    await finish();
+
+    expect(stderr.value()).toContain('100%');
+  });
+});
+
 describe('messageOf', () => {
   it('returns the error message for Error instances', () => {
     expect(messageOf(new Error('boom'))).toBe('boom');
@@ -391,6 +403,87 @@ describe('runCli', () => {
     expect(report.savingsPercent).toBeGreaterThan(0);
   });
 
+  it('writes JSON to stdout and stats to stderr together', async () => {
+    const outputPath = join(workDir, `json-stats-${counter}.log`);
+    const { io, stdout, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli(
+      [inputPath, '-o', outputPath, '--json', '--stats'],
+      io,
+    );
+
+    expect(code).toBe(0);
+    expect(JSON.parse(stdout.value())).toMatchObject({
+      outputPath,
+    });
+    expect(stderr.value()).toContain('LogStrip compression report');
+  });
+
+  it('applies include, exclude and max line length options', async () => {
+    const { io, stdout } = makeIo(
+      bufferReadable(
+        [
+          '[ERROR] keep this failure',
+          '[WARN] skip by include',
+          '[ERROR] hide this failure',
+          `[ERROR] ${'x'.repeat(160)}`,
+        ].join('\n'),
+      ),
+    );
+
+    const code = await runCli([
+      '--include',
+      'ERROR',
+      '--exclude',
+      'hide',
+      '--max-line-length',
+      '100',
+    ], io);
+
+    expect(code).toBe(0);
+    expect(stdout.value()).toContain('[ERROR] keep this failure');
+    expect(stdout.value()).not.toContain('skip by include');
+    expect(stdout.value()).not.toContain('hide this failure');
+    expect(stdout.value()).toContain('… [truncated]');
+  });
+
+  it('applies sample and timeout options', async () => {
+    const { io, stdout } = makeIo(
+      bufferReadable('[ERROR] one\n[ERROR] two\n[ERROR] three\n'),
+    );
+
+    const code = await runCli(['--sample', '2', '--timeout', '1'], io);
+
+    expect(code).toBe(0);
+    expect(stdout.value().match(/\[ERROR\]/gu)).toHaveLength(2);
+  });
+
+  it('returns a runtime failure when timeout is reached', async () => {
+    const stdin = new Readable({
+      read() {
+        // Keep stream open until timeout.
+      },
+    });
+    const { io, stderr } = makeIo(stdin);
+
+    const code = await runCli(['--timeout', '0.1'], io);
+
+    expect(code).toBe(1);
+    expect(stderr.value()).toContain('processing timed out');
+  });
+
+  it('renders progress for file input with output', async () => {
+    const outputPath = join(workDir, `progress-${counter}.log`);
+    const { io, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli([inputPath, '-o', outputPath, '--progress'], io);
+
+    expect(code).toBe(0);
+    expect(stderr.value()).toContain('logstrip: [');
+    expect(stderr.value()).toContain('100%');
+    expect(await readFile(outputPath, 'utf8')).toContain('[ERROR]');
+  });
+
   it('rejects --json without --output as usage error', async () => {
     const { io, stderr } = makeIo(new PassThrough());
 
@@ -398,6 +491,15 @@ describe('runCli', () => {
 
     expect(code).toBe(2);
     expect(stderr.value()).toContain('--json requires --output');
+  });
+
+  it('rejects --progress without --output', async () => {
+    const { io, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli([inputPath, '--progress'], io);
+
+    expect(code).toBe(2);
+    expect(stderr.value()).toContain('--progress requires --output');
   });
 
   it('refuses to read stdin when it is a TTY', async () => {
@@ -582,6 +684,15 @@ describe('runCli', () => {
     expect((error as CliError).message).toContain('Invalid --max-line-length');
   });
 
+  it('rejects malformed --max-line-length value', () => {
+    const error = (() => {
+      try { parseCliOptions(['raw.log', '--max-line-length', '100x']); return undefined; }
+      catch (e) { return e; }
+    })();
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).exitCode).toBe(2);
+  });
+
   it('rejects invalid --timeout value', () => {
     const error = (() => {
       try { parseCliOptions(['raw.log', '--timeout', '0']); return undefined; }
@@ -590,6 +701,15 @@ describe('runCli', () => {
     expect(error).toBeInstanceOf(CliError);
     expect((error as CliError).exitCode).toBe(2);
     expect((error as CliError).message).toContain('Invalid --timeout');
+  });
+
+  it('rejects malformed --timeout value', () => {
+    const error = (() => {
+      try { parseCliOptions(['raw.log', '--timeout', '1s']); return undefined; }
+      catch (e) { return e; }
+    })();
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).exitCode).toBe(2);
   });
 
   it('rejects --progress without a file input', async () => {

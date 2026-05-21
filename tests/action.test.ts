@@ -111,7 +111,7 @@ describe('GitHub Action wrapper', () => {
 
   it('prefers parser outputPath when present', async () => {
     mocks.getInput.mockImplementation((name: string) =>
-      name === 'log-path' ? 'raw' : 'low',
+      name === 'log-path' ? 'raw' : name === 'aggressiveness' ? 'low' : '',
     );
     mocks.processLogFile.mockResolvedValue(result('/tmp/custom.log'));
 
@@ -143,13 +143,109 @@ describe('GitHub Action wrapper', () => {
 
   it('marks non-error failures as failed', async () => {
     mocks.getInput.mockImplementation((name: string) =>
-      name === 'log-path' ? 'raw.log' : 'high',
+      name === 'log-path' ? 'raw.log' : name === 'aggressiveness' ? 'high' : '',
     );
     mocks.processLogFile.mockRejectedValue('boom');
 
     await run();
 
     expect(mocks.setFailed).toHaveBeenCalledWith('boom');
+  });
+
+  it('passes optional action inputs through to the parser', async () => {
+    const inputs: Record<string, string> = {
+      'log-path': 'raw.log',
+      aggressiveness: 'aggressive',
+      'output-path': 'custom.log',
+      'config-path': '.logstrip.yml',
+      multiline: 'python',
+      severity: 'error',
+      include: 'ERROR',
+      exclude: 'heartbeat',
+      sample: '5',
+      'max-line-length': '1000',
+      timeout: '2.5',
+    };
+    mocks.getInput.mockImplementation((name: string) => inputs[name] ?? '');
+    mocks.processLogFile.mockResolvedValue(result('custom.log'));
+
+    await run();
+
+    expect(mocks.processLogFile).toHaveBeenCalledWith('raw.log', 'custom.log', {
+      aggressiveness: 'aggressive',
+      configPath: '.logstrip.yml',
+      multiline: 'python',
+      severity: 'error',
+      include: /ERROR/u,
+      exclude: /heartbeat/u,
+      sampleSize: 5,
+      maxLineLength: 1000,
+      timeoutMs: 2500,
+    });
+  });
+
+  it('marks invalid optional action inputs as failed', async () => {
+    mocks.getInput.mockImplementation((name: string) =>
+      name === 'log-path'
+        ? 'raw.log'
+        : name === 'aggressiveness'
+          ? 'auto'
+          : name === 'include'
+            ? '[invalid'
+            : '',
+    );
+
+    await run();
+
+    expect(mocks.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid include regex'),
+    );
+    expect(mocks.processLogFile).not.toHaveBeenCalled();
+  });
+
+  it('marks invalid multiline action input as failed', async () => {
+    mocks.getInput.mockImplementation((name: string) =>
+      name === 'log-path'
+        ? 'raw.log'
+        : name === 'aggressiveness'
+          ? 'auto'
+          : name === 'multiline'
+            ? 'badmode'
+            : '',
+    );
+
+    await run();
+
+    expect(mocks.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining('Unsupported multiline mode'),
+    );
+    expect(mocks.processLogFile).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['sample', 'abc', 'Invalid sample'],
+    ['sample', '0', 'Invalid sample'],
+    ['max-line-length', 'abc', 'Invalid max-line-length'],
+    ['max-line-length', '50', 'Invalid max-line-length'],
+    ['timeout', 'abc', 'Invalid timeout'],
+    ['timeout', '0', 'Invalid timeout'],
+  ])('marks invalid %s action input as failed', async (field, value, message) => {
+    mocks.getInput.mockImplementation((name: string) =>
+      name === 'log-path'
+        ? 'raw.log'
+        : name === 'aggressiveness'
+          ? 'auto'
+          : name === field
+            ? value
+            : '',
+    );
+
+    await run();
+
+    expect(mocks.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining(message),
+    );
+    expect(mocks.processLogFile).not.toHaveBeenCalled();
   });
 
   it('writes a formatted summary table', async () => {

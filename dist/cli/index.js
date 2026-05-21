@@ -8,11 +8,13 @@ exports.parseCliOptions = parseCliOptions;
 exports.formatStats = formatStats;
 exports.writeAll = writeAll;
 exports.endStream = endStream;
+exports.attachProgress = attachProgress;
 exports.runCli = runCli;
 const node_fs_1 = require("node:fs");
 const node_util_1 = require("node:util");
 const logstrip_parser_1 = require("../core/logstrip-parser");
-exports.CLI_VERSION = '1.2.0'; // x-release-please-version
+const telemetry_store_1 = require("../core/telemetry/telemetry-store");
+exports.CLI_VERSION = '1.4.0'; // x-release-please-version
 exports.HELP_TEXT = `Usage: logstrip [INPUT] [options]
 
 Stream-based log compression that trims noisy server logs, build
@@ -38,6 +40,7 @@ Options:
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
       --config <path>      Path to .logstrip.yml config file. Auto-detects from cwd.
+      --telemetry          Show cumulative telemetry summary on stderr and exit.
   -h, --help               Show this help text and exit.
   -v, --version            Print the CLI version and exit.
 
@@ -93,6 +96,7 @@ function parseCliOptions(argv) {
                 timeout: { type: 'string' },
                 progress: { type: 'boolean', default: false },
                 config: { type: 'string' },
+                telemetry: { type: 'boolean', default: false },
                 help: { type: 'boolean', short: 'h', default: false },
                 version: { type: 'boolean', short: 'v', default: false },
             },
@@ -153,20 +157,26 @@ function parseCliOptions(argv) {
     }
     let sample;
     if (typeof parsed.values.sample === 'string') {
-        sample = parseInt(parsed.values.sample, 10);
-        if (isNaN(sample) || sample < 1)
+        if (!/^\d+$/u.test(parsed.values.sample))
+            throw new CliError(`Invalid --sample: ${parsed.values.sample}. Must be a positive integer.`, 2);
+        sample = Number(parsed.values.sample);
+        if (sample < 1)
             throw new CliError(`Invalid --sample: ${parsed.values.sample}. Must be a positive integer.`, 2);
     }
     let maxLineLength;
     if (typeof parsed.values['max-line-length'] === 'string') {
-        maxLineLength = parseInt(parsed.values['max-line-length'], 10);
-        if (isNaN(maxLineLength) || maxLineLength < 100)
+        if (!/^\d+$/u.test(parsed.values['max-line-length']))
+            throw new CliError(`Invalid --max-line-length. Must be >= 100.`, 2);
+        maxLineLength = Number(parsed.values['max-line-length']);
+        if (maxLineLength < 100)
             throw new CliError(`Invalid --max-line-length. Must be >= 100.`, 2);
     }
     let timeout;
     if (typeof parsed.values.timeout === 'string') {
-        timeout = parseFloat(parsed.values.timeout);
-        if (isNaN(timeout) || timeout < 0.1)
+        if (!/^(?:\d+|\d*\.\d+)$/u.test(parsed.values.timeout))
+            throw new CliError(`Invalid --timeout. Must be a positive number.`, 2);
+        timeout = Number(parsed.values.timeout);
+        if (timeout < 0.1)
             throw new CliError(`Invalid --timeout. Must be a positive number.`, 2);
         timeout = Math.round(timeout * 1000);
     }
@@ -188,6 +198,7 @@ function parseCliOptions(argv) {
         config: typeof parsed.values.config === 'string'
             ? parsed.values.config
             : undefined,
+        telemetry: parsed.values.telemetry === true,
         help: parsed.values.help === true,
         version: parsed.values.version === true,
     };
@@ -200,6 +211,7 @@ function formatStats(result) {
         `  dropped lines   : ${result.stats.droppedLines}`,
         `  duplicate lines : ${result.stats.duplicateLines}`,
         `  hidden internal : ${result.stats.hiddenInternalStackLines}`,
+        `  truncated lines : ${result.stats.truncatedLines ?? 0}`,
         `  input tokens    : ${result.inputTokens}`,
         `  output tokens   : ${result.outputTokens}`,
         `  saved tokens    : ${result.savedTokens}`,
@@ -234,6 +246,28 @@ function endStream(stream) {
         });
     });
 }
+function attachProgress(input, stderr, totalBytes) {
+    let seenBytes = 0;
+    const width = 20;
+    const render = () => {
+        const ratio = totalBytes === 0 ? 1 : Math.min(1, seenBytes / totalBytes);
+        const complete = Math.round(ratio * width);
+        const bar = `${'#'.repeat(complete)}${'-'.repeat(width - complete)}`;
+        stderr.write(`\rlogstrip: [${bar}] ${Math.round(ratio * 100)}%`);
+    };
+    const onData = (chunk) => {
+        seenBytes += Buffer.byteLength(chunk);
+        render();
+    };
+    input.on('data', onData);
+    render();
+    return async () => {
+        input.off('data', onData);
+        seenBytes = totalBytes;
+        render();
+        await writeAll(stderr, '\n');
+    };
+}
 async function runCli(argv, io) {
     let options;
     try {
@@ -252,12 +286,21 @@ async function runCli(argv, io) {
         await writeAll(io.stdout, `${exports.CLI_VERSION}\n`);
         return 0;
     }
+    if (options.telemetry) {
+        const store = (0, telemetry_store_1.loadTelemetry)();
+        await writeAll(io.stderr, (0, telemetry_store_1.formatTelemetrySummary)(store));
+        return 0;
+    }
     if (options.json && options.output === undefined) {
         await writeAll(io.stderr, 'logstrip: --json requires --output so the compressed log does not collide with the JSON report on stdout\n');
         return 2;
     }
     if (options.progress && options.input === undefined) {
         await writeAll(io.stderr, 'logstrip: --progress requires a file input (not stdin)\n');
+        return 2;
+    }
+    if (options.progress && options.output === undefined) {
+        await writeAll(io.stderr, 'logstrip: --progress requires --output so progress does not collide with stdout\n');
         return 2;
     }
     if (options.input === undefined && io.stdinIsTTY) {
@@ -277,13 +320,23 @@ async function runCli(argv, io) {
         ? (0, node_fs_1.createWriteStream)(options.output, { encoding: 'utf8' })
         : io.stdout;
     let result;
+    let finishProgress;
     try {
-        result = await (0, logstrip_parser_1.processLogStream)(input, output, {
+        finishProgress =
+            options.progress && options.input !== undefined
+                ? attachProgress(input, io.stderr, (0, node_fs_1.statSync)(options.input).size)
+                : undefined;
+        const logStripOptions = {
             aggressiveness: options.aggressiveness,
             configPath: options.config,
             multiline: options.multiline,
             severity: options.severity,
-        });
+            include: options.include,
+            exclude: options.exclude,
+            sampleSize: options.sample,
+            maxLineLength: options.maxLineLength,
+        };
+        result = await (0, logstrip_parser_1.processLogStreamWithTimeout)(input, output, logStripOptions, options.timeout);
     }
     catch (error) {
         if (options.input !== undefined) {
@@ -295,15 +348,26 @@ async function runCli(argv, io) {
         await writeAll(io.stderr, `logstrip: ${messageOf(error)}\n`);
         return 1;
     }
+    if (finishProgress !== undefined) {
+        await finishProgress();
+    }
     if (options.output !== undefined) {
         result = { ...result, outputPath: options.output };
         await endStream(output);
     }
+    try {
+        (0, telemetry_store_1.recordTelemetry)(result);
+    }
+    catch { /* non-critical, ignore write failures */ }
     if (options.json) {
         await writeAll(io.stdout, `${JSON.stringify(result, null, 2)}\n`);
     }
-    else if (options.stats) {
+    if (options.stats) {
         await writeAll(io.stderr, formatStats(result));
+    }
+    if (result.timedOut === true) {
+        await writeAll(io.stderr, 'logstrip: processing timed out\n');
+        return 1;
     }
     return 0;
 }

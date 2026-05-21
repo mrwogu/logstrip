@@ -5803,7 +5803,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
         source: body.source
       };
     }
-    function throwIfAborted(state) {
+    function throwIfAborted2(state) {
       if (state.aborted) {
         throw new DOMException("The operation was aborted.", "AbortError");
       }
@@ -5877,7 +5877,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
       if (bodyUnusable(object)) {
         throw new TypeError("Body is unusable: Body has already been read");
       }
-      throwIfAborted(object[kState]);
+      throwIfAborted2(object[kState]);
       const promise = createDeferredPromise();
       const errorSteps = (error) => promise.reject(error);
       const successSteps = (data) => {
@@ -25517,12 +25517,12 @@ __export(index_exports, {
 });
 module.exports = __toCommonJS(index_exports);
 var core = __toESM(require_core());
-var import_node_path3 = __toESM(require("node:path"));
+var import_node_path4 = __toESM(require("node:path"));
 
 // src/core/logstrip-parser.ts
 var import_node_events = require("node:events");
 var import_node_fs2 = require("node:fs");
-var import_node_path2 = __toESM(require("node:path"));
+var import_node_path3 = __toESM(require("node:path"));
 var import_node_readline = require("node:readline");
 var import_promises = require("node:stream/promises");
 
@@ -26871,6 +26871,23 @@ var SEVERITY_PATTERNS = [
   { level: "debug", regex: /\[DEBUG\]|"level"\s*:\s*"debug"|\bDEBUG\b/iu },
   { level: "trace", regex: /\[TRACE\]|"level"\s*:\s*"trace"|\bTRACE\b/iu }
 ];
+var VALID_SEVERITY_LEVELS = [
+  "fatal",
+  "error",
+  "warn",
+  "info",
+  "debug",
+  "trace"
+];
+function parseSeverityLevel(value) {
+  const normalized = value.toLowerCase();
+  if (VALID_SEVERITY_LEVELS.includes(normalized)) {
+    return normalized;
+  }
+  throw new Error(
+    `Unsupported severity level: ${value}. Valid values: ${VALID_SEVERITY_LEVELS.join(", ")}`
+  );
+}
 function inferSeverity(line) {
   for (const { level, regex } of SEVERITY_PATTERNS) {
     if (regex.test(line)) return level;
@@ -26981,7 +26998,23 @@ function isProgressBarLine(line) {
   return false;
 }
 
+// src/core/telemetry/telemetry-store.ts
+var import_node_os = require("node:os");
+var import_node_path2 = require("node:path");
+var STORE_PATH = (0, import_node_path2.join)(
+  process.env.LOGSTRIP_TELEMETRY_DIR ?? (0, import_node_path2.join)((0, import_node_os.homedir)(), ".logstrip"),
+  "telemetry.json"
+);
+
 // src/core/logstrip-parser.ts
+var LogStripError = class extends Error {
+  code;
+  constructor(code, message) {
+    super(message);
+    this.name = "LogStripError";
+    this.code = code;
+  }
+};
 async function* readLogicalLines(lines, multilineMode) {
   if (multilineMode === "off") {
     yield* lines;
@@ -27009,7 +27042,8 @@ async function* readLogicalLines(lines, multilineMode) {
   }
 }
 function buildMergedConfig(options = {}) {
-  const config = loadLogStripConfig(options.configPath);
+  const fileConfig = loadLogStripConfig(options.configPath);
+  const config = mergeCustomConfigs(fileConfig, options.config);
   const mergedSources = [
     ...LOG_SOURCE_SIGNATURES
   ];
@@ -27025,27 +27059,62 @@ function buildMergedConfig(options = {}) {
   }
   return { ...config, mergedSources };
 }
+function mergeCustomConfigs(base, override) {
+  if (override === void 0) {
+    return base;
+  }
+  return {
+    sources: [...base.sources, ...override.sources],
+    diagnosticPatterns: [
+      ...base.diagnosticPatterns,
+      ...override.diagnosticPatterns
+    ],
+    ignorePatterns: [...base.ignorePatterns, ...override.ignorePatterns],
+    sanitizePatterns: [...base.sanitizePatterns, ...override.sanitizePatterns],
+    internalStackPatterns: [
+      ...base.internalStackPatterns,
+      ...override.internalStackPatterns
+    ]
+  };
+}
 async function processLogStream(input, output, options = {}) {
+  if (options.timeoutMs !== void 0) {
+    const { timeoutMs, ...streamOptions } = options;
+    return processLogStreamWithTimeout(input, output, streamOptions, timeoutMs);
+  }
+  throwIfAborted(options.signal);
   const requestedAggressiveness = parseAggressiveness(options.aggressiveness);
   const dynamicAggressiveness = createDynamicAggressivenessState(requestedAggressiveness);
   const merged = buildMergedConfig(options);
   const multilineMode = options.multiline ?? "off";
   const severityLevel = options.severity;
-  const maxLineLength = options.maxLineLength ?? 1e5;
+  const maxLineLength = Math.max(1, Math.floor(options.maxLineLength ?? 1e5));
   const includePattern = options.include;
   const excludePattern = options.exclude;
   const sampleSize = options.sampleSize;
+  const contextWindowBefore = Math.max(
+    0,
+    Math.floor(options.contextBefore ?? CONTEXT_WINDOW_BEFORE)
+  );
+  const contextWindowAfter = Math.max(
+    0,
+    Math.floor(options.contextAfter ?? CONTEXT_WINDOW_AFTER)
+  );
+  const dedupeEnabled = options.dedupe !== false && options.outputFormat !== "jsonl-preserve";
+  const tokenEstimator = options.tokenEstimator;
+  let inputTokensFromEstimator = 0;
+  let outputTokensFromEstimator = 0;
   const customDiagnosticRegexes = merged.diagnosticPatterns.map(
-    (p) => new RegExp(p, "u")
+    (p) => compileConfigRegex(p, "u")
   );
   const customIgnoreRegexes = merged.ignorePatterns.map(
-    (p) => new RegExp(p, "u")
+    (p) => compileConfigRegex(p, "u")
   );
   const customInternalStackRegexes = merged.internalStackPatterns.map(
-    (p) => new RegExp(p, "u")
+    (p) => compileConfigRegex(p, "u")
   );
   const customSanitizeRules = merged.sanitizePatterns.map(
-    (r) => ({ regex: new RegExp(r.pattern, r.flags ?? "gu"), replacement: r.replacement })
+    (r) => ({ regex: compileConfigRegex(r.pattern, r.flags ?? "gu"), replacement: r.replacement })
   );
   const stats = createEmptyStats();
   const detectedSourceState = createSourceDetectionState(merged.mergedSources);
@@ -27059,7 +27128,29 @@ async function processLogStream(input, output, options = {}) {
   let detectedFormat;
   let outputLineCount = 0;
   const recordDecision = (decision) => {
+    options.onDecision?.(decision);
     recordLineDecision(dynamicAggressiveness, decision);
+  };
+  const emitOutputLine = async (line) => {
+    if (sampleSize !== void 0 && outputLineCount >= sampleSize) {
+      stats.droppedLines += line.split("\n").length;
+      recordDecision({
+        line,
+        kept: false,
+        dropped: true,
+        hardKeep: false,
+        repeated: false,
+        reason: "sample-limit"
+      });
+      return false;
+    }
+    outputLineCount += 1;
+    if (tokenEstimator !== void 0) {
+      outputTokensFromEstimator += estimateLineTokens(tokenEstimator, `${line}
+`);
+    }
+    await writeOutputLine(output, line, stats);
+    return true;
   };
   const flushPreviousLine = async () => {
     if (previousGroup === void 0) {
@@ -27069,15 +27160,15 @@ async function processLogStream(input, output, options = {}) {
     if (previousGroup.count > 1) {
       stats.duplicateLines += previousGroup.count - 1;
     }
-    if (sampleSize !== void 0 && outputLineCount >= sampleSize) {
-      previousGroup = void 0;
-      return;
-    }
-    outputLineCount += 1;
-    await writeOutputLine(output, line, stats);
+    await emitOutputLine(line);
     previousGroup = void 0;
   };
   const emitCandidate = async (line) => {
+    if (!dedupeEnabled) {
+      await flushPreviousLine();
+      await emitOutputLine(line);
+      return;
+    }
     const signature = createRepeatSignature(line);
     if (previousGroup?.signature === signature) {
       addRepeatGroupLine(previousGroup, line);
@@ -27092,14 +27183,31 @@ async function processLogStream(input, output, options = {}) {
     }
     contextBefore.length = 0;
   };
+  const dropLine = (line, physicalLineCount, reason) => {
+    stats.droppedLines += physicalLineCount;
+    hidingInternalStack = false;
+    recordDecision({
+      line,
+      kept: false,
+      dropped: true,
+      hardKeep: false,
+      repeated: false,
+      reason
+    });
+  };
   for await (const rawLine of lines) {
-    const line = String(rawLine);
+    throwIfAborted(options.signal);
+    let line = String(rawLine);
     const physicalLineCount = line.split("\n").length;
     collectDetectedSourceHits(line, detectedSourceState);
     stats.inputLines += physicalLineCount;
     stats.inputWords += countWords(line);
     stats.inputBytes += Buffer.byteLength(`${line}
 `, "utf8");
+    if (tokenEstimator !== void 0) {
+      inputTokensFromEstimator += estimateLineTokens(tokenEstimator, `${line}
+`);
+    }
     if (detectedFormat === void 0 && line.trim().length > 0) {
       const fmt = detectFormat(line);
       if (fmt !== "unknown") detectedFormat = fmt;
@@ -27107,73 +27215,52 @@ async function processLogStream(input, output, options = {}) {
     if (line.trim().length === 0) {
       stats.droppedLines += physicalLineCount;
       recordDecision({
+        line,
         kept: false,
         dropped: true,
         hardKeep: false,
-        repeated: false
+        repeated: false,
+        reason: "empty"
       });
       continue;
     }
-    if (customIgnoreRegexes.some((r) => r.test(line))) {
-      stats.droppedLines += physicalLineCount;
-      hidingInternalStack = false;
-      recordDecision({
-        kept: false,
-        dropped: true,
-        hardKeep: false,
-        repeated: false
-      });
+    if (includePattern !== void 0 && !testRegex(includePattern, line)) {
+      dropLine(line, physicalLineCount, "include-filter");
+      continue;
+    }
+    if (excludePattern !== void 0 && testRegex(excludePattern, line)) {
+      dropLine(line, physicalLineCount, "exclude-filter");
+      continue;
+    }
+    if (line.length > maxLineLength) {
+      stats.truncatedLines = Number(stats.truncatedLines) + physicalLineCount;
+      line = `${line.slice(0, maxLineLength)}\u2026 [truncated]`;
+    }
+    if (customIgnoreRegexes.some((r) => testRegex(r, line))) {
+      dropLine(line, physicalLineCount, "custom-ignore");
       continue;
     }
     if (severityLevel !== void 0 && !passesSeverityFilter(line, severityLevel)) {
-      stats.droppedLines += physicalLineCount;
-      hidingInternalStack = false;
-      recordDecision({
-        kept: false,
-        dropped: true,
-        hardKeep: false,
-        repeated: false
-      });
+      dropLine(line, physicalLineCount, "severity");
       continue;
     }
     if (isCiNoiseLine(line)) {
-      stats.droppedLines += physicalLineCount;
-      hidingInternalStack = false;
-      recordDecision({
-        kept: false,
-        dropped: true,
-        hardKeep: false,
-        repeated: false
-      });
+      dropLine(line, physicalLineCount, "ci-noise");
       continue;
     }
     if (isProgressBarLine(line)) {
-      stats.droppedLines += physicalLineCount;
-      hidingInternalStack = false;
-      recordDecision({
-        kept: false,
-        dropped: true,
-        hardKeep: false,
-        repeated: false
-      });
+      dropLine(line, physicalLineCount, "progress");
       continue;
     }
     if (isIgnoredLogLine(line)) {
-      stats.droppedLines += physicalLineCount;
-      hidingInternalStack = false;
-      recordDecision({
-        kept: false,
-        dropped: true,
-        hardKeep: false,
-        repeated: false
-      });
+      dropLine(line, physicalLineCount, "ignored-tag");
       continue;
     }
     let sanitized = sanitizeLine(line);
     for (const rule of customSanitizeRules) {
       sanitized = sanitized.replace(rule.regex, rule.replacement);
     }
-    const isCustomInternalStack = customInternalStackRegexes.length > 0 && customInternalStackRegexes.some((r) => r.test(sanitized));
+    const isCustomInternalStack = customInternalStackRegexes.length > 0 && customInternalStackRegexes.some((r) => testRegex(r, sanitized));
     if (isInternalStackTraceLine(sanitized) || isCustomInternalStack) {
       stats.hiddenInternalStackLines += physicalLineCount;
       if (!hidingInternalStack) {
@@ -27183,10 +27270,13 @@ async function processLogStream(input, output, options = {}) {
         afterContextRemaining = 0;
       }
       recordDecision({
+        line,
+        sanitizedLine: INTERNAL_STACK_MARKER,
         kept: true,
         dropped: false,
         hardKeep: false,
-        repeated: false
+        repeated: false,
+        reason: "internal-stack"
       });
       continue;
     }
@@ -27204,7 +27294,7 @@ async function processLogStream(input, output, options = {}) {
       seenCount
     );
     for (const regex of customDiagnosticRegexes) {
-      if (regex.test(sanitized)) {
+      if (testRegex(regex, sanitized)) {
         score += 50;
         break;
       }
@@ -27213,52 +27303,82 @@ async function processLogStream(input, output, options = {}) {
     if (score >= SCORE_KEEP_THRESHOLD) {
       await flushContextBefore();
       await emitCandidate(sanitized);
-      afterContextRemaining = CONTEXT_WINDOW_AFTER;
+      afterContextRemaining = contextWindowAfter;
       recordDecision({
+        line,
+        sanitizedLine: sanitized,
         kept: true,
         dropped: false,
         hardKeep: true,
-        repeated: seenCount > 1
+        repeated: seenCount > 1,
+        reason: "hard-keep",
+        score
       });
     } else if (afterContextRemaining > 0) {
       await emitCandidate(sanitized);
       afterContextRemaining -= 1;
       recordDecision({
+        line,
+        sanitizedLine: sanitized,
         kept: true,
         dropped: false,
         hardKeep: false,
-        repeated: seenCount > 1
+        repeated: seenCount > 1,
+        reason: "after-context",
+        score
       });
     } else if (score >= 0) {
       let droppedBufferedLine = false;
-      if (contextBefore.length >= CONTEXT_WINDOW_BEFORE) {
+      if (contextWindowBefore === 0) {
+        stats.droppedLines += physicalLineCount;
+        recordDecision({
+          line,
+          sanitizedLine: sanitized,
+          kept: false,
+          dropped: true,
+          hardKeep: false,
+          repeated: seenCount > 1,
+          reason: "context-disabled",
+          score
+        });
+        continue;
+      }
+      if (contextBefore.length >= contextWindowBefore) {
         contextBefore.shift();
         stats.droppedLines += 1;
         droppedBufferedLine = true;
       }
       contextBefore.push(sanitized);
       recordDecision({
+        line,
+        sanitizedLine: sanitized,
         kept: false,
         dropped: droppedBufferedLine,
         hardKeep: false,
-        repeated: seenCount > 1
+        repeated: seenCount > 1,
+        reason: "context-buffered",
+        score
       });
     } else {
       stats.droppedLines += physicalLineCount;
       afterContextRemaining = 0;
       recordDecision({
+        line,
+        sanitizedLine: sanitized,
         kept: false,
         dropped: true,
         hardKeep: false,
-        repeated: seenCount > 1
+        repeated: seenCount > 1,
+        reason: "low-score",
+        score
       });
     }
   }
   stats.droppedLines += contextBefore.length;
   contextBefore.length = 0;
   await flushPreviousLine();
-  const inputTokens = estimateTokens(stats.inputWords);
-  const outputTokens = estimateTokens(stats.outputWords);
+  const inputTokens = tokenEstimator === void 0 ? estimateTokens(stats.inputWords) : inputTokensFromEstimator;
+  const outputTokens = tokenEstimator === void 0 ? estimateTokens(stats.outputWords) : outputTokensFromEstimator;
   const savedTokens = Math.max(inputTokens - outputTokens, 0);
   const savingsPercent = inputTokens === 0 ? 0 : Math.round(savedTokens / inputTokens * 1e4) / 100;
   return {
@@ -27273,7 +27393,8 @@ async function processLogStream(input, output, options = {}) {
 }
 async function processLogFile(inputPath, outputPath, options = {}) {
   if (pathsReferToSameFile(inputPath, outputPath)) {
-    throw new Error(
+    throw new LogStripError(
+      "SAME_INPUT_OUTPUT",
       "Input and output paths must be different; refusing to overwrite the input log"
     );
   }
@@ -27291,7 +27412,29 @@ async function processLogFile(inputPath, outputPath, options = {}) {
   }
 }
 function pathsReferToSameFile(inputPath, outputPath) {
-  return import_node_path2.default.resolve(inputPath).toLowerCase() === import_node_path2.default.resolve(outputPath).toLowerCase();
+  return import_node_path3.default.resolve(inputPath).toLowerCase() === import_node_path3.default.resolve(outputPath).toLowerCase();
+}
+function compileConfigRegex(pattern, flags) {
+  try {
+    return new RegExp(pattern, flags);
+  } catch (error) {
+    throw new LogStripError(
+      "INVALID_CONFIG",
+      `Invalid logstrip config regex "${pattern}": ${String(error)}`
+    );
+  }
+}
+function estimateLineTokens(estimator, line) {
+  return Math.max(0, Math.ceil(estimator(line)));
+}
+function testRegex(regex, line) {
+  regex.lastIndex = 0;
+  return regex.test(line);
+}
+function throwIfAborted(signal) {
+  if (signal?.aborted === true) {
+    throw new LogStripError("ABORTED", "Processing aborted");
+  }
 }
 function createEmptyStats() {
   return {
@@ -27303,7 +27446,8 @@ function createEmptyStats() {
     outputBytes: 0,
     droppedLines: 0,
     duplicateLines: 0,
-    hiddenInternalStackLines: 0
+    hiddenInternalStackLines: 0,
+    truncatedLines: 0
   };
 }
 function countWords(line) {
@@ -27319,18 +27463,71 @@ async function writeOutputLine(output, line, stats) {
     await (0, import_node_events.once)(output, "drain");
   }
 }
+async function processLogStreamWithTimeout(input, output, options = {}, timeoutMs) {
+  if (timeoutMs === void 0) {
+    return processLogStream(input, output, options);
+  }
+  let rejectTimeout;
+  const timeoutPromise = new Promise((_, reject) => {
+    rejectTimeout = reject;
+  });
+  const timer = setTimeout(
+    () => rejectTimeout(new LogStripError("TIMEOUT", "Processing timed out")),
+    timeoutMs
+  );
+  const { timeoutMs: _ignoredTimeoutMs, ...streamOptions } = options;
+  try {
+    return await Promise.race([
+      processLogStream(input, output, streamOptions),
+      timeoutPromise
+    ]);
+  } catch (error) {
+    if (error instanceof LogStripError && error.code === "TIMEOUT") {
+      input.destroy();
+      return {
+        stats: createEmptyStats(),
+        inputTokens: 0,
+        outputTokens: 0,
+        savedTokens: 0,
+        savingsPercent: 0,
+        timedOut: true
+      };
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // src/action/index.ts
+var VALID_MULTILINE_MODES = [
+  "auto",
+  "python",
+  "node",
+  "java",
+  "go",
+  "rust",
+  "off"
+];
 async function run() {
   try {
     const inputPath = core.getInput("log-path", { required: true });
     const aggressiveness = parseAggressiveness(
       core.getInput("aggressiveness") || "auto"
     );
-    const outputPath = buildOutputPath(inputPath);
-    const result = await processLogFile(inputPath, outputPath, {
-      aggressiveness
-    });
+    const outputPath = core.getInput("output-path") || buildOutputPath(inputPath);
+    const options = {
+      aggressiveness,
+      configPath: optionalInput("config-path"),
+      multiline: parseOptionalMultilineMode("multiline"),
+      severity: parseOptionalSeverity("severity"),
+      include: parseOptionalRegex("include"),
+      exclude: parseOptionalRegex("exclude"),
+      sampleSize: parseOptionalPositiveInteger("sample"),
+      maxLineLength: parseOptionalMinInteger("max-line-length", 100),
+      timeoutMs: parseOptionalTimeoutMs("timeout")
+    };
+    const result = await processLogFile(inputPath, outputPath, options);
     core.setOutput("output-path", result.outputPath ?? outputPath);
     await writeSummary(result);
   } catch (error) {
@@ -27338,11 +27535,61 @@ async function run() {
   }
 }
 function buildOutputPath(inputPath) {
-  const absoluteInputPath = import_node_path3.default.resolve(inputPath);
-  const extension = import_node_path3.default.extname(absoluteInputPath);
-  const basename = import_node_path3.default.basename(absoluteInputPath, extension);
+  const absoluteInputPath = import_node_path4.default.resolve(inputPath);
+  const extension = import_node_path4.default.extname(absoluteInputPath);
+  const basename = import_node_path4.default.basename(absoluteInputPath, extension);
   const outputName = `${basename}.logstrip${extension || ".log"}`;
-  return import_node_path3.default.join(import_node_path3.default.dirname(absoluteInputPath), outputName);
+  return import_node_path4.default.join(import_node_path4.default.dirname(absoluteInputPath), outputName);
+}
+function optionalInput(name) {
+  const value = core.getInput(name);
+  return value === "" ? void 0 : value;
+}
+function parseOptionalMultilineMode(name) {
+  const value = optionalInput(name);
+  if (value === void 0) return void 0;
+  const normalized = value.toLowerCase();
+  if (VALID_MULTILINE_MODES.includes(normalized)) return normalized;
+  throw new Error(
+    `Unsupported multiline mode: ${value}. Valid values: ${VALID_MULTILINE_MODES.join(", ")}`
+  );
+}
+function parseOptionalRegex(name) {
+  const value = optionalInput(name);
+  if (value === void 0) return void 0;
+  try {
+    return new RegExp(value, "u");
+  } catch {
+    throw new Error(`Invalid ${name} regex: ${value}`);
+  }
+}
+function parseOptionalSeverity(name) {
+  const value = optionalInput(name);
+  return value === void 0 ? void 0 : parseSeverityLevel(value);
+}
+function parseOptionalPositiveInteger(name) {
+  const value = optionalInput(name);
+  if (value === void 0) return void 0;
+  if (!/^\d+$/u.test(value)) throw new Error(`Invalid ${name}: ${value}. Must be a positive integer.`);
+  const parsed = Number(value);
+  if (parsed < 1) throw new Error(`Invalid ${name}: ${value}. Must be a positive integer.`);
+  return parsed;
+}
+function parseOptionalMinInteger(name, min) {
+  const value = optionalInput(name);
+  if (value === void 0) return void 0;
+  if (!/^\d+$/u.test(value)) throw new Error(`Invalid ${name}: ${value}. Must be >= ${min}.`);
+  const parsed = Number(value);
+  if (parsed < min) throw new Error(`Invalid ${name}: ${value}. Must be >= ${min}.`);
+  return parsed;
+}
+function parseOptionalTimeoutMs(name) {
+  const value = optionalInput(name);
+  if (value === void 0) return void 0;
+  if (!/^(?:\d+|\d*\.\d+)$/u.test(value)) throw new Error(`Invalid ${name}: ${value}. Must be a positive number.`);
+  const parsed = Number(value);
+  if (parsed < 0.1) throw new Error(`Invalid ${name}: ${value}. Must be a positive number.`);
+  return Math.round(parsed * 1e3);
 }
 async function getRepositorySlug() {
   const github = await Promise.resolve().then(() => (init_github(), github_exports));

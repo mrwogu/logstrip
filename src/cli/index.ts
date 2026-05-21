@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-import { createReadStream, createWriteStream } from 'node:fs';
+import { createReadStream, createWriteStream, statSync } from 'node:fs';
 import { Readable, Writable } from 'node:stream';
 import { parseArgs } from 'node:util';
 import {
   parseAggressiveness,
   parseSeverityLevel,
   pathsReferToSameFile,
-  processLogStream,
   processLogStreamWithTimeout,
   type Aggressiveness,
+  type LogStripOptions,
   type LogStripResult,
   type MultilineMode,
   type SeverityLevel,
@@ -200,20 +200,23 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
 
   let sample: number | undefined;
   if (typeof parsed.values.sample === 'string') {
-    sample = parseInt(parsed.values.sample, 10);
-    if (isNaN(sample) || sample < 1) throw new CliError(`Invalid --sample: ${parsed.values.sample}. Must be a positive integer.`, 2);
+    if (!/^\d+$/u.test(parsed.values.sample)) throw new CliError(`Invalid --sample: ${parsed.values.sample}. Must be a positive integer.`, 2);
+    sample = Number(parsed.values.sample);
+    if (sample < 1) throw new CliError(`Invalid --sample: ${parsed.values.sample}. Must be a positive integer.`, 2);
   }
 
   let maxLineLength: number | undefined;
   if (typeof parsed.values['max-line-length'] === 'string') {
-    maxLineLength = parseInt(parsed.values['max-line-length'], 10);
-    if (isNaN(maxLineLength) || maxLineLength < 100) throw new CliError(`Invalid --max-line-length. Must be >= 100.`, 2);
+    if (!/^\d+$/u.test(parsed.values['max-line-length'])) throw new CliError(`Invalid --max-line-length. Must be >= 100.`, 2);
+    maxLineLength = Number(parsed.values['max-line-length']);
+    if (maxLineLength < 100) throw new CliError(`Invalid --max-line-length. Must be >= 100.`, 2);
   }
 
   let timeout: number | undefined;
   if (typeof parsed.values.timeout === 'string') {
-    timeout = parseFloat(parsed.values.timeout);
-    if (isNaN(timeout) || timeout < 0.1) throw new CliError(`Invalid --timeout. Must be a positive number.`, 2);
+    if (!/^(?:\d+|\d*\.\d+)$/u.test(parsed.values.timeout)) throw new CliError(`Invalid --timeout. Must be a positive number.`, 2);
+    timeout = Number(parsed.values.timeout);
+    if (timeout < 0.1) throw new CliError(`Invalid --timeout. Must be a positive number.`, 2);
     timeout = Math.round(timeout * 1000);
   }
 
@@ -252,6 +255,7 @@ export function formatStats(result: LogStripResult): string {
     `  dropped lines   : ${result.stats.droppedLines}`,
     `  duplicate lines : ${result.stats.duplicateLines}`,
     `  hidden internal : ${result.stats.hiddenInternalStackLines}`,
+    `  truncated lines : ${result.stats.truncatedLines ?? 0}`,
     `  input tokens    : ${result.inputTokens}`,
     `  output tokens   : ${result.outputTokens}`,
     `  saved tokens    : ${result.savedTokens}`,
@@ -290,6 +294,36 @@ export function endStream(stream: Writable): Promise<void> {
       }
     });
   });
+}
+
+export function attachProgress(
+  input: Readable,
+  stderr: NodeJS.WritableStream,
+  totalBytes: number,
+): () => Promise<void> {
+  let seenBytes = 0;
+  const width = 20;
+  const render = (): void => {
+    const ratio =
+      totalBytes === 0 ? 1 : Math.min(1, seenBytes / totalBytes);
+    const complete = Math.round(ratio * width);
+    const bar = `${'#'.repeat(complete)}${'-'.repeat(width - complete)}`;
+    stderr.write(`\rlogstrip: [${bar}] ${Math.round(ratio * 100)}%`);
+  };
+  const onData = (chunk: Buffer | string): void => {
+    seenBytes += Buffer.byteLength(chunk);
+    render();
+  };
+
+  input.on('data', onData);
+  render();
+
+  return async () => {
+    input.off('data', onData);
+    seenBytes = totalBytes;
+    render();
+    await writeAll(stderr, '\n');
+  };
 }
 
 export async function runCli(
@@ -334,6 +368,11 @@ export async function runCli(
     return 2;
   }
 
+  if (options.progress && options.output === undefined) {
+    await writeAll(io.stderr, 'logstrip: --progress requires --output so progress does not collide with stdout\n');
+    return 2;
+  }
+
   if (options.input === undefined && io.stdinIsTTY) {
     await writeAll(
       io.stderr,
@@ -365,13 +404,28 @@ export async function runCli(
       : (io.stdout as NodeJS.WritableStream);
 
   let result: LogStripResult;
+  let finishProgress: (() => Promise<void>) | undefined;
   try {
-    result = await processLogStream(input, output as Writable, {
+    finishProgress =
+      options.progress && options.input !== undefined
+        ? attachProgress(input as Readable, io.stderr, statSync(options.input).size)
+        : undefined;
+    const logStripOptions: LogStripOptions = {
       aggressiveness: options.aggressiveness,
       configPath: options.config,
       multiline: options.multiline,
       severity: options.severity,
-    });
+      include: options.include,
+      exclude: options.exclude,
+      sampleSize: options.sample,
+      maxLineLength: options.maxLineLength,
+    };
+    result = await processLogStreamWithTimeout(
+      input,
+      output as Writable,
+      logStripOptions,
+      options.timeout,
+    );
   } catch (error) {
     if (options.input !== undefined) {
       (input as Readable).destroy();
@@ -383,6 +437,10 @@ export async function runCli(
     return 1;
   }
 
+  if (finishProgress !== undefined) {
+    await finishProgress();
+  }
+
   if (options.output !== undefined) {
     result = { ...result, outputPath: options.output };
     await endStream(output as Writable);
@@ -392,8 +450,14 @@ export async function runCli(
 
   if (options.json) {
     await writeAll(io.stdout, `${JSON.stringify(result, null, 2)}\n`);
-  } else if (options.stats) {
+  }
+  if (options.stats) {
     await writeAll(io.stderr, formatStats(result));
+  }
+
+  if (result.timedOut === true) {
+    await writeAll(io.stderr, 'logstrip: processing timed out\n');
+    return 1;
   }
 
   return 0;

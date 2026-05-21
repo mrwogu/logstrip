@@ -8,6 +8,33 @@ inputs:
     description: "Compression level: low, medium, high, aggressive, auto."
     required: false
     default: auto
+  output-path:
+    description: Path to write the compressed log. Defaults to the input name with .logstrip before the extension.
+    required: false
+  config-path:
+    description: Path to a .logstrip.yml config file.
+    required: false
+  multiline:
+    description: "Multiline handling: auto, python, node, java, go, rust, off."
+    required: false
+  severity:
+    description: "Minimum severity: fatal, error, warn, info, debug, trace."
+    required: false
+  include:
+    description: Keep only lines matching this regular expression.
+    required: false
+  exclude:
+    description: Drop lines matching this regular expression.
+    required: false
+  sample:
+    description: Limit output to the first N kept lines.
+    required: false
+  max-line-length:
+    description: Truncate lines longer than this many characters. Minimum 100.
+    required: false
+  timeout:
+    description: Stop processing after this many seconds.
+    required: false
 outputs:
   output-path:
     description: Path to the compressed log file.

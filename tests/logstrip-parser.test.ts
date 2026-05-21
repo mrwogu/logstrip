@@ -1,7 +1,8 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Readable, Writable, type WritableOptions } from 'node:stream';
+import { Readable, Transform, Writable, type WritableOptions } from 'node:stream';
+import { finished } from 'node:stream/promises';
 import { describe, expect, it } from 'vitest';
 import {
   createDynamicAggressivenessState,
@@ -30,21 +31,26 @@ import {
   TFIDF_PENALTY,
   TFIDF_REPEAT_THRESHOLD,
   buildMergedConfig,
+  createLogStripTransform,
   createRepeatSignature,
   detectLogSources,
   estimateTokens,
+  explainLogLine,
   isCiNoiseLine,
   isInternalStackTraceLine,
   isProgressBarLine,
   looksLikeDiagnosticLine,
   parseAggressiveness,
   pathsReferToSameFile,
+  processLogFiles,
   processLogFile,
+  processLogString,
   processLogStream,
   processLogStreamWithTimeout,
   sanitizeLine,
   scoreLineRelevance,
   shouldKeepLine,
+  LogStripError,
 } from '../src/core/logstrip-parser';
 
 class MemoryWritable extends Writable {
@@ -1298,6 +1304,252 @@ describe('logstrip parser', () => {
     expect(keptLines[1]).toContain('second');
   });
 
+  it('processLogStream applies include, exclude, truncation and decisions', async () => {
+    const decisions: string[] = [];
+    const logs = [
+      '[ERROR] keep this failure',
+      '[WARN] skip by include',
+      '[ERROR] hide this failure',
+      `[ERROR] ${'x'.repeat(60)}`,
+    ].join('\n');
+
+    const output = new MemoryWritable();
+    const result = await processLogStream(Readable.from([logs]), output, {
+      include: /ERROR/gu,
+      exclude: /hide/u,
+      maxLineLength: 40,
+      onDecision(decision) {
+        decisions.push(decision.reason);
+      },
+    });
+    const content = output.content();
+
+    expect(content).toContain('[ERROR] keep this failure');
+    expect(content).not.toContain('skip by include');
+    expect(content).not.toContain('hide this failure');
+    expect(content).toContain('… [truncated]');
+    expect(result.stats.truncatedLines).toBe(1);
+    expect(decisions).toContain('hard-keep');
+    expect(decisions).toContain('include-filter');
+    expect(decisions).toContain('exclude-filter');
+  });
+
+  it('processLogStream can disable context buffering and dedupe', async () => {
+    const output = new MemoryWritable();
+    const result = await processLogStream(
+      Readable.from(['soft context line\n[ERROR] same\n[ERROR] same\n']),
+      output,
+      {
+        contextBefore: 0,
+        dedupe: false,
+      },
+    );
+    const content = output.content();
+
+    expect(content.match(/\[ERROR\] same/gu)).toHaveLength(2);
+    expect(result.stats.duplicateLines).toBe(0);
+    expect(result.stats.droppedLines).toBeGreaterThanOrEqual(1);
+  });
+
+  it('processLogStream preserves JSONL output when requested', async () => {
+    const line = '{"level":"error","msg":"database timeout"}';
+    const output = new MemoryWritable();
+    const result = await processLogStream(
+      Readable.from([`${line}\n${line}\n`]),
+      output,
+      { outputFormat: 'jsonl-preserve' },
+    );
+
+    expect(output.content().trim().split('\n')).toEqual([line, line]);
+    expect(result.stats.duplicateLines).toBe(0);
+  });
+
+  it('processLogStream supports custom token estimators and option timeout', async () => {
+    const output = new MemoryWritable();
+    const result = await processLogStream(
+      Readable.from(['[ERROR] token test\n']),
+      output,
+      {
+        timeoutMs: 100,
+        tokenEstimator: () => 7.2,
+      },
+    );
+
+    expect(result.inputTokens).toBe(8);
+    expect(result.outputTokens).toBe(8);
+  });
+
+  it('processLogStream rejects an already aborted signal', async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      processLogStream(Readable.from(['[ERROR] ignored\n']), new MemoryWritable(), {
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({
+      code: 'ABORTED',
+    });
+  });
+
+  it('processLogString returns compressed text in memory', async () => {
+    const result = await processLogString('[ERROR] string api failed\n');
+
+    expect(result.output).toBe('[ERROR] string api failed\n');
+    expect(result.stats.outputLines).toBe(1);
+  });
+
+  it('createLogStripTransform works with stream consumers', async () => {
+    const transform = createLogStripTransform();
+    const chunks: Buffer[] = [];
+    transform.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    transform.end('[ERROR] transform api failed\n');
+    await finished(transform);
+    const result = await transform.result;
+
+    expect(Buffer.concat(chunks).toString('utf8')).toBe(
+      '[ERROR] transform api failed\n',
+    );
+    expect(result.stats.outputLines).toBe(1);
+  });
+
+  it('createLogStripTransform respects readable backpressure', async () => {
+    const transform = createLogStripTransform();
+    const chunks: Buffer[] = [];
+    const originalPush = transform.push.bind(transform);
+    let forcedBackpressure = false;
+    transform.push = ((chunk: unknown, encoding?: BufferEncoding) => {
+      originalPush(chunk, encoding);
+      if (!forcedBackpressure) {
+        forcedBackpressure = true;
+        return false;
+      }
+      return true;
+    }) as typeof transform.push;
+    const writeDone = new Promise<void>((resolve, reject) => {
+      transform.write(
+        '[ERROR] backpressure api failed\n',
+        (error?: Error | null) => {
+          if (error) reject(error);
+          else resolve();
+        },
+      );
+    });
+
+    for (let i = 0; i < 10 && transform.readableLength === 0; i += 1) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    (transform as Transform & { _read(size: number): void })._read(1);
+    await writeDone;
+
+    transform.on('data', (chunk: Buffer) => chunks.push(chunk));
+    transform.end();
+    await finished(transform);
+    const result = await transform.result;
+
+    expect(Buffer.concat(chunks).toString('utf8')).toContain(
+      '[ERROR] backpressure api failed',
+    );
+    expect(result.stats.outputLines).toBe(1);
+  });
+
+  it('createLogStripTransform surfaces parser errors', async () => {
+    const transform = createLogStripTransform({
+      config: {
+        sources: [],
+        diagnosticPatterns: ['['],
+        ignorePatterns: [],
+        sanitizePatterns: [],
+        internalStackPatterns: [],
+      },
+    });
+    transform.on('error', () => {});
+
+    transform.end('[ERROR] bad config\n');
+
+    await expect(transform.result).rejects.toMatchObject({
+      code: 'INVALID_CONFIG',
+    });
+  });
+
+  it('explainLogLine reports keep and drop reasons', () => {
+    expect(explainLogLine('').reason).toBe('empty');
+    expect(explainLogLine('plain line', { include: /ERROR/u }).reason).toBe(
+      'include-filter',
+    );
+    expect(explainLogLine('[ERROR] hidden', { exclude: /hidden/u }).reason).toBe(
+      'exclude-filter',
+    );
+    expect(
+      explainLogLine('heartbeat ok', {
+        config: {
+          sources: [],
+          diagnosticPatterns: [],
+          ignorePatterns: ['heartbeat'],
+          sanitizePatterns: [],
+          internalStackPatterns: [],
+        },
+      }).reason,
+    ).toBe('custom-ignore');
+    expect(explainLogLine('[INFO] boot', { severity: 'error' }).reason).toBe(
+      'severity',
+    );
+    expect(explainLogLine('2024-01-01T00:00:00Z').reason).toBe('ci-noise');
+    expect(explainLogLine('Downloading package 50%').reason).toBe('progress');
+    expect(explainLogLine('[INFO] boot').reason).toBe('ignored-tag');
+    expect(
+      explainLogLine('  at acme.run (/opt/acme/lib/core.js:10:5)', {
+        config: {
+          sources: [],
+          diagnosticPatterns: [],
+          ignorePatterns: [],
+          sanitizePatterns: [],
+          internalStackPatterns: ['/opt/acme/lib/'],
+        },
+      }).reason,
+    ).toBe('internal-stack');
+    expect(
+      explainLogLine('ACME_KEEP_42', {
+        config: {
+          sources: [],
+          diagnosticPatterns: ['ACME_KEEP_\\d+'],
+          ignorePatterns: [],
+          sanitizePatterns: [],
+          internalStackPatterns: [],
+        },
+      }).reason,
+    ).toBe('hard-keep');
+    expect(
+      explainLogLine('plain line', {
+        config: {
+          sources: [],
+          diagnosticPatterns: ['NO_MATCH'],
+          ignorePatterns: [],
+          sanitizePatterns: [],
+          internalStackPatterns: [],
+        },
+      }).reason,
+    ).toBe('low-score');
+    expect(
+      explainLogLine('[ERROR] auth ACME-USER-123', {
+        config: {
+          sources: [],
+          diagnosticPatterns: [],
+          ignorePatterns: [],
+          sanitizePatterns: [
+            {
+              pattern: 'ACME-USER-\\d+',
+              replacement: '[ACME-USER]',
+            },
+          ],
+          internalStackPatterns: [],
+        },
+      }).sanitizedLine,
+    ).toContain('[ACME-USER]');
+    expect(explainLogLine('plain line').reason).toBe('low-score');
+  });
+
   it('processLogStream joins multiline continuations in python mode', async () => {
     const logs = [
       '[ERROR] traceback:',
@@ -1415,11 +1667,47 @@ describe('logstrip parser', () => {
       await expect(processLogFile(inputPath, inputPath)).rejects.toThrow(
         'Input and output paths must be different',
       );
+      await expect(processLogFile(inputPath, inputPath)).rejects.toBeInstanceOf(
+        LogStripError,
+      );
+      await expect(processLogFile(inputPath, inputPath)).rejects.toMatchObject({
+        code: 'SAME_INPUT_OUTPUT',
+      });
       expect(await readFile(inputPath, 'utf8')).toBe('[ERROR] file failed\n');
 
       await expect(
         processLogFile(join(directory, 'missing.log'), outputPath),
       ).rejects.toThrow();
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it('processLogFiles runs multiple file jobs', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'logstrip-batch-'));
+
+    try {
+      const firstInput = join(directory, 'one.log');
+      const secondInput = join(directory, 'two.log');
+      const firstOutput = join(directory, 'one.out.log');
+      const secondOutput = join(directory, 'two.out.log');
+      await writeFile(firstInput, '[ERROR] first failed\n', 'utf8');
+      await writeFile(secondInput, '[ERROR] second failed\n', 'utf8');
+
+      const results = await processLogFiles([
+        { inputPath: firstInput, outputPath: firstOutput },
+        {
+          inputPath: secondInput,
+          outputPath: secondOutput,
+          options: { aggressiveness: 'low' },
+        },
+      ]);
+
+      expect(results).toHaveLength(2);
+      expect(await readFile(firstOutput, 'utf8')).toBe('[ERROR] first failed\n');
+      expect(await readFile(secondOutput, 'utf8')).toBe(
+        '[ERROR] second failed\n',
+      );
     } finally {
       await rm(directory, { force: true, recursive: true });
     }
@@ -1431,6 +1719,44 @@ describe('custom config integration', () => {
     const merged = buildMergedConfig();
     expect(merged.mergedSources.length).toBeGreaterThan(0);
     expect(merged.diagnosticPatterns).toHaveLength(0);
+  });
+
+  it('buildMergedConfig merges in-memory custom config', () => {
+    const merged = buildMergedConfig({
+      config: {
+        sources: [{ name: 'memory-source', markers: ['memory-marker'] }],
+        diagnosticPatterns: ['MEMORY_ERROR'],
+        ignorePatterns: ['memory-ignore'],
+        sanitizePatterns: [
+          { pattern: 'MEMORY-SECRET', replacement: '[MEMORY-SECRET]' },
+        ],
+        internalStackPatterns: ['memory-stack'],
+      },
+    });
+
+    expect(merged.mergedSources.some(([name]) => name === 'memory-source')).toBe(
+      true,
+    );
+    expect(merged.diagnosticPatterns).toContain('MEMORY_ERROR');
+    expect(merged.ignorePatterns).toContain('memory-ignore');
+    expect(merged.sanitizePatterns[0].replacement).toBe('[MEMORY-SECRET]');
+    expect(merged.internalStackPatterns).toContain('memory-stack');
+  });
+
+  it('wraps invalid custom regexes in LogStripError', async () => {
+    await expect(
+      processLogStream(Readable.from(['[ERROR] bad regex\n']), new MemoryWritable(), {
+        config: {
+          sources: [],
+          diagnosticPatterns: ['['],
+          ignorePatterns: [],
+          sanitizePatterns: [],
+          internalStackPatterns: [],
+        },
+      }),
+    ).rejects.toMatchObject({
+      code: 'INVALID_CONFIG',
+    });
   });
 
   it('buildMergedConfig merges custom sources with existing ones', async () => {
