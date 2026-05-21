@@ -14,7 +14,7 @@ const node_fs_1 = require("node:fs");
 const node_util_1 = require("node:util");
 const logstrip_parser_1 = require("../core/logstrip-parser");
 const telemetry_store_1 = require("../core/telemetry/telemetry-store");
-exports.CLI_VERSION = '1.4.0'; // x-release-please-version
+exports.CLI_VERSION = '1.5.0'; // x-release-please-version
 exports.HELP_TEXT = `Usage: logstrip [INPUT] [options]
 
 Stream-based log compression that trims noisy server logs, build
