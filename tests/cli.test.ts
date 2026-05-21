@@ -614,7 +614,7 @@ describe('runCli', () => {
     expect(code).toBe(0);
     expect(stdout.value()).toContain('[ERROR]');
 
-    const { loadTelemetry: load } = await import('../src/core/telemetry/telemetry-store');
+    const { loadTelemetry: load } = await import('../src/core/telemetry/telemetry-store.js');
     const store = load();
     expect(store.totalRuns).toBeGreaterThanOrEqual(1);
     expect(store.totalSavedTokens).toBeGreaterThan(0);
