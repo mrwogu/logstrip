@@ -1,6 +1,6 @@
 # OPENCODE.md
 
-<!-- PromptScript 2026-05-18T21:39:45.604Z | source: .promptscript/project.prs | target: opencode - do not edit -->
+<!-- PromptScript 2026-05-21T20:23:43.926Z | source: .promptscript/project.prs | target: opencode - do not edit -->
 
 ## Project
 
@@ -29,7 +29,7 @@ typescript, Node.js >= 20
 - Types and constants: PascalCase / SCREAMING_SNAKE_CASE for regex tables
 - Functions and locals: camelCase
 - Exported regex patterns end in _PATTERN, exported strings end in _MARKER
-- CLI bins are spelled logstrip (short) and logstrip (verbose) - keep both registered
+- CLI bin is spelled logstrip - keep it registered
 - src/cli/index.ts is the canonical user-facing entry - all UX changes start here
 - Argument parsing uses node:util.parseArgs with allowPositionals + strict, no commander/yargs
 - First positional is the input path; omit to read stdin. -o/--output defaults to stdout
@@ -49,7 +49,7 @@ typescript, Node.js >= 20
 - Failures must call core.setFailed - never throw out of run()
 - tsc -p tsconfig.build.json emits to dist/{cli,core,action}
 - scripts/post-build.js stamps the shebang and chmods dist/cli/index.js to 0755 - do not skip it
-- package.json bin map points both logstrip and logstrip to dist/cli/index.js
+- package.json bin map points logstrip to dist/cli/index.js
 - files: must include dist/cli alongside dist/core, dist/action, action.yml
 - Runner: vitest run --coverage (Node v8 provider)
 - Unit tests next to source: tests/logstrip-parser.test.ts, tests/cli.test.ts, tests/action.test.ts

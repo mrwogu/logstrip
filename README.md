@@ -302,8 +302,8 @@ Full config reference: [CLI docs – Custom configuration](https://mrwogu.github
 
 ## CLI <a id="cli"></a>
 
-LogStrip is primarily a CLI tool. Both `logstrip` and `logstrip` are
-registered as bins, so you can call whichever feels natural.
+LogStrip is primarily a CLI tool. The `logstrip` binary is the sole
+entry point — install globally and call it directly.
 
 ```text
 Usage: logstrip [INPUT] [options]

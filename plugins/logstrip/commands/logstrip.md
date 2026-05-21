@@ -10,8 +10,8 @@ If the user pasted log-like output instead of providing a file path, write the p
 Workflow:
 
 1. Parse the input path, optional output path, and optional aggressiveness level from `$ARGUMENTS`.
-2. Verify `logstrip` or `logstrip` is available with `logstrip --version` or `logstrip --version`.
-3. If neither binary exists, tell the user to install it with `npm i -g logstrip`; do not install it automatically.
+2. Verify `logstrip` is available with `logstrip --version`.
+3. If the binary does not exist, tell the user to install it with `npm i -g logstrip`; do not install it automatically.
 4. Run the CLI with `--stats`, using `-o <output-log>` when an output path is provided.
 5. Summarize the output path, savings percentage, input/output token estimates, dropped lines, duplicate lines, and hidden internal stack lines.
 

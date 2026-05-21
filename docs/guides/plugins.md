@@ -279,7 +279,7 @@ All plugin prompts defer to the same aggressiveness levels as the CLI:
 
 ## Troubleshooting
 
-**Command not found** - Make sure `logstrip` or `logstrip` is on your
+**Command not found** - Make sure `logstrip` is on your
 PATH after `npm i -g logstrip`. Verify with `logstrip --version`.
 
 **Plugin does not appear after install** - Restart the agent and confirm it is

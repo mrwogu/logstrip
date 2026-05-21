@@ -106,7 +106,7 @@ description: Free, zero-dependency CLI that compresses noisy logs into high-sign
 
 ### one install away
 
-Installs one CLI with two aliases: `logstrip` (short) and `logstrip` (explicit). Same behavior, same binary, zero runtime dependencies on the hot path.
+Installs one CLI: `logstrip`. Zero runtime dependencies on the hot path.
 </div>
 
 <div class="logstrip-card" data-logstrip-reveal data-delay="2" markdown="1">

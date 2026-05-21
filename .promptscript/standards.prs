@@ -20,7 +20,7 @@
   ]
 
   cli: [
-    "CLI bins are spelled logstrip (short) and logstrip (verbose) - keep both registered",
+    "CLI bin is spelled logstrip - keep it registered",
     "src/cli/index.ts is the canonical user-facing entry - all UX changes start here",
     "Argument parsing uses node:util.parseArgs with allowPositionals + strict, no commander/yargs",
     "First positional is the input path; omit to read stdin. -o/--output defaults to stdout",
@@ -49,7 +49,7 @@
   build: [
     "tsc -p tsconfig.build.json emits to dist/{cli,core,action}",
     "scripts/post-build.js stamps the shebang and chmods dist/cli/index.js to 0755 - do not skip it",
-    "package.json bin map points both logstrip and logstrip to dist/cli/index.js",
+    "package.json bin map points logstrip to dist/cli/index.js",
     "files: must include dist/cli alongside dist/core, dist/action, action.yml"
   ]
 

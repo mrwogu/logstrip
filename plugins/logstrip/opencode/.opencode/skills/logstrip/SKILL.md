@@ -10,7 +10,7 @@ LogStrip removes repeated low-signal lines, masks common identifiers, collapses 
 ## Procedure
 
 1. Identify the raw input log and desired output path. If no output path is supplied, use `<input>.logstrip.log`.
-2. Verify `logstrip` or `logstrip` is installed. If not, instruct the user to run `npm i -g logstrip`.
+2. Verify `logstrip` is installed. If not, instruct the user to run `npm i -g logstrip`.
 3. Run `logstrip <input> -o <output> --stats`, adding `--aggressiveness <level>` only when requested.
 4. Diagnose from the compressed output file.
 5. Report the output path, savings percentage, input/output token estimates, dropped lines, duplicate lines, and hidden internal stack lines.

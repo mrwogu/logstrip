@@ -23,7 +23,7 @@ When the user pastes content that resembles log output into the chat, automatica
 ## Log file workflow
 
 1. Identify the raw log path and choose an output path, usually `<input>.logstrip.log`.
-2. Verify the CLI is available with `logstrip --version` or `logstrip --version`.
+2. Verify the CLI is available with `logstrip --version`.
 3. If the CLI is missing, tell the user to install it with `npm i -g logstrip`.
 4. Run `logstrip <input> -o <output> --stats`, adding `--aggressiveness <level>` only when the user asks for a non-default level.
 5. Use the compressed output for analysis and summarize the `--stats` savings: input tokens, output tokens, savings percent, dropped lines, duplicate lines, and hidden internal stack lines.

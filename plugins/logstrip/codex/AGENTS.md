@@ -15,7 +15,7 @@ When the user pastes content that resembles log output (2+ of: timestamps, log l
 ## Log file workflow
 
 1. Locate the raw log path and choose an output path, usually `<input>.logstrip.log`.
-2. Verify `logstrip` or `logstrip` is available.
+2. Verify `logstrip` is available.
 3. If the CLI is missing, ask the user to install it with `npm i -g logstrip`.
 4. Run `logstrip <input> -o <output> --stats`, using the default `high` aggressiveness unless the user requests another level.
 5. Analyze the compressed file instead of the raw log.

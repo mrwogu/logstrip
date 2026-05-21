@@ -1,6 +1,8 @@
-# International SEO: Evidence & Sources
+<!-- PromptScript 2026-05-21T20:23:43.921Z | source: .promptscript/project.prs | target: github - do not edit -->
 
-<!-- PromptScript 2026-05-21T20:23:43.925Z | source: .promptscript/project.prs | target: codex - do not edit -->
+<!-- from: .github/skills/seo-audit/references/international-seo.md -->
+
+# International SEO: Evidence & Sources
 
 Detailed evidence backing the International SEO & Localization section of the SEO Audit skill. Organized by topic with source URLs and key quotes.
 

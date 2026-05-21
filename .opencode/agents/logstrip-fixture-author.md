@@ -1,5 +1,5 @@
 ---
-# promptscript-generated: 2026-05-18T21:39:45.604Z | source: .promptscript/project.prs | target: opencode
+# promptscript-generated: 2026-05-21T20:23:43.926Z | source: .promptscript/project.prs | target: opencode
 description: Generates new realistic CI log fixtures (Node, Python, Docker, Java, etc.) and wires them into tests/smoke.test.ts with grounded thresholds.
 mode: subagent
 ---

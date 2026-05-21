@@ -5,14 +5,13 @@ description: Complete CLI reference for LogStrip – flags, exit codes, I/O cont
 # CLI Reference
 
 The CLI is the primary distribution channel for LogStrip. It is published
-to npm as `logstrip` and exposes two binaries:
+to npm as `logstrip` and exposes one binary:
 
 | Binary | Purpose |
 | :--- | :--- |
-| `logstrip` | Short alias - preferred when the name is free. |
-| `logstrip` | Verbose alias - useful when `logstrip` is already taken. |
+| `logstrip` | Log compression CLI — the sole entry point. |
 
-Both binaries point at the same compiled entry: `dist/cli/index.js`.
+The binary points at the compiled entry: `dist/cli/index.js`.
 
 ## Synopsis
 

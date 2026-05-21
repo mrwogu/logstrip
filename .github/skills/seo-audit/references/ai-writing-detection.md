@@ -1,6 +1,8 @@
-# AI Writing Detection
+<!-- PromptScript 2026-05-21T20:23:43.921Z | source: .promptscript/project.prs | target: github - do not edit -->
 
-<!-- PromptScript 2026-05-21T20:23:43.925Z | source: .promptscript/project.prs | target: codex - do not edit -->
+<!-- from: .github/skills/seo-audit/references/ai-writing-detection.md -->
+
+# AI Writing Detection
 
 Words, phrases, and punctuation patterns commonly associated with AI-generated text. Avoid these to ensure writing sounds natural and human.
 

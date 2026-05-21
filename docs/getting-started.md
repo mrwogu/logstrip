@@ -16,8 +16,7 @@ LogStrip requires Node.js 20 or newer.
 npm install --global logstrip
 ```
 
-The package registers two binaries: `logstrip` (short) and `logstrip`
-(verbose, useful when something else owns the `logstrip` name).
+The package registers the `logstrip` binary.
 
 Don't want a global install? Use `npx`:
 

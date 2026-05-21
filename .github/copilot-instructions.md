@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions
 
-<!-- PromptScript 2026-05-18T21:39:45.600Z | source: .promptscript/project.prs | target: github - do not edit -->
+<!-- PromptScript 2026-05-21T20:23:43.920Z | source: .promptscript/project.prs | target: github - do not edit -->
 
 ## project
 
@@ -41,7 +41,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 
 ### cli
 
-- CLI bins are spelled logstrip (short) and logstrip (verbose) - keep both registered
+- CLI bin is spelled logstrip - keep it registered
 - src/cli/index.ts is the canonical user-facing entry - all UX changes start here
 - Argument parsing uses node:util.parseArgs with allowPositionals + strict, no commander/yargs
 - First positional is the input path; omit to read stdin. -o/--output defaults to stdout
@@ -70,7 +70,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 
 - tsc -p tsconfig.build.json emits to dist/{cli,core,action}
 - scripts/post-build.js stamps the shebang and chmods dist/cli/index.js to 0755 - do not skip it
-- package.json bin map points both logstrip and logstrip to dist/cli/index.js
+- package.json bin map points logstrip to dist/cli/index.js
 - files: must include dist/cli alongside dist/core, dist/action, action.yml
 
 ### testing

@@ -1,5 +1,5 @@
 ---
-# promptscript-generated: 2026-05-18T21:39:45.600Z | source: .promptscript/project.prs | target: github
+# promptscript-generated: 2026-05-21T20:23:43.921Z | source: .promptscript/project.prs | target: github
 name: logstrip-reviewer
 description: Reviews diffs against LogStrip standards and restrictions, with a focus on CLI Unix correctness, parser streaming, and the 100% coverage gate.
 tools: ['read', 'search']
