@@ -42,6 +42,7 @@ import {
   createContinuationContext,
   isContinuationLine,
 } from './multiline/multiline-buffer.js';
+import { detectFormat } from './formats/format-detector.js';
 import { sanitizeLine } from './sanitize/sanitize-line.js';
 import { passesSeverityFilter } from './severity/severity-filter.js';
 import type { SeverityLevel } from './severity/severity-filter.js';
@@ -62,6 +63,7 @@ import type {
 
 export { inferSeverity, parseSeverityLevel, passesSeverityFilter } from './severity/severity-filter.js';
 export type { SeverityLevel } from './severity/severity-filter.js';
+export { detectFormat } from './formats/format-detector.js';
 export { parseAggressiveness } from './aggressiveness/levels.js';
 export {
   CONTEXT_WINDOW_AFTER,
@@ -196,6 +198,7 @@ export async function processLogStream(
   const lines = readLogicalLines(rawLines, multilineMode);
   let previousGroup: RepeatGroup | undefined;
   let hidingInternalStack = false;
+  let detectedFormat: string | undefined;
 
   const recordDecision = (decision: LineDecision): void => {
     recordLineDecision(dynamicAggressiveness, decision);
@@ -247,6 +250,11 @@ export async function processLogStream(
     stats.inputLines += physicalLineCount;
     stats.inputWords += countWords(line);
     stats.inputBytes += Buffer.byteLength(`${line}\n`, 'utf8');
+
+    if (detectedFormat === undefined && line.trim().length > 0) {
+      const fmt = detectFormat(line);
+      if (fmt !== 'unknown') detectedFormat = fmt;
+    }
 
     // Empty lines always dropped; don't disturb context state
     if (line.trim().length === 0) {
@@ -426,6 +434,7 @@ export async function processLogStream(
     savedTokens,
     savingsPercent,
     detectedSources: rankDetectedSources(detectedSourceState),
+    detectedFormat,
   };
 }
 

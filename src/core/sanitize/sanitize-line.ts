@@ -1,3 +1,5 @@
+import { groupHttpStatusCodes } from '../formats/format-detector.js';
+
 const UUID_PATTERN =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
 const ISO_TIME_PATTERN =
@@ -35,4 +37,8 @@ export function sanitizeLine(line: string): string {
       match.replace(accountId, '[ACCOUNT]'),
     )
     .replace(/[ \t]+$/u, '');
+
+  result = groupHttpStatusCodes(result);
+
+  return result;
 }

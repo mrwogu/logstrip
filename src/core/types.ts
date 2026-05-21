@@ -31,4 +31,5 @@ export interface LogStripResult {
   savingsPercent: number;
   detectedSources?: readonly string[];
   outputPath?: string;
+  detectedFormat?: string;
 }
