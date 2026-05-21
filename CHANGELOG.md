@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/mrwogu/logstrip/compare/v1.4.0...v1.5.0) (2026-05-21)
+
+
+### Features
+
+* expand log processing APIs ([be5b673](https://github.com/mrwogu/logstrip/commit/be5b673fae89c598c5eab7c072c55832b1490fc3))
+
 ## [1.4.0](https://github.com/mrwogu/logstrip/compare/v1.3.0...v1.4.0) (2026-05-21)
 
 
