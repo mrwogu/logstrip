@@ -33,12 +33,15 @@ import {
   createRepeatSignature,
   detectLogSources,
   estimateTokens,
+  isCiNoiseLine,
   isInternalStackTraceLine,
+  isProgressBarLine,
   looksLikeDiagnosticLine,
   parseAggressiveness,
   pathsReferToSameFile,
   processLogFile,
   processLogStream,
+  processLogStreamWithTimeout,
   sanitizeLine,
   scoreLineRelevance,
   shouldKeepLine,
@@ -712,6 +715,27 @@ describe('logstrip parser', () => {
     ).toBe('[TIME] [error] connect() failed for upstream [IP]:[PORT]');
   });
 
+  it('masks secret and credential patterns', () => {
+    // GitHub tokens
+    expect(sanitizeLine('auth ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn')).toBe('auth [REDACTED]');
+    // JWT tokens
+    expect(sanitizeLine('Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc123def456ghi789jkl')).toBe('Bearer [JWT]');
+    // Slack tokens
+    expect(sanitizeLine('token ' + ['xox','b-1234567890-1234567890-ABCDEFGHIJKLMNOPQRSTUVWX'].join(''))).toBe('token [REDACTED]');
+    // Connection strings
+    expect(sanitizeLine('postgres://user:secretpass@db.example.com:5432/mydb')).toBe('postgres://user:[REDACTED]@db.example.com:5432/mydb');
+    // Secret field values
+    expect(sanitizeLine('password=hunter2')).toBe('password=[REDACTED]');
+    expect(sanitizeLine('api_key=sk_live_abc123')).toBe('api_key=[REDACTED]');
+    expect(sanitizeLine('secret: hiddenvalue')).toBe('secret: [REDACTED]');
+    expect(sanitizeLine('token=abc123def')).toBe('token=[REDACTED]');
+    expect(sanitizeLine('Authorization: Bearer xyz')).toBe('Authorization: [REDACTED]');
+    // AWS access keys
+    expect(sanitizeLine('key=AKIAIOSFODNN7EXAMPLE')).toBe('key=[REDACTED]');
+    // AWS ARN with account ID
+    expect(sanitizeLine('arn:aws:s3:us-east-1:123456789012:bucket/object')).toBe('arn:aws:s3:us-east-1:[ACCOUNT]:bucket/object');
+  });
+
   it('builds generic repeat signatures from structured fields', () => {
     expect(MAX_REPEAT_DELTA_VALUES).toBe(3);
     expect(
@@ -1104,6 +1128,13 @@ describe('logstrip parser', () => {
     expect(result.stats.droppedLines).toBe(TFIDF_MAP_LIMIT + 1);
   });
 
+  it('handles empty stream with multiline mode enabled', async () => {
+    const emptyMultilineOutput = new MemoryWritable();
+    const emptyMultilineResult = await processLogStream(Readable.from(['']), emptyMultilineOutput, { multiline: 'python' });
+    expect(emptyMultilineResult.savingsPercent).toBe(0);
+    expect(emptyMultilineOutput.content()).toBe('');
+  });
+
   it('handles empty streams and backpressure', async () => {
     const emptyOutput = new MemoryWritable();
     const emptyResult = await processLogStream(Readable.from(['']), emptyOutput);
@@ -1142,6 +1173,225 @@ describe('logstrip parser', () => {
       '[WARN] request failed after retry budget exhausted',
     );
     expect(aggressiveOutput.content()).toContain('[ERROR] hard failure');
+  });
+
+  it('isCiNoiseLine detects timestamp-only, K8s Normal, and rate-limited lines', () => {
+    // Timestamp-only
+    expect(isCiNoiseLine('2026-05-15T10:20:30.123Z')).toBe(true);
+    expect(isCiNoiseLine('  2026-05-15T10:20:30Z')).toBe(true);
+    expect(isCiNoiseLine('2026/05/15 10:20:30')).toBe(true); // also timestamp-only
+    // K8s Normal
+    expect(isCiNoiseLine('type: Normal Pulled')).toBe(true);
+    expect(isCiNoiseLine("type: 'Normal' Started")).toBe(true);
+    expect(isCiNoiseLine('Normal 5s test-pod')).toBe(true);
+    // Rate-limited
+    expect(isCiNoiseLine('message repeated 42 times')).toBe(true);
+    expect(isCiNoiseLine('last message repeated 5 times')).toBe(true);
+    expect(isCiNoiseLine('message repeated 1 time')).toBe(true);
+    // Not noise
+    expect(isCiNoiseLine('[ERROR] crash')).toBe(false);
+    expect(isCiNoiseLine('2026-05-15T10:20:30Z request failed')).toBe(false);
+  });
+
+  it('isProgressBarLine detects progress bars and separators', () => {
+    // Separator pattern
+    expect(isProgressBarLine('========================================')).toBe(true);
+    expect(isProgressBarLine('------------------------------------')).toBe(true);
+    // Progress indicator
+    expect(isProgressBarLine('Downloading 45% [====>     ] 12.3 MB/s')).toBe(true);
+    expect(isProgressBarLine('Extracting 80% |========= |')).toBe(true);
+    expect(isProgressBarLine('  50% |=====|')).toBe(true);
+    // Visual progress bar
+    expect(isProgressBarLine('[  =====>    ]')).toBe(true);
+    expect(isProgressBarLine('|  =====>   |')).toBe(true);
+    // Not a progress bar
+    expect(isProgressBarLine('[ERROR] failed')).toBe(false);
+    expect(isProgressBarLine('')).toBe(false);
+    expect(isProgressBarLine('   ')).toBe(false);
+    // Lines containing error keywords are NOT progress bars
+    expect(isProgressBarLine('Downloading 45% Error: timeout')).toBe(false);
+    expect(isProgressBarLine('Extracting 80% fail')).toBe(false);
+    expect(isProgressBarLine('Pushing 50% crashed')).toBe(false);
+    expect(isProgressBarLine('Building 90% timeout')).toBe(false);
+    expect(isProgressBarLine('Installing 30% FAIL')).toBe(false);
+  });
+
+  it('processLogStream drops CI noise lines', async () => {
+    const logs = [
+      '2026-05-15T10:20:30.123Z',
+      'type: Normal Pulled image',
+      'message repeated 42 times',
+      '[ERROR] actual error',
+    ].join('\n');
+
+    const output = new MemoryWritable();
+    const result = await processLogStream(Readable.from([logs]), output);
+    const content = output.content();
+
+    expect(content).not.toContain('2026-05-15T10:20:30.123Z');
+    expect(content).not.toContain('type: Normal');
+    expect(content).not.toContain('message repeated');
+    expect(content).toContain('[ERROR] actual error');
+    expect(result.stats.droppedLines).toBeGreaterThanOrEqual(3);
+  });
+
+  it('processLogStream drops progress bar lines', async () => {
+    const logs = [
+      '========================================',
+      'Downloading 45% [====>     ]',
+      '[ERROR] actual error',
+    ].join('\n');
+
+    const output = new MemoryWritable();
+    const result = await processLogStream(Readable.from([logs]), output);
+    const content = output.content();
+
+    expect(content).not.toContain('====================');
+    expect(content).not.toContain('Downloading');
+    expect(content).toContain('[ERROR] actual error');
+    expect(result.stats.droppedLines).toBeGreaterThanOrEqual(2);
+  });
+
+  it('processLogStream filters by severity level', async () => {
+    const logs = [
+      '[TRACE] trace msg',
+      '[DEBUG] debug msg',
+      '[INFO] info msg',
+      '[WARN] warning msg',
+      '[ERROR] error msg',
+      '[FATAL] fatal msg',
+    ].join('\n');
+
+    const output = new MemoryWritable();
+    const result = await processLogStream(Readable.from([logs]), output, {
+      severity: 'warn',
+    });
+    const content = output.content();
+
+    expect(content).not.toContain('[TRACE]');
+    expect(content).not.toContain('[DEBUG]');
+    expect(content).not.toContain('[INFO]');
+    expect(content).toContain('[WARN]');
+    expect(content).toContain('[ERROR]');
+    expect(content).toContain('[FATAL]');
+  });
+
+  it('processLogStream respects sampleSize option', async () => {
+    const logs = [
+      '[ERROR] first',
+      '[ERROR] second',
+      '[ERROR] third',
+      '[ERROR] fourth',
+      '[ERROR] fifth',
+    ].join('\n');
+
+    const output = new MemoryWritable();
+    const result = await processLogStream(Readable.from([logs]), output, {
+      sampleSize: 2,
+    });
+    const content = output.content();
+
+    // Only first 2 kept lines should appear
+    const keptLines = content.trim().split('\n').filter((l) => l.includes('[ERROR]'));
+    expect(keptLines.length).toBe(2);
+    expect(keptLines[0]).toContain('first');
+    expect(keptLines[1]).toContain('second');
+  });
+
+  it('processLogStream joins multiline continuations in python mode', async () => {
+    const logs = [
+      '[ERROR] traceback:',
+      'Traceback (most recent call last):',
+      '    File "app.py", line 42, in main',
+      '    raise ValueError("bad")',
+      'ValueError: bad',
+      '[ERROR] separate error',
+    ].join('\n');
+
+    const output = new MemoryWritable();
+    const result = await processLogStream(Readable.from([logs]), output, {
+      multiline: 'python',
+    });
+    const content = output.content();
+
+    // Indented continuation lines should be joined with their parent
+    expect(content).toContain('[ERROR]');
+    expect(result.stats.inputLines).toBe(6);
+  });
+
+  it('processLogStream joins multiline continuations in node mode', async () => {
+    const logs = [
+      '[ERROR] TypeError: boom',
+      '    at app (/src/app.ts:10:5)',
+      '    at lib (/src/lib.ts:20:3)',
+    ].join('\n');
+
+    const output = new MemoryWritable();
+    const result = await processLogStream(Readable.from([logs]), output, {
+      multiline: 'node',
+    });
+    const content = output.content();
+
+    expect(content).toContain('TypeError');
+    expect(content).toContain('at app');
+    expect(result.stats.inputLines).toBe(3);
+  });
+
+  it('processLogStreamWithTimeout returns timedOut result on timeout', async () => {
+    const result = await processLogStreamWithTimeout(
+      Readable.from(['[ERROR] test\n']),
+      new MemoryWritable(),
+      {},
+      100,
+    );
+
+    // A small log finishes before timeout, so timedOut should be false
+    expect(result.timedOut).toBeFalsy();
+  });
+
+  it('processLogStreamWithTimeout delegates without timeout', async () => {
+    const output = new MemoryWritable();
+    const result = await processLogStreamWithTimeout(
+      Readable.from(['[ERROR] test\n']),
+      output,
+      {},
+      undefined,
+    );
+
+    expect(result.timedOut).toBeFalsy();
+    expect(output.content()).toContain('[ERROR] test');
+  });
+
+  it('processLogStreamWithTimeout returns timedOut on actual timeout', async () => {
+    // Create a stream that never emits data
+    const slowInput = new Readable({
+      read() {
+        // Never push data, never end — the stream just hangs
+      },
+    });
+
+    const result = await processLogStreamWithTimeout(
+      slowInput,
+      new MemoryWritable(),
+      {},
+      50, // 50ms timeout
+    );
+
+    expect(result.timedOut).toBe(true);
+    expect(result.stats.inputLines).toBe(0);
+    slowInput.destroy();
+  });
+
+  it('processLogStreamWithTimeout re-throws non-timeout errors', async () => {
+    const brokenInput = new Readable({
+      read() {
+        this.destroy(new Error('stream broken'));
+      },
+    });
+
+    await expect(
+      processLogStreamWithTimeout(brokenInput, new MemoryWritable(), {}, 5000),
+    ).rejects.toThrow('stream broken');
   });
 
   it('processes files and propagates read errors', async () => {

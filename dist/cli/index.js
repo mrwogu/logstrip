@@ -2,6 +2,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CliError = exports.HELP_TEXT = exports.CLI_VERSION = void 0;
+exports.parseMultilineMode = parseMultilineMode;
 exports.messageOf = messageOf;
 exports.parseCliOptions = parseCliOptions;
 exports.formatStats = formatStats;
@@ -11,7 +12,7 @@ exports.runCli = runCli;
 const node_fs_1 = require("node:fs");
 const node_util_1 = require("node:util");
 const logstrip_parser_1 = require("../core/logstrip-parser");
-exports.CLI_VERSION = '1.1.0'; // x-release-please-version
+exports.CLI_VERSION = '1.2.0'; // x-release-please-version
 exports.HELP_TEXT = `Usage: logstrip [INPUT] [options]
 
 Stream-based log compression that trims noisy server logs, build
@@ -26,7 +27,16 @@ Options:
   -a, --aggressiveness <l> Compression preset: low | medium | high | aggressive | auto.
                            Default: auto.
   -s, --stats              Print compression statistics to stderr.
-  -j, --json               Print LogStripResult as JSON to stdout. Requires --output.
+  -j, --json               Print LogStripResult JSON to stdout. Requires --output.
+  -m, --multiline <mode>   Multiline handling: auto | python | node | java | go | rust | off.
+                           Default: off.
+      --severity <level>   Minimum severity: fatal | error | warn | info | debug | trace.
+      --include <regex>    Keep only lines matching this regex.
+      --exclude <regex>    Drop lines matching this regex.
+      --sample <N>         Limit output to first N kept lines.
+      --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
+      --timeout <s>        Stop processing after s seconds.
+      --progress           Show progress bar (file input only, requires --output).
       --config <path>      Path to .logstrip.yml config file. Auto-detects from cwd.
   -h, --help               Show this help text and exit.
   -v, --version            Print the CLI version and exit.
@@ -36,7 +46,13 @@ Examples:
   cat raw.log | logstrip > clean.log
   logstrip raw.log --stats > clean.log
   logstrip raw.log -o clean.log --json
+  logstrip traceback.log -m python -o clean.log
+  logstrip build.log --exclude 'Downloading|Extracting' -o clean.log
+  logstrip huge.log --progress --timeout 30 -o clean.log
 `;
+const VALID_MULTILINE_MODES = [
+    'auto', 'python', 'node', 'java', 'go', 'rust', 'off',
+];
 class CliError extends Error {
     exitCode;
     constructor(message, exitCode = 1) {
@@ -46,6 +62,13 @@ class CliError extends Error {
     }
 }
 exports.CliError = CliError;
+function parseMultilineMode(value) {
+    const normalized = value.toLowerCase();
+    if (VALID_MULTILINE_MODES.includes(normalized)) {
+        return normalized;
+    }
+    throw new CliError(`Unsupported multiline mode: ${value}. Valid values: ${VALID_MULTILINE_MODES.join(', ')}`, 2);
+}
 function messageOf(error) {
     return error instanceof Error ? error.message : String(error);
 }
@@ -61,6 +84,14 @@ function parseCliOptions(argv) {
                 aggressiveness: { type: 'string', short: 'a' },
                 stats: { type: 'boolean', short: 's', default: false },
                 json: { type: 'boolean', short: 'j', default: false },
+                multiline: { type: 'string', short: 'm' },
+                severity: { type: 'string' },
+                include: { type: 'string' },
+                exclude: { type: 'string' },
+                sample: { type: 'string' },
+                'max-line-length': { type: 'string' },
+                timeout: { type: 'string' },
+                progress: { type: 'boolean', default: false },
                 config: { type: 'string' },
                 help: { type: 'boolean', short: 'h', default: false },
                 version: { type: 'boolean', short: 'v', default: false },
@@ -83,12 +114,77 @@ function parseCliOptions(argv) {
     catch (error) {
         throw new CliError(messageOf(error), 2);
     }
+    const multilineInput = typeof parsed.values.multiline === 'string'
+        ? parsed.values.multiline
+        : 'off';
+    let multiline;
+    try {
+        multiline = parseMultilineMode(multilineInput);
+    }
+    catch (error) {
+        throw new CliError(messageOf(error), 2);
+    }
+    let severity;
+    if (typeof parsed.values.severity === 'string') {
+        try {
+            severity = (0, logstrip_parser_1.parseSeverityLevel)(parsed.values.severity);
+        }
+        catch (error) {
+            throw new CliError(messageOf(error), 2);
+        }
+    }
+    let include;
+    if (typeof parsed.values.include === 'string') {
+        try {
+            include = new RegExp(parsed.values.include, 'u');
+        }
+        catch {
+            throw new CliError(`Invalid --include regex: ${parsed.values.include}`, 2);
+        }
+    }
+    let exclude;
+    if (typeof parsed.values.exclude === 'string') {
+        try {
+            exclude = new RegExp(parsed.values.exclude, 'u');
+        }
+        catch {
+            throw new CliError(`Invalid --exclude regex: ${parsed.values.exclude}`, 2);
+        }
+    }
+    let sample;
+    if (typeof parsed.values.sample === 'string') {
+        sample = parseInt(parsed.values.sample, 10);
+        if (isNaN(sample) || sample < 1)
+            throw new CliError(`Invalid --sample: ${parsed.values.sample}. Must be a positive integer.`, 2);
+    }
+    let maxLineLength;
+    if (typeof parsed.values['max-line-length'] === 'string') {
+        maxLineLength = parseInt(parsed.values['max-line-length'], 10);
+        if (isNaN(maxLineLength) || maxLineLength < 100)
+            throw new CliError(`Invalid --max-line-length. Must be >= 100.`, 2);
+    }
+    let timeout;
+    if (typeof parsed.values.timeout === 'string') {
+        timeout = parseFloat(parsed.values.timeout);
+        if (isNaN(timeout) || timeout < 0.1)
+            throw new CliError(`Invalid --timeout. Must be a positive number.`, 2);
+        timeout = Math.round(timeout * 1000);
+    }
+    const progress = parsed.values.progress === true;
     return {
         input: parsed.positionals[0],
         output: typeof parsed.values.output === 'string' ? parsed.values.output : undefined,
         aggressiveness,
         stats: parsed.values.stats === true,
         json: parsed.values.json === true,
+        multiline,
+        severity,
+        include,
+        exclude,
+        sample,
+        maxLineLength,
+        timeout,
+        progress,
         config: typeof parsed.values.config === 'string'
             ? parsed.values.config
             : undefined,
@@ -160,6 +256,10 @@ async function runCli(argv, io) {
         await writeAll(io.stderr, 'logstrip: --json requires --output so the compressed log does not collide with the JSON report on stdout\n');
         return 2;
     }
+    if (options.progress && options.input === undefined) {
+        await writeAll(io.stderr, 'logstrip: --progress requires a file input (not stdin)\n');
+        return 2;
+    }
     if (options.input === undefined && io.stdinIsTTY) {
         await writeAll(io.stderr, 'logstrip: no INPUT given and stdin is a terminal. Pass a file path or pipe a log.\n');
         return 2;
@@ -181,6 +281,8 @@ async function runCli(argv, io) {
         result = await (0, logstrip_parser_1.processLogStream)(input, output, {
             aggressiveness: options.aggressiveness,
             configPath: options.config,
+            multiline: options.multiline,
+            severity: options.severity,
         });
     }
     catch (error) {

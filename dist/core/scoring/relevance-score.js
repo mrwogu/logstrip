@@ -6,36 +6,38 @@ exports.looksLikeDiagnosticLine = looksLikeDiagnosticLine;
 exports.isInternalStackTraceLine = isInternalStackTraceLine;
 exports.estimateTokens = estimateTokens;
 exports.scoreLineRelevance = scoreLineRelevance;
+exports.isCiNoiseLine = isCiNoiseLine;
+exports.isProgressBarLine = isProgressBarLine;
 const constants_js_1 = require("../constants.js");
-const IGNORED_LOG_TAG_PATTERN = /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/i;
-const IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/i;
-const EXPLICIT_LOG_TAG_PATTERN = /\[[A-Z]+\]/i;
+const IGNORED_LOG_TAG_PATTERN = /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
+const IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/iu;
+const EXPLICIT_LOG_TAG_PATTERN = /\[[A-Z]+\]/iu;
 const STACK_FRAME_PATTERN = /^\s*at\s+.*(?:\(|\s).+:\d+:\d+\)?$/;
 const JAVA_STACK_FRAME_PATTERN = /^\s*at\s+[\w$_.<>/]+\([^)]+:\d+\)$/;
 const PYTHON_STACK_FRAME_PATTERN = /^\s*File\s+"[^"]+",\s+line\s+\d+,\s+in\s+.+$/;
 const GO_STACK_FRAME_PATTERN = /^\s*(?:(?:[\w.-]+\/)+[\w./-]+|[\w.-]+\.\(\*?[\w.]+\)\.[\w.]+|[\w.-]+\.[A-Z]\w*)\(.*\)$/;
 const GO_FILE_FRAME_PATTERN = /^\s*(?:\/[^\s]+|[A-Za-z]:[\\/][^\s]+):\d+(?:\s+\+\S+)?$/;
-const GO_GOROUTINE_PATTERN = /^\s*goroutine\s+\d+\s+\[.+\]:$/i;
+const GO_GOROUTINE_PATTERN = /^\s*goroutine\s+\d+\s+\[.+\]:$/iu;
 const PYTHON_TRACEBACK_PATTERN = /^Traceback \(most recent call last\):$/;
 const STACK_MORE_PATTERN = /^\s*\.\.\. \d+ more$/;
 const GITHUB_ACTIONS_ANNOTATION_PATTERN = /^::(?:error|warning|notice)\b/u;
-const GRADLE_FAILURE_PATTERN = /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/i;
+const GRADLE_FAILURE_PATTERN = /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/iu;
 const MAKE_ERROR_PATTERN = /^make[:\s*]+/u;
 const GO_TEST_FAIL_PATTERN = /---\s*FAIL:/u;
-const SYSTEMD_STATUS_PATTERN = /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/i;
-const CIRCLECI_STEP_PATTERN = /\b(?:Spin Cancelled|Step failed|job was not approved)\b/i;
+const SYSTEMD_STATUS_PATTERN = /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/iu;
+const CIRCLECI_STEP_PATTERN = /\b(?:Spin Cancelled|Step failed|job was not approved)\b/iu;
 const JENKINS_MARKER_PATTERN = /\[(?:Pipeline|Checks|FCMaker)\]/u;
 const AZURE_PIPELINE_PATTERN = /^##vso\[task\.(?:LogIssue|Complete)\b/u;
 const TEAMCITY_MARKER_PATTERN = /^##teamcity\[(?:buildProblem|compilationFinished|message)\b/u;
-const DIAGNOSTIC_PATTERN = /\b(?:Error|Exception|AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|NullPointerException|Unhandled|failed|failure|fatal|panic|refused|timeout|timed\s+out|unreachable|unavailable|disconnected|killed|aborted|crashed|terminated|unauthorized)\b/i;
-const JSON_SEVERITY_PATTERN = /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/i;
-const NPM_ERROR_PATTERN = /\b(?:npm|pnpm)\s+ERR!/i;
-const YARN_ERROR_PATTERN = /\byarn\s+error\b/i;
-const SCANNER_FINDING_PATTERN = /\b(?:CVE-\d{4}-\d{4,7}|GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}|vulnerabilit(?:y|ies)|severity:\s*(?:critical|high|medium)|(?:critical|high)\s+severity)\b/i;
-const CONTAINER_FAILURE_PATTERN = /\b(?:CrashLoopBackOff|ImagePullBackOff|ErrImagePull|OOMKilled|Back[- ]off restarting failed container|failed to pull image|(?:containerd|runc).*?(?:failed|error|panic|timeout|refused)|(?:failed|error|panic|timeout|refused).*?(?:containerd|runc)|rpc error: code = Unknown desc = failed to resolve reference)\b/i;
-const INTERNAL_STACK_PATTERN = /(?:node_modules[\\/]|node:internal|internal[\\/]modules|bootstrap_node|[\\/]usr[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]go[\\/]src[\\/]runtime[\\/]|site-packages[\\/]|dist-packages[\\/]|\.venv[\\/]|java\.base[\\/]|jdk\.internal|org\.springframework\.|[\\/]pkg[\\/]mod[\\/]|\.cargo[\\/]registry[\\/])/i;
-const LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/i;
-const AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/i;
+const DIAGNOSTIC_PATTERN = /\b(?:Error|Exception|AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|NullPointerException|Unhandled|failed|failure|fatal|panic|refused|timeout|timed\s+out|unreachable|unavailable|disconnected|killed|aborted|crashed|terminated|unauthorized)\b/iu;
+const JSON_SEVERITY_PATTERN = /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/iu;
+const NPM_ERROR_PATTERN = /\b(?:npm|pnpm)\s+ERR!/iu;
+const YARN_ERROR_PATTERN = /\byarn\s+error\b/iu;
+const SCANNER_FINDING_PATTERN = /\b(?:CVE-\d{4}-\d{4,7}|GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}|vulnerabilit(?:y|ies)|severity:\s*(?:critical|high|medium)|(?:critical|high)\s+severity)\b/iu;
+const CONTAINER_FAILURE_PATTERN = /\b(?:CrashLoopBackOff|ImagePullBackOff|ErrImagePull|OOMKilled|Back[- ]off restarting failed container|failed to pull image|(?:containerd|runc).*?(?:failed|error|panic|timeout|refused)|(?:failed|error|panic|timeout|refused).*?(?:containerd|runc)|rpc error: code = Unknown desc = failed to resolve reference)\b/iu;
+const INTERNAL_STACK_PATTERN = /(?:node_modules[\\/]|node:internal|internal[\\/]modules|bootstrap_node|[\\/]usr[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]go[\\/]src[\\/]runtime[\\/]|site-packages[\\/]|dist-packages[\\/]|\.venv[\\/]|java\.base[\\/]|jdk\.internal|org\.springframework\.|[\\/]pkg[\\/]mod[\\/]|\.cargo[\\/]registry[\\/])/iu;
+const LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/iu;
+const AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/iu;
 const AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
 function isIgnoredLogLine(line) {
     return IGNORED_LOG_TAG_PATTERN.test(line);
@@ -146,4 +148,34 @@ function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
         score -= constants_js_1.TFIDF_PENALTY * (seenCount - constants_js_1.TFIDF_REPEAT_THRESHOLD + 1);
     }
     return score;
+}
+// ---- CI noise patterns ----
+const TIMESTAMP_ONLY_PATTERN = /^\s*(?:\d{4}[-\/]\d{2}[-\/]\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?\s*)$/u;
+const PROGRESS_SEPARATOR_PATTERN = /^[=\-#]{20,}$/u;
+const PROGRESS_INDICATOR_PATTERN = /(?:(?:Downloading|Extracting|Pulling|Pushing|Fetching|Installing|Building|Receiving|Sending)[^\n]*?\d{1,3}%|\d{1,3}%\s*(?:[|][=#>-]+|(?:\d+\.?\d*\s*(?:[A-Za-z]+(?:\/s)?|ETA|s\b))))/u;
+const PROGRESS_BAR_VISUAL_PATTERN = /[|[]\s*[=#>-]{5,}[>\s]*[|\]]/u;
+const K8S_NORMAL_EVENT_PATTERN = /\b(?:type:\s*'?Normal'?|Normal\s+\d+[smhd])\b/iu;
+const RATE_LIMITED_MESSAGE_PATTERN = /\b(?:(?:message|last message)\s+repeated\s+\d+\s+times?|\[\s*\d+\s*times?\s*\])/iu;
+function isCiNoiseLine(line) {
+    if (TIMESTAMP_ONLY_PATTERN.test(line))
+        return true;
+    if (K8S_NORMAL_EVENT_PATTERN.test(line))
+        return true;
+    if (RATE_LIMITED_MESSAGE_PATTERN.test(line))
+        return true;
+    return false;
+}
+function isProgressBarLine(line) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0)
+        return false;
+    if (/\b(?:Error|error|fail|FAIL|crashed|timeout)\b/u.test(line))
+        return false;
+    if (PROGRESS_SEPARATOR_PATTERN.test(trimmed))
+        return true;
+    if (PROGRESS_INDICATOR_PATTERN.test(line))
+        return true;
+    if (PROGRESS_BAR_VISUAL_PATTERN.test(line))
+        return true;
+    return false;
 }

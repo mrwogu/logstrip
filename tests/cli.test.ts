@@ -450,4 +450,134 @@ describe('runCli', () => {
     expect(code).toBe(0);
     expect(stdout.value()).toBe(`${CLI_VERSION}\n`);
   });
+
+  it('parses --multiline flag', () => {
+    const opts = parseCliOptions(['raw.log', '--multiline', 'python']);
+    expect(opts.multiline).toBe('python');
+  });
+
+  it('parses --severity flag', () => {
+    const opts = parseCliOptions(['raw.log', '--severity', 'error']);
+    expect(opts.severity).toBe('error');
+  });
+
+  it('parses --include flag', () => {
+    const opts = parseCliOptions(['raw.log', '--include', 'ERROR|WARN']);
+    expect(opts.include).toBeInstanceOf(RegExp);
+    expect(opts.include?.source).toBe('ERROR|WARN');
+  });
+
+  it('parses --exclude flag', () => {
+    const opts = parseCliOptions(['raw.log', '--exclude', 'DEBUG|TRACE']);
+    expect(opts.exclude).toBeInstanceOf(RegExp);
+    expect(opts.exclude?.source).toBe('DEBUG|TRACE');
+  });
+
+  it('parses --sample flag', () => {
+    const opts = parseCliOptions(['raw.log', '--sample', '10']);
+    expect(opts.sample).toBe(10);
+  });
+
+  it('parses --max-line-length flag', () => {
+    const opts = parseCliOptions(['raw.log', '--max-line-length', '500']);
+    expect(opts.maxLineLength).toBe(500);
+  });
+
+  it('parses --timeout flag', () => {
+    const opts = parseCliOptions(['raw.log', '--timeout', '30']);
+    expect(opts.timeout).toBe(30000);
+  });
+
+  it('parses --progress flag', () => {
+    const opts = parseCliOptions(['raw.log', '--progress', '-o', 'out.log']);
+    expect(opts.progress).toBe(true);
+  });
+
+  it('rejects invalid --multiline mode', () => {
+    const error = (() => {
+      try { parseCliOptions(['raw.log', '--multiline', 'badmode']); return undefined; }
+      catch (e) { return e; }
+    })();
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).exitCode).toBe(2);
+    expect((error as CliError).message).toContain('Unsupported multiline mode');
+  });
+
+  it('rejects invalid --severity level', () => {
+    const error = (() => {
+      try { parseCliOptions(['raw.log', '--severity', 'verbose']); return undefined; }
+      catch (e) { return e; }
+    })();
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).exitCode).toBe(2);
+    expect((error as CliError).message).toContain('Unsupported severity level');
+  });
+
+  it('rejects invalid --include regex', () => {
+    const error = (() => {
+      try { parseCliOptions(['raw.log', '--include', '[invalid']); return undefined; }
+      catch (e) { return e; }
+    })();
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).exitCode).toBe(2);
+    expect((error as CliError).message).toContain('Invalid --include regex');
+  });
+
+  it('rejects invalid --exclude regex', () => {
+    const error = (() => {
+      try { parseCliOptions(['raw.log', '--exclude', '[invalid']); return undefined; }
+      catch (e) { return e; }
+    })();
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).exitCode).toBe(2);
+    expect((error as CliError).message).toContain('Invalid --exclude regex');
+  });
+
+  it('rejects invalid --sample value', () => {
+    const error = (() => {
+      try { parseCliOptions(['raw.log', '--sample', 'abc']); return undefined; }
+      catch (e) { return e; }
+    })();
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).exitCode).toBe(2);
+    expect((error as CliError).message).toContain('Invalid --sample');
+  });
+
+  it('rejects negative --sample value', () => {
+    const error = (() => {
+      try { parseCliOptions(['raw.log', '--sample', '0']); return undefined; }
+      catch (e) { return e; }
+    })();
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).exitCode).toBe(2);
+  });
+
+  it('rejects invalid --max-line-length value', () => {
+    const error = (() => {
+      try { parseCliOptions(['raw.log', '--max-line-length', '50']); return undefined; }
+      catch (e) { return e; }
+    })();
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).exitCode).toBe(2);
+    expect((error as CliError).message).toContain('Invalid --max-line-length');
+  });
+
+  it('rejects invalid --timeout value', () => {
+    const error = (() => {
+      try { parseCliOptions(['raw.log', '--timeout', '0']); return undefined; }
+      catch (e) { return e; }
+    })();
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).exitCode).toBe(2);
+    expect((error as CliError).message).toContain('Invalid --timeout');
+  });
+
+  it('rejects --progress without a file input', async () => {
+    const { io, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli(['--progress'], io);
+
+    expect(code).toBe(2);
+    expect(stderr.value()).toContain('--progress requires a file input');
+  });
 });

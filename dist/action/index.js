@@ -26736,55 +26736,182 @@ function scoreSourceDiagnosticBoost(line, state) {
   return 0;
 }
 
+// src/core/multiline/multiline-buffer.ts
+var MAX_MULTILINE_GROUP_LINES = 200;
+var MAX_MULTILINE_GROUP_BYTES = 2e5;
+var INDENTED_PATTERN = /^\s+/u;
+function createContinuationContext(mode) {
+  return { mode, groupLineCount: 0, groupByteCount: 0, previousLine: "" };
+}
+function isContinuationLine(line, ctx) {
+  if (ctx.mode === "off") return false;
+  if (ctx.groupLineCount >= MAX_MULTILINE_GROUP_LINES) return false;
+  if (ctx.groupByteCount >= MAX_MULTILINE_GROUP_BYTES) return false;
+  switch (ctx.mode) {
+    case "python":
+      return isCont(line);
+    case "node":
+      return isCont(line);
+    case "java":
+      return isJavaCont(line);
+    case "go":
+      return isGoCont(line);
+    case "rust":
+      return isCont(line);
+    case "auto":
+      return isAutoCont(line, ctx.previousLine);
+    default:
+      return false;
+  }
+}
+function isCont(line) {
+  return line.trim().length > 0 && INDENTED_PATTERN.test(line) && !line.startsWith("    [");
+}
+function isJavaCont(line) {
+  if (line.trim().length === 0) return false;
+  if (/^Caused\s+by:/iu.test(line)) return true;
+  return INDENTED_PATTERN.test(line) && !line.startsWith("    [");
+}
+function isGoCont(line) {
+  if (line.trim().length === 0) return false;
+  if (/^(?:\t|goroutine\s+\d+\s+\[.+\]:|created\s+by\s)/u.test(line)) return true;
+  return /^\t/u.test(line);
+}
+function isAutoCont(line, previousLine) {
+  if (line.trim().length === 0) return false;
+  if (INDENTED_PATTERN.test(line) && !line.startsWith("    [")) return true;
+  if (/^Caused\s+by:/iu.test(line)) return true;
+  if (/^goroutine\s+\d+\s+\[.+\]:/u.test(line)) return true;
+  return false;
+}
+
+// src/core/formats/format-detector.ts
+var LOGFMT_PATTERN = /^\s*\w+=[^\s=]+(?:\s+\w+=[^\s=]+)*\s*$/u;
+var SYSLOG_PATTERN = /^<\d{1,3}>\d?\s/u;
+var JSON_LINE_PATTERN = /^\s*\{.+\}\s*$/u;
+function detectFormat(line) {
+  if (SYSLOG_PATTERN.test(line)) return "syslog";
+  if (JSON_LINE_PATTERN.test(line)) {
+    try {
+      JSON.parse(line);
+      return "json";
+    } catch {
+    }
+  }
+  if (LOGFMT_PATTERN.test(line)) return "logfmt";
+  return "unknown";
+}
+var HTTP_STATUS_CONTEXT_PATTERN = /\b(?:HTTP\s*\/?\d?(?:\.\d+)?\s+|status[=:\s]+|returned\s+|responded\s+with\s+|got\s+|received\s+|with\s+status\s+|code[=:\s]+)\s*(\d{3})\b/giu;
+var HTTP_STATUS_DESC_PATTERN = /\b(\d{3})\s+(?:OK|Created|Accepted|No Content|Moved|Found|Not Modified|Bad Request|Unauthorized|Forbidden|Not Found|Method Not Allowed|Conflict|Gone|Too Many Requests|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout)\b/giu;
+function groupHttpStatusCodes(line) {
+  line = line.replace(HTTP_STATUS_CONTEXT_PATTERN, (match, codeStr) => {
+    const code = parseInt(codeStr, 10);
+    if (code >= 500) return match.replace(codeStr, "[HTTP 5xx]");
+    if (code >= 400) return match.replace(codeStr, "[HTTP 4xx]");
+    return match;
+  });
+  line = line.replace(HTTP_STATUS_DESC_PATTERN, (match, codeStr) => {
+    const code = parseInt(codeStr, 10);
+    if (code >= 500) return match.replace(codeStr, "[HTTP 5xx]");
+    if (code >= 400) return match.replace(codeStr, "[HTTP 4xx]");
+    return match;
+  });
+  return line;
+}
+
 // src/core/sanitize/sanitize-line.ts
-var UUID_PATTERN = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
-var ISO_TIME_PATTERN = /\b\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?)?\b/g;
-var UTC_TIME_PATTERN = /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+(?:GMT|UTC)\b/gi;
-var COMMON_LOG_TIME_PATTERN = /\b\d{1,2}\/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}\b/gi;
-var NGINX_ERROR_TIME_PATTERN = /\b\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\b/g;
+var UUID_PATTERN = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
+var ISO_TIME_PATTERN = /\b\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?)?\b/gu;
+var UTC_TIME_PATTERN = /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+(?:GMT|UTC)\b/giu;
+var COMMON_LOG_TIME_PATTERN = /\b\d{1,2}\/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}\b/giu;
+var NGINX_ERROR_TIME_PATTERN = /\b\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\b/gu;
 var ANSI_ESCAPE_PATTERN = /\u001b\[[0-9;]*m/gu;
-var IPV4_WITH_PORT_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})\b/g;
-var IPV4_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}\b/g;
-var HEX_HASH_PATTERN = /\b(?=[a-f0-9]*\d)(?=[a-f0-9]*[a-f])[a-f0-9]{16,}\b/gi;
-var ALPHANUMERIC_HASH_PATTERN = /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-Za-z0-9]{24,}\b/g;
-var AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/g;
-var AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z]+:[a-z0-9-]+:(\d{12})/g;
+var IPV4_WITH_PORT_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})\b/gu;
+var IPV4_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}\b/gu;
+var GITHUB_TOKEN_PATTERN = /\bgh[opuars]_[A-Za-z0-9]{36,255}\b/gu;
+var JWT_TOKEN_PATTERN = /\beyJ[A-Za-z0-9_-]{16,2000}\.[A-Za-z0-9_-]{16,2000}\.[A-Za-z0-9_-]{16,2000}\b/gu;
+var CONNECTION_STRING_PATTERN = /\b(?:postgres|mysql|mongodb|redis|postgresql|sqlserver|jdbc):\/\/[^:@\s]+:([^@\s]+)@/giu;
+var SLACK_TOKEN_PATTERN = /\bxox[abprs]-\d{10,12}-\d{10,12}-[A-Za-z0-9]{24,}\b/gu;
+var AUTHORIZATION_HEADER_PATTERN = /\bAuthorization\s*:\s*\S+(?:\s+\S+)*/giu;
+var SECRET_FIELD_PATTERN = /\b(?:password|secret|token|api[_-]?key|api[_-]?secret|private[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token|auth[_-]?token|bearer)\s*[:=]\s*\S+/giu;
+var HEX_HASH_PATTERN = /\b(?=[a-f0-9]*\d)(?=[a-f0-9]*[a-f])[a-f0-9]{16,128}\b/giu;
+var ALPHANUMERIC_HASH_PATTERN = /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-Za-z0-9]{24,512}\b/gu;
+var AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/gu;
+var AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
 function sanitizeLine(line) {
-  return line.replace(ANSI_ESCAPE_PATTERN, "").replace(UUID_PATTERN, "[ID]").replace(UTC_TIME_PATTERN, "[TIME]").replace(COMMON_LOG_TIME_PATTERN, "[TIME]").replace(NGINX_ERROR_TIME_PATTERN, "[TIME]").replace(ISO_TIME_PATTERN, "[TIME]").replace(IPV4_WITH_PORT_PATTERN, "[IP]:[PORT]").replace(IPV4_PATTERN, "[IP]").replace(HEX_HASH_PATTERN, "[HASH]").replace(ALPHANUMERIC_HASH_PATTERN, "[HASH]").replace(AWS_ACCESS_KEY_PATTERN, "[REDACTED]").replace(
+  let result = line.replace(ANSI_ESCAPE_PATTERN, "").replace(UUID_PATTERN, "[ID]").replace(UTC_TIME_PATTERN, "[TIME]").replace(COMMON_LOG_TIME_PATTERN, "[TIME]").replace(NGINX_ERROR_TIME_PATTERN, "[TIME]").replace(ISO_TIME_PATTERN, "[TIME]").replace(IPV4_WITH_PORT_PATTERN, "[IP]:[PORT]").replace(IPV4_PATTERN, "[IP]").replace(
+    CONNECTION_STRING_PATTERN,
+    (match, pwd) => match.replace(pwd, "[REDACTED]")
+  ).replace(GITHUB_TOKEN_PATTERN, "[REDACTED]").replace(JWT_TOKEN_PATTERN, "[JWT]").replace(SLACK_TOKEN_PATTERN, "[REDACTED]").replace(AUTHORIZATION_HEADER_PATTERN, "Authorization: [REDACTED]").replace(SECRET_FIELD_PATTERN, (match) => {
+    const sepIdx = match.search(/[:=]\s*/u);
+    const sepEnd = match.slice(sepIdx).match(/^[:=]\s*/u)[0].length;
+    return `${match.slice(0, sepIdx + sepEnd)}[REDACTED]`;
+  }).replace(HEX_HASH_PATTERN, "[HASH]").replace(ALPHANUMERIC_HASH_PATTERN, "[HASH]").replace(AWS_ACCESS_KEY_PATTERN, "[REDACTED]").replace(
     AWS_ARN_ACCOUNT_PATTERN,
     (match, accountId) => match.replace(accountId, "[ACCOUNT]")
   ).replace(/[ \t]+$/u, "");
+  result = groupHttpStatusCodes(result);
+  return result;
+}
+
+// src/core/severity/severity-filter.ts
+var SEVERITY_ORDER = {
+  fatal: 5,
+  error: 4,
+  warn: 3,
+  info: 2,
+  debug: 1,
+  trace: 0
+};
+var SEVERITY_PATTERNS = [
+  { level: "fatal", regex: /\[FATAL\]|"level"\s*:\s*"fatal"|Severity:\s*FATAL|\bFATAL\b/iu },
+  { level: "error", regex: /\[ERROR\]|"level"\s*:\s*"error"|Severity:\s*ERROR|\bERROR\b/iu },
+  { level: "warn", regex: /\[WARN(?:ING)?\]|"level"\s*:\s*"warn(?:ing)?"|Severity:\s*WARN/i },
+  { level: "info", regex: /\[INFO\]|"level"\s*:\s*"info"|\bINFO\b/iu },
+  { level: "debug", regex: /\[DEBUG\]|"level"\s*:\s*"debug"|\bDEBUG\b/iu },
+  { level: "trace", regex: /\[TRACE\]|"level"\s*:\s*"trace"|\bTRACE\b/iu }
+];
+function inferSeverity(line) {
+  for (const { level, regex } of SEVERITY_PATTERNS) {
+    if (regex.test(line)) return level;
+  }
+  return void 0;
+}
+function passesSeverityFilter(line, minLevel) {
+  const lineLevel = inferSeverity(line);
+  if (lineLevel === void 0) return true;
+  return SEVERITY_ORDER[lineLevel] >= SEVERITY_ORDER[minLevel];
 }
 
 // src/core/scoring/relevance-score.ts
-var IGNORED_LOG_TAG_PATTERN = /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/i;
-var IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/i;
+var IGNORED_LOG_TAG_PATTERN = /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
+var IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/iu;
 var STACK_FRAME_PATTERN = /^\s*at\s+.*(?:\(|\s).+:\d+:\d+\)?$/;
 var JAVA_STACK_FRAME_PATTERN = /^\s*at\s+[\w$_.<>/]+\([^)]+:\d+\)$/;
 var PYTHON_STACK_FRAME_PATTERN = /^\s*File\s+"[^"]+",\s+line\s+\d+,\s+in\s+.+$/;
 var GO_STACK_FRAME_PATTERN = /^\s*(?:(?:[\w.-]+\/)+[\w./-]+|[\w.-]+\.\(\*?[\w.]+\)\.[\w.]+|[\w.-]+\.[A-Z]\w*)\(.*\)$/;
 var GO_FILE_FRAME_PATTERN = /^\s*(?:\/[^\s]+|[A-Za-z]:[\\/][^\s]+):\d+(?:\s+\+\S+)?$/;
-var GO_GOROUTINE_PATTERN = /^\s*goroutine\s+\d+\s+\[.+\]:$/i;
+var GO_GOROUTINE_PATTERN = /^\s*goroutine\s+\d+\s+\[.+\]:$/iu;
 var PYTHON_TRACEBACK_PATTERN = /^Traceback \(most recent call last\):$/;
 var STACK_MORE_PATTERN = /^\s*\.\.\. \d+ more$/;
 var GITHUB_ACTIONS_ANNOTATION_PATTERN = /^::(?:error|warning|notice)\b/u;
-var GRADLE_FAILURE_PATTERN = /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/i;
+var GRADLE_FAILURE_PATTERN = /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/iu;
 var MAKE_ERROR_PATTERN = /^make[:\s*]+/u;
 var GO_TEST_FAIL_PATTERN = /---\s*FAIL:/u;
-var SYSTEMD_STATUS_PATTERN = /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/i;
-var CIRCLECI_STEP_PATTERN = /\b(?:Spin Cancelled|Step failed|job was not approved)\b/i;
+var SYSTEMD_STATUS_PATTERN = /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/iu;
+var CIRCLECI_STEP_PATTERN = /\b(?:Spin Cancelled|Step failed|job was not approved)\b/iu;
 var JENKINS_MARKER_PATTERN = /\[(?:Pipeline|Checks|FCMaker)\]/u;
 var AZURE_PIPELINE_PATTERN = /^##vso\[task\.(?:LogIssue|Complete)\b/u;
 var TEAMCITY_MARKER_PATTERN = /^##teamcity\[(?:buildProblem|compilationFinished|message)\b/u;
-var DIAGNOSTIC_PATTERN = /\b(?:Error|Exception|AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|NullPointerException|Unhandled|failed|failure|fatal|panic|refused|timeout|timed\s+out|unreachable|unavailable|disconnected|killed|aborted|crashed|terminated|unauthorized)\b/i;
-var JSON_SEVERITY_PATTERN = /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/i;
-var NPM_ERROR_PATTERN = /\b(?:npm|pnpm)\s+ERR!/i;
-var YARN_ERROR_PATTERN = /\byarn\s+error\b/i;
-var SCANNER_FINDING_PATTERN = /\b(?:CVE-\d{4}-\d{4,7}|GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}|vulnerabilit(?:y|ies)|severity:\s*(?:critical|high|medium)|(?:critical|high)\s+severity)\b/i;
-var CONTAINER_FAILURE_PATTERN = /\b(?:CrashLoopBackOff|ImagePullBackOff|ErrImagePull|OOMKilled|Back[- ]off restarting failed container|failed to pull image|(?:containerd|runc).*?(?:failed|error|panic|timeout|refused)|(?:failed|error|panic|timeout|refused).*?(?:containerd|runc)|rpc error: code = Unknown desc = failed to resolve reference)\b/i;
-var INTERNAL_STACK_PATTERN = /(?:node_modules[\\/]|node:internal|internal[\\/]modules|bootstrap_node|[\\/]usr[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]go[\\/]src[\\/]runtime[\\/]|site-packages[\\/]|dist-packages[\\/]|\.venv[\\/]|java\.base[\\/]|jdk\.internal|org\.springframework\.|[\\/]pkg[\\/]mod[\\/]|\.cargo[\\/]registry[\\/])/i;
-var LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/i;
-var AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/i;
+var DIAGNOSTIC_PATTERN = /\b(?:Error|Exception|AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|NullPointerException|Unhandled|failed|failure|fatal|panic|refused|timeout|timed\s+out|unreachable|unavailable|disconnected|killed|aborted|crashed|terminated|unauthorized)\b/iu;
+var JSON_SEVERITY_PATTERN = /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/iu;
+var NPM_ERROR_PATTERN = /\b(?:npm|pnpm)\s+ERR!/iu;
+var YARN_ERROR_PATTERN = /\byarn\s+error\b/iu;
+var SCANNER_FINDING_PATTERN = /\b(?:CVE-\d{4}-\d{4,7}|GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}|vulnerabilit(?:y|ies)|severity:\s*(?:critical|high|medium)|(?:critical|high)\s+severity)\b/iu;
+var CONTAINER_FAILURE_PATTERN = /\b(?:CrashLoopBackOff|ImagePullBackOff|ErrImagePull|OOMKilled|Back[- ]off restarting failed container|failed to pull image|(?:containerd|runc).*?(?:failed|error|panic|timeout|refused)|(?:failed|error|panic|timeout|refused).*?(?:containerd|runc)|rpc error: code = Unknown desc = failed to resolve reference)\b/iu;
+var INTERNAL_STACK_PATTERN = /(?:node_modules[\\/]|node:internal|internal[\\/]modules|bootstrap_node|[\\/]usr[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]go[\\/]src[\\/]runtime[\\/]|site-packages[\\/]|dist-packages[\\/]|\.venv[\\/]|java\.base[\\/]|jdk\.internal|org\.springframework\.|[\\/]pkg[\\/]mod[\\/]|\.cargo[\\/]registry[\\/])/iu;
+var LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/iu;
+var AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/iu;
 var AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
 function isIgnoredLogLine(line) {
   return IGNORED_LOG_TAG_PATTERN.test(line);
@@ -26832,8 +26959,55 @@ function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
   }
   return score;
 }
+var TIMESTAMP_ONLY_PATTERN = /^\s*(?:\d{4}[-\/]\d{2}[-\/]\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?\s*)$/u;
+var PROGRESS_SEPARATOR_PATTERN = /^[=\-#]{20,}$/u;
+var PROGRESS_INDICATOR_PATTERN = /(?:(?:Downloading|Extracting|Pulling|Pushing|Fetching|Installing|Building|Receiving|Sending)[^\n]*?\d{1,3}%|\d{1,3}%\s*(?:[|][=#>-]+|(?:\d+\.?\d*\s*(?:[A-Za-z]+(?:\/s)?|ETA|s\b))))/u;
+var PROGRESS_BAR_VISUAL_PATTERN = /[|[]\s*[=#>-]{5,}[>\s]*[|\]]/u;
+var K8S_NORMAL_EVENT_PATTERN = /\b(?:type:\s*'?Normal'?|Normal\s+\d+[smhd])\b/iu;
+var RATE_LIMITED_MESSAGE_PATTERN = /\b(?:(?:message|last message)\s+repeated\s+\d+\s+times?|\[\s*\d+\s*times?\s*\])/iu;
+function isCiNoiseLine(line) {
+  if (TIMESTAMP_ONLY_PATTERN.test(line)) return true;
+  if (K8S_NORMAL_EVENT_PATTERN.test(line)) return true;
+  if (RATE_LIMITED_MESSAGE_PATTERN.test(line)) return true;
+  return false;
+}
+function isProgressBarLine(line) {
+  const trimmed = line.trim();
+  if (trimmed.length === 0) return false;
+  if (/\b(?:Error|error|fail|FAIL|crashed|timeout)\b/u.test(line)) return false;
+  if (PROGRESS_SEPARATOR_PATTERN.test(trimmed)) return true;
+  if (PROGRESS_INDICATOR_PATTERN.test(line)) return true;
+  if (PROGRESS_BAR_VISUAL_PATTERN.test(line)) return true;
+  return false;
+}
 
 // src/core/logstrip-parser.ts
+async function* readLogicalLines(lines, multilineMode) {
+  if (multilineMode === "off") {
+    yield* lines;
+    return;
+  }
+  const ctx = createContinuationContext(multilineMode);
+  let buffer = [];
+  for await (const line of lines) {
+    if (buffer.length > 0 && isContinuationLine(line, ctx)) {
+      buffer.push(line);
+      ctx.groupLineCount += 1;
+      ctx.groupByteCount += Buffer.byteLength(line, "utf8");
+      continue;
+    }
+    if (buffer.length > 0) {
+      yield buffer.join("\n");
+    }
+    ctx.previousLine = line;
+    ctx.groupLineCount = 1;
+    ctx.groupByteCount = Buffer.byteLength(line, "utf8");
+    buffer = [line];
+  }
+  if (buffer.length > 0) {
+    yield buffer.join("\n");
+  }
+}
 function buildMergedConfig(options = {}) {
   const config = loadLogStripConfig(options.configPath);
   const mergedSources = [
@@ -26855,6 +27029,12 @@ async function processLogStream(input, output, options = {}) {
   const requestedAggressiveness = parseAggressiveness(options.aggressiveness);
   const dynamicAggressiveness = createDynamicAggressivenessState(requestedAggressiveness);
   const merged = buildMergedConfig(options);
+  const multilineMode = options.multiline ?? "off";
+  const severityLevel = options.severity;
+  const maxLineLength = options.maxLineLength ?? 1e5;
+  const includePattern = options.include;
+  const excludePattern = options.exclude;
+  const sampleSize = options.sampleSize;
   const customDiagnosticRegexes = merged.diagnosticPatterns.map(
     (p) => new RegExp(p, "u")
   );
@@ -26872,9 +27052,12 @@ async function processLogStream(input, output, options = {}) {
   const seenLines = /* @__PURE__ */ new Map();
   const contextBefore = [];
   let afterContextRemaining = 0;
-  const lines = (0, import_node_readline.createInterface)({ input, crlfDelay: Infinity });
+  const rawLines = (0, import_node_readline.createInterface)({ input, crlfDelay: Infinity });
+  const lines = readLogicalLines(rawLines, multilineMode);
   let previousGroup;
   let hidingInternalStack = false;
+  let detectedFormat;
+  let outputLineCount = 0;
   const recordDecision = (decision) => {
     recordLineDecision(dynamicAggressiveness, decision);
   };
@@ -26886,6 +27069,11 @@ async function processLogStream(input, output, options = {}) {
     if (previousGroup.count > 1) {
       stats.duplicateLines += previousGroup.count - 1;
     }
+    if (sampleSize !== void 0 && outputLineCount >= sampleSize) {
+      previousGroup = void 0;
+      return;
+    }
+    outputLineCount += 1;
     await writeOutputLine(output, line, stats);
     previousGroup = void 0;
   };
@@ -26906,13 +27094,18 @@ async function processLogStream(input, output, options = {}) {
   };
   for await (const rawLine of lines) {
     const line = String(rawLine);
+    const physicalLineCount = line.split("\n").length;
     collectDetectedSourceHits(line, detectedSourceState);
-    stats.inputLines += 1;
+    stats.inputLines += physicalLineCount;
     stats.inputWords += countWords(line);
     stats.inputBytes += Buffer.byteLength(`${line}
 `, "utf8");
+    if (detectedFormat === void 0 && line.trim().length > 0) {
+      const fmt = detectFormat(line);
+      if (fmt !== "unknown") detectedFormat = fmt;
+    }
     if (line.trim().length === 0) {
-      stats.droppedLines += 1;
+      stats.droppedLines += physicalLineCount;
       recordDecision({
         kept: false,
         dropped: true,
@@ -26922,7 +27115,40 @@ async function processLogStream(input, output, options = {}) {
       continue;
     }
     if (customIgnoreRegexes.some((r) => r.test(line))) {
-      stats.droppedLines += 1;
+      stats.droppedLines += physicalLineCount;
+      hidingInternalStack = false;
+      recordDecision({
+        kept: false,
+        dropped: true,
+        hardKeep: false,
+        repeated: false
+      });
+      continue;
+    }
+    if (severityLevel !== void 0 && !passesSeverityFilter(line, severityLevel)) {
+      stats.droppedLines += physicalLineCount;
+      hidingInternalStack = false;
+      recordDecision({
+        kept: false,
+        dropped: true,
+        hardKeep: false,
+        repeated: false
+      });
+      continue;
+    }
+    if (isCiNoiseLine(line)) {
+      stats.droppedLines += physicalLineCount;
+      hidingInternalStack = false;
+      recordDecision({
+        kept: false,
+        dropped: true,
+        hardKeep: false,
+        repeated: false
+      });
+      continue;
+    }
+    if (isProgressBarLine(line)) {
+      stats.droppedLines += physicalLineCount;
       hidingInternalStack = false;
       recordDecision({
         kept: false,
@@ -26933,7 +27159,7 @@ async function processLogStream(input, output, options = {}) {
       continue;
     }
     if (isIgnoredLogLine(line)) {
-      stats.droppedLines += 1;
+      stats.droppedLines += physicalLineCount;
       hidingInternalStack = false;
       recordDecision({
         kept: false,
@@ -26949,7 +27175,7 @@ async function processLogStream(input, output, options = {}) {
     }
     const isCustomInternalStack = customInternalStackRegexes.length > 0 && customInternalStackRegexes.some((r) => r.test(sanitized));
     if (isInternalStackTraceLine(sanitized) || isCustomInternalStack) {
-      stats.hiddenInternalStackLines += 1;
+      stats.hiddenInternalStackLines += physicalLineCount;
       if (!hidingInternalStack) {
         await flushContextBefore();
         await emitCandidate(INTERNAL_STACK_MARKER);
@@ -27018,7 +27244,7 @@ async function processLogStream(input, output, options = {}) {
         repeated: seenCount > 1
       });
     } else {
-      stats.droppedLines += 1;
+      stats.droppedLines += physicalLineCount;
       afterContextRemaining = 0;
       recordDecision({
         kept: false,
@@ -27041,7 +27267,8 @@ async function processLogStream(input, output, options = {}) {
     outputTokens,
     savedTokens,
     savingsPercent,
-    detectedSources: rankDetectedSources(detectedSourceState)
+    detectedSources: rankDetectedSources(detectedSourceState),
+    detectedFormat
   };
 }
 async function processLogFile(inputPath, outputPath, options = {}) {

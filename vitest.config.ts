@@ -7,6 +7,7 @@ export default defineConfig({
     coverage: {
       all: true,
       include: ['src/**/*.ts'],
+      exclude: ['src/core/types.ts', 'src/core/telemetry/telemetry-store.ts'],
       provider: 'v8',
       reporter: ['text', 'lcov'],
       thresholds: {

@@ -3,11 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LOG_SOURCE_SIGNATURES = exports.KNOWN_LOG_SOURCES = exports.shouldKeepLine = exports.scoreLineRelevance = exports.looksLikeDiagnosticLine = exports.isInternalStackTraceLine = exports.estimateTokens = exports.sanitizeLine = exports.detectLogSources = exports.createRepeatSignature = exports.TFIDF_REPEAT_THRESHOLD = exports.TFIDF_PENALTY = exports.TFIDF_MAP_LIMIT = exports.SCORE_KEEP_THRESHOLD = exports.MAX_REPEAT_DELTA_VALUES = exports.INTERNAL_STACK_MARKER = exports.CONTEXT_WINDOW_BEFORE = exports.CONTEXT_WINDOW_AFTER = exports.parseAggressiveness = void 0;
+exports.LOG_SOURCE_SIGNATURES = exports.KNOWN_LOG_SOURCES = exports.shouldKeepLine = exports.scoreLineRelevance = exports.looksLikeDiagnosticLine = exports.isProgressBarLine = exports.isCiNoiseLine = exports.isInternalStackTraceLine = exports.estimateTokens = exports.sanitizeLine = exports.isContinuationLine = exports.detectLogSources = exports.createRepeatSignature = exports.TFIDF_REPEAT_THRESHOLD = exports.TFIDF_PENALTY = exports.TFIDF_MAP_LIMIT = exports.SCORE_KEEP_THRESHOLD = exports.MAX_REPEAT_DELTA_VALUES = exports.INTERNAL_STACK_MARKER = exports.CONTEXT_WINDOW_BEFORE = exports.CONTEXT_WINDOW_AFTER = exports.parseAggressiveness = exports.detectFormat = exports.passesSeverityFilter = exports.parseSeverityLevel = exports.inferSeverity = void 0;
 exports.buildMergedConfig = buildMergedConfig;
 exports.processLogStream = processLogStream;
 exports.processLogFile = processLogFile;
 exports.pathsReferToSameFile = pathsReferToSameFile;
+exports.processLogStreamWithTimeout = processLogStreamWithTimeout;
 const node_events_1 = require("node:events");
 const node_fs_1 = require("node:fs");
 const node_path_1 = __importDefault(require("node:path"));
@@ -19,9 +20,18 @@ const dynamic_js_1 = require("./aggressiveness/dynamic.js");
 const constants_js_1 = require("./constants.js");
 const repeat_grouper_js_1 = require("./dedupe/repeat-grouper.js");
 const source_detector_js_1 = require("./detection/source-detector.js");
+const multiline_buffer_js_1 = require("./multiline/multiline-buffer.js");
+const format_detector_js_1 = require("./formats/format-detector.js");
 const sanitize_line_js_1 = require("./sanitize/sanitize-line.js");
+const severity_filter_js_1 = require("./severity/severity-filter.js");
 const relevance_score_js_1 = require("./scoring/relevance-score.js");
 const catalog_js_1 = require("./sources/catalog.js");
+var severity_filter_js_2 = require("./severity/severity-filter.js");
+Object.defineProperty(exports, "inferSeverity", { enumerable: true, get: function () { return severity_filter_js_2.inferSeverity; } });
+Object.defineProperty(exports, "parseSeverityLevel", { enumerable: true, get: function () { return severity_filter_js_2.parseSeverityLevel; } });
+Object.defineProperty(exports, "passesSeverityFilter", { enumerable: true, get: function () { return severity_filter_js_2.passesSeverityFilter; } });
+var format_detector_js_2 = require("./formats/format-detector.js");
+Object.defineProperty(exports, "detectFormat", { enumerable: true, get: function () { return format_detector_js_2.detectFormat; } });
 var levels_js_2 = require("./aggressiveness/levels.js");
 Object.defineProperty(exports, "parseAggressiveness", { enumerable: true, get: function () { return levels_js_2.parseAggressiveness; } });
 var constants_js_2 = require("./constants.js");
@@ -37,17 +47,48 @@ var repeat_grouper_js_2 = require("./dedupe/repeat-grouper.js");
 Object.defineProperty(exports, "createRepeatSignature", { enumerable: true, get: function () { return repeat_grouper_js_2.createRepeatSignature; } });
 var source_detector_js_2 = require("./detection/source-detector.js");
 Object.defineProperty(exports, "detectLogSources", { enumerable: true, get: function () { return source_detector_js_2.detectLogSources; } });
+var multiline_buffer_js_2 = require("./multiline/multiline-buffer.js");
+Object.defineProperty(exports, "isContinuationLine", { enumerable: true, get: function () { return multiline_buffer_js_2.isContinuationLine; } });
 var sanitize_line_js_2 = require("./sanitize/sanitize-line.js");
 Object.defineProperty(exports, "sanitizeLine", { enumerable: true, get: function () { return sanitize_line_js_2.sanitizeLine; } });
 var relevance_score_js_2 = require("./scoring/relevance-score.js");
 Object.defineProperty(exports, "estimateTokens", { enumerable: true, get: function () { return relevance_score_js_2.estimateTokens; } });
 Object.defineProperty(exports, "isInternalStackTraceLine", { enumerable: true, get: function () { return relevance_score_js_2.isInternalStackTraceLine; } });
+Object.defineProperty(exports, "isCiNoiseLine", { enumerable: true, get: function () { return relevance_score_js_2.isCiNoiseLine; } });
+Object.defineProperty(exports, "isProgressBarLine", { enumerable: true, get: function () { return relevance_score_js_2.isProgressBarLine; } });
 Object.defineProperty(exports, "looksLikeDiagnosticLine", { enumerable: true, get: function () { return relevance_score_js_2.looksLikeDiagnosticLine; } });
 Object.defineProperty(exports, "scoreLineRelevance", { enumerable: true, get: function () { return relevance_score_js_2.scoreLineRelevance; } });
 Object.defineProperty(exports, "shouldKeepLine", { enumerable: true, get: function () { return relevance_score_js_2.shouldKeepLine; } });
 var catalog_js_2 = require("./sources/catalog.js");
 Object.defineProperty(exports, "KNOWN_LOG_SOURCES", { enumerable: true, get: function () { return catalog_js_2.KNOWN_LOG_SOURCES; } });
 Object.defineProperty(exports, "LOG_SOURCE_SIGNATURES", { enumerable: true, get: function () { return catalog_js_2.LOG_SOURCE_SIGNATURES; } });
+// ---- Multiline-aware line reader ----
+async function* readLogicalLines(lines, multilineMode) {
+    if (multilineMode === 'off') {
+        yield* lines;
+        return;
+    }
+    const ctx = (0, multiline_buffer_js_1.createContinuationContext)(multilineMode);
+    let buffer = [];
+    for await (const line of lines) {
+        if (buffer.length > 0 && (0, multiline_buffer_js_1.isContinuationLine)(line, ctx)) {
+            buffer.push(line);
+            ctx.groupLineCount += 1;
+            ctx.groupByteCount += Buffer.byteLength(line, 'utf8');
+            continue;
+        }
+        if (buffer.length > 0) {
+            yield buffer.join('\n');
+        }
+        ctx.previousLine = line;
+        ctx.groupLineCount = 1;
+        ctx.groupByteCount = Buffer.byteLength(line, 'utf8');
+        buffer = [line];
+    }
+    if (buffer.length > 0) {
+        yield buffer.join('\n');
+    }
+}
 function buildMergedConfig(options = {}) {
     const config = (0, logstrip_config_js_1.loadLogStripConfig)(options.configPath);
     const mergedSources = [
@@ -70,6 +111,12 @@ async function processLogStream(input, output, options = {}) {
     const requestedAggressiveness = (0, levels_js_1.parseAggressiveness)(options.aggressiveness);
     const dynamicAggressiveness = (0, dynamic_js_1.createDynamicAggressivenessState)(requestedAggressiveness);
     const merged = buildMergedConfig(options);
+    const multilineMode = options.multiline ?? 'off';
+    const severityLevel = options.severity;
+    const maxLineLength = options.maxLineLength ?? 100_000;
+    const includePattern = options.include;
+    const excludePattern = options.exclude;
+    const sampleSize = options.sampleSize;
     // Compile custom patterns once per stream
     const customDiagnosticRegexes = merged.diagnosticPatterns.map((p) => new RegExp(p, 'u'));
     const customIgnoreRegexes = merged.ignorePatterns.map((p) => new RegExp(p, 'u'));
@@ -82,9 +129,12 @@ async function processLogStream(input, output, options = {}) {
     // Context window: ring-buffer of soft-scored lines pending near-error promotion
     const contextBefore = [];
     let afterContextRemaining = 0;
-    const lines = (0, node_readline_1.createInterface)({ input, crlfDelay: Infinity });
+    const rawLines = (0, node_readline_1.createInterface)({ input, crlfDelay: Infinity });
+    const lines = readLogicalLines(rawLines, multilineMode);
     let previousGroup;
     let hidingInternalStack = false;
+    let detectedFormat;
+    let outputLineCount = 0;
     const recordDecision = (decision) => {
         (0, dynamic_js_1.recordLineDecision)(dynamicAggressiveness, decision);
     };
@@ -98,6 +148,11 @@ async function processLogStream(input, output, options = {}) {
         if (previousGroup.count > 1) {
             stats.duplicateLines += previousGroup.count - 1;
         }
+        if (sampleSize !== undefined && outputLineCount >= sampleSize) {
+            previousGroup = undefined;
+            return;
+        }
+        outputLineCount += 1;
         await writeOutputLine(output, line, stats);
         previousGroup = undefined;
     };
@@ -119,13 +174,19 @@ async function processLogStream(input, output, options = {}) {
     };
     for await (const rawLine of lines) {
         const line = String(rawLine);
+        const physicalLineCount = line.split('\n').length;
         (0, source_detector_js_1.collectDetectedSourceHits)(line, detectedSourceState);
-        stats.inputLines += 1;
+        stats.inputLines += physicalLineCount;
         stats.inputWords += countWords(line);
         stats.inputBytes += Buffer.byteLength(`${line}\n`, 'utf8');
+        if (detectedFormat === undefined && line.trim().length > 0) {
+            const fmt = (0, format_detector_js_1.detectFormat)(line);
+            if (fmt !== 'unknown')
+                detectedFormat = fmt;
+        }
         // Empty lines always dropped; don't disturb context state
         if (line.trim().length === 0) {
-            stats.droppedLines += 1;
+            stats.droppedLines += physicalLineCount;
             recordDecision({
                 kept: false,
                 dropped: true,
@@ -136,7 +197,7 @@ async function processLogStream(input, output, options = {}) {
         }
         // Custom ignore patterns (drop matching lines early)
         if (customIgnoreRegexes.some((r) => r.test(line))) {
-            stats.droppedLines += 1;
+            stats.droppedLines += physicalLineCount;
             hidingInternalStack = false;
             recordDecision({
                 kept: false,
@@ -146,11 +207,38 @@ async function processLogStream(input, output, options = {}) {
             });
             continue;
         }
+        // Severity filter (Phase 1.4): drop lines below threshold
+        if (severityLevel !== undefined && !(0, severity_filter_js_1.passesSeverityFilter)(line, severityLevel)) {
+            stats.droppedLines += physicalLineCount;
+            hidingInternalStack = false;
+            recordDecision({
+                kept: false, dropped: true, hardKeep: false, repeated: false,
+            });
+            continue;
+        }
+        // CI noise: timestamp-only, K8s Normal, rate-limited
+        if ((0, relevance_score_js_1.isCiNoiseLine)(line)) {
+            stats.droppedLines += physicalLineCount;
+            hidingInternalStack = false;
+            recordDecision({
+                kept: false, dropped: true, hardKeep: false, repeated: false,
+            });
+            continue;
+        }
+        // CI noise: progress bars
+        if ((0, relevance_score_js_1.isProgressBarLine)(line)) {
+            stats.droppedLines += physicalLineCount;
+            hidingInternalStack = false;
+            recordDecision({
+                kept: false, dropped: true, hardKeep: false, repeated: false,
+            });
+            continue;
+        }
         // Noise tags (INFO/DEBUG/TRACE/VERBOSE) are silently dropped without
         // disturbing afterContextRemaining so that sparse INFO lines between
         // errors do not close the context window prematurely.
         if ((0, relevance_score_js_1.isIgnoredLogLine)(line)) {
-            stats.droppedLines += 1;
+            stats.droppedLines += physicalLineCount;
             hidingInternalStack = false;
             recordDecision({
                 kept: false,
@@ -169,7 +257,7 @@ async function processLogStream(input, output, options = {}) {
         const isCustomInternalStack = customInternalStackRegexes.length > 0 &&
             customInternalStackRegexes.some((r) => r.test(sanitized));
         if ((0, relevance_score_js_1.isInternalStackTraceLine)(sanitized) || isCustomInternalStack) {
-            stats.hiddenInternalStackLines += 1;
+            stats.hiddenInternalStackLines += physicalLineCount;
             if (!hidingInternalStack) {
                 await flushContextBefore();
                 await emitCandidate(constants_js_1.INTERNAL_STACK_MARKER);
@@ -244,7 +332,7 @@ async function processLogStream(input, output, options = {}) {
         }
         else {
             // Hard drop (score < 0): negative TF-IDF or aggressive WARN suppression
-            stats.droppedLines += 1;
+            stats.droppedLines += physicalLineCount;
             afterContextRemaining = 0;
             recordDecision({
                 kept: false,
@@ -269,6 +357,7 @@ async function processLogStream(input, output, options = {}) {
         savedTokens,
         savingsPercent,
         detectedSources: (0, source_detector_js_1.rankDetectedSources)(detectedSourceState),
+        detectedFormat,
     };
 }
 async function processLogFile(inputPath, outputPath, options = {}) {
@@ -316,5 +405,19 @@ async function writeOutputLine(output, line, stats) {
     stats.outputBytes += Buffer.byteLength(rendered, 'utf8');
     if (!output.write(rendered)) {
         await (0, node_events_1.once)(output, 'drain');
+    }
+}
+// ---- Timeout wrapper ----
+async function processLogStreamWithTimeout(input, output, options = {}, timeoutMs) {
+    if (timeoutMs === undefined)
+        return processLogStream(input, output, options);
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Processing timed out')), timeoutMs));
+    try {
+        return await Promise.race([processLogStream(input, output, options), timeoutPromise]);
+    }
+    catch (error) {
+        if (error instanceof Error && error.message === 'Processing timed out')
+            return { stats: createEmptyStats(), inputTokens: 0, outputTokens: 0, savedTokens: 0, savingsPercent: 0, timedOut: true };
+        throw error;
     }
 }

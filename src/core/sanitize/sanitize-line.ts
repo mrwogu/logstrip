@@ -32,6 +32,10 @@ const CONNECTION_STRING_PATTERN =
 const SLACK_TOKEN_PATTERN =
   /\bxox[abprs]-\d{10,12}-\d{10,12}-[A-Za-z0-9]{24,}\b/gu;
 
+// Authorization header (handles "Authorization: Bearer <value>" and similar)
+const AUTHORIZATION_HEADER_PATTERN =
+  /\bAuthorization\s*:\s*\S+(?:\s+\S+)*/giu;
+
 // Generic secret field values in key=value or key: value format
 const SECRET_FIELD_PATTERN =
   /\b(?:password|secret|token|api[_-]?key|api[_-]?secret|private[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token|auth[_-]?token|bearer)\s*[:=]\s*\S+/giu;
@@ -42,7 +46,7 @@ const HEX_HASH_PATTERN = /\b(?=[a-f0-9]*\d)(?=[a-f0-9]*[a-f])[a-f0-9]{16,128}\b/
 const ALPHANUMERIC_HASH_PATTERN =
   /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-Za-z0-9]{24,512}\b/gu;
 const AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/gu;
-const AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z]+:[a-z0-9-]+:(\d{12})/gu;
+const AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
 
 export function sanitizeLine(line: string): string {
   let result = line
@@ -61,10 +65,10 @@ export function sanitizeLine(line: string): string {
     .replace(GITHUB_TOKEN_PATTERN, '[REDACTED]')
     .replace(JWT_TOKEN_PATTERN, '[JWT]')
     .replace(SLACK_TOKEN_PATTERN, '[REDACTED]')
+    .replace(AUTHORIZATION_HEADER_PATTERN, 'Authorization: [REDACTED]')
     .replace(SECRET_FIELD_PATTERN, (match) => {
       const sepIdx = match.search(/[:=]\s*/u);
-      if (sepIdx < 0) return match;
-      const sepEnd = match.slice(sepIdx).match(/^[:=]\s*/u)?.[0].length ?? 1;
+      const sepEnd = match.slice(sepIdx).match(/^[:=]\s*/u)![0].length;
       return `${match.slice(0, sepIdx + sepEnd)}[REDACTED]`;
     })
     .replace(HEX_HASH_PATTERN, '[HASH]')
