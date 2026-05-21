@@ -34,7 +34,7 @@
 [ERROR] inngest function Error: InngestFunctionError: step "validate-payment" failed - timeout
     at inngest/lib/step.ts:42 in invoke
     at inngest/lib/function.ts:88 in execute
-[ERROR] trigger.dev job Error: TriggerDevError: job "send-notification" failed - API returned 503
+[ERROR] trigger.dev job Error: TriggerDevError: job "send-notification" failed - API returned [HTTP 5xx]
     at triggerdev/lib/job.ts:42 in run
     at trigger.dev/lib/runner.ts:88 in process
 [ERROR] kubecost api Error: KubecostPricingError: cannot retrieve spot pricing for us-east-1 from AWS

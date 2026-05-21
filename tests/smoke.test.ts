@@ -224,7 +224,7 @@ const cases: readonly SmokeCase[] = [
     mustContain: [
       'unable to resolve dependency tree',
       'Could not resolve dependency',
-      'error An unexpected error occurred: "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz: Request failed \\"404 Not Found\\""',
+      'error An unexpected error occurred: "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz: Request failed \\"[HTTP 4xx] Not Found\\""',
       '[pipeline] [ERROR] Step failed',
     ],
     mustNotContain: ['[INFO]', '[DEBUG]'],
@@ -298,7 +298,7 @@ const cases: readonly SmokeCase[] = [
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
-      '[ERROR] tomcat HTTP Status 500 - Internal Server Error',
+      '[ERROR] tomcat HTTP Status [HTTP 5xx] - Internal Server Error',
       '[ERROR] jetty.server IOException: Cannot read request body',
       '[ERROR] wildfly Deployment failed: WFLYCTL0199',
       '[ERROR] micronaut startup Error: No bean of type [CheckoutService] exists',

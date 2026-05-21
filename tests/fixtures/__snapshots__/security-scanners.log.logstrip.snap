@@ -49,7 +49,7 @@ npm audit report
   Severity: ERROR
 [ERROR] gitleaks: secret detected in .env line 42
   Rule: AWS Access Key ID
-  Secret: AKIA5f8a3b2c1d0e9f7a
+  Secret: [REDACTED]
   File: .env
   Line: 42
 [ERROR] High severity: Detected a hardcoded secret 'password123'. Use environment variables instead.

@@ -8,7 +8,6 @@ npm ERR! Could not resolve dependency: peer react@"^19.0.0" from @company/paymen
 #12 18.44     at emitFilesAndReportErrors (/workspace/node_modules/typescript/lib/tsc.js:120458:21)
 #12 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 2
 registry.example.com/checkout:2.4.1 (alpine 3.19)
-=============================================
 Total: 2 (HIGH: 1, CRITICAL: 1)
 CVE-2026-12345  openssl  CRITICAL  Fixed Version: 3.0.15-r2
 GHSA-ab12-cd34-ef56  express  HIGH  Fixed Version: 4.19.3

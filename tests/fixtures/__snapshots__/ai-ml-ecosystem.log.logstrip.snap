@@ -27,7 +27,7 @@
 [ERROR] langchain agent Error: OutputParserError: Could not parse LLM output
     at langchain/output_parsers/__init__.py:42 in parse
     at langchain/chains/llm.py:88 in _call
-[ERROR] llamaindex Error: ValueError: Embedding dimension mismatch: expected 1536, got 768
+[ERROR] llamaindex Error: ValueError: Embedding dimension mismatch: expected 1536, got [HTTP 5xx]
     at llamaindex/indices/vector_store/base.py:42 in _build_index_from_nodes
     at llamaindex/storage/vector_store.py:88 in add
 [ERROR] stable diffusion Error: RuntimeError: Latent dimension mismatch

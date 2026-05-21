@@ -7,7 +7,7 @@
 [ERROR] apache solr Error: SolrException: Error opening new searcher - too many open files
     at solrconfig/solr/core/src/java/org/apache/solr/core/SolrCore.java:42 in openSearcher
     at solrconfig/solr/core/src/java/org/apache/solr/update/DirectUpdateHandler2.java:88 in commit
-[ERROR] algolia index Error: AlgoliaAPIError: 429 Too many requests - quota exceeded
+[ERROR] algolia index Error: AlgoliaAPIError: [HTTP 4xx] Too many requests - quota exceeded
     at algolia/lib/src/index.py:42 in save_objects
     at algolia/lib/src/client.py:88 in request
 [ERROR] posthog capture Error: QueueFullError: event buffer overflow - 12000 events dropped
@@ -16,7 +16,7 @@
 [ERROR] amplitude Error: InvalidAPIKeyError: key [HASH] not recognized
     at amplitude/lib/client.py:42 in identify
     at amplitude/lib/transport.py:88 in request
-[ERROR] mixpanel track Error: MixpanelServerError: 503 Service Unavailable
+[ERROR] mixpanel track Error: MixpanelServerError: [HTTP 5xx] Service Unavailable
     at mixpanel/lib/mixpanel.py:42 in track
     at mixpanel/lib/consumer.py:88 in send
 [ERROR] heap analytics Error: heap.io connection timeout after 30s to [IP]

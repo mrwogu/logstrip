@@ -1,4 +1,4 @@
-[ERROR] tomcat HTTP Status 500 - Internal Server Error
+[ERROR] tomcat HTTP Status [HTTP 5xx] - Internal Server Error
     at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:118)
     at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:42)
     at org.apache.coyote.http11.Http11Processor.process(Http11Processor.java:88)

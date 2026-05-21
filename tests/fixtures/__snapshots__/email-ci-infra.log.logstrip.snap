@@ -7,7 +7,7 @@
 [ERROR] mailchimp Error: CampaignError: template rendering failed - merge tag *|FNAME|* not found
     at mailchimp/lib/campaigns.js:42 in render
     at mailchimp/lib/templates.js:88 in parse
-[ERROR] brevo Error: SendinblueAPIError: 403 Forbidden - sender address not verified
+[ERROR] brevo Error: SendinblueAPIError: [HTTP 4xx] Forbidden - sender address not verified
     at sendinblue/lib/api.js:42 in sendTransacEmail
     at sendinblue/lib/client.js:88 in request
 [ERROR] postmark Error: PostmarkError: InactiveRecipient - bounce detected for user@example.com

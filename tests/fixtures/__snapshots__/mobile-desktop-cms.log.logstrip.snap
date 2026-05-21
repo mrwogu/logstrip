@@ -45,7 +45,7 @@
 [ERROR] apache solr Error: SolrException: Error opening new searcher - too many open files
     at solrconfig/solr/core/src/java/org/apache/solr/core/SolrCore.java:42 in openSearcher
     at solrconfig/solr/core/src/java/org/apache/solr/update/DirectUpdateHandler2.java:88 in commit
-[ERROR] algolia index Error: AlgoliaAPIError: 429 Too many requests - quota exceeded
+[ERROR] algolia index Error: AlgoliaAPIError: [HTTP 4xx] Too many requests - quota exceeded
     at algolia/lib/src/index.py:42 in save_objects
     at algolia/lib/src/client.py:88 in request
 [x2] [ERROR] [TIME] react-native Error: request [ID] failed on POST /api/checkout from [IP]:[PORT]
