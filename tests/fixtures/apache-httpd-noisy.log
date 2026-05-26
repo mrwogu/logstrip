@@ -1,0 +1,30 @@
+[Sun Dec 04 04:47:44 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties
+[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10
+[Sun Dec 04 04:51:09 2005] [notice] jk2_init() Found child 6726 in scoreboard slot 8
+[Sun Dec 04 04:51:09 2005] [notice] jk2_init() Found child 6728 in scoreboard slot 6
+[Sun Dec 04 04:51:14 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties
+[Sun Dec 04 04:51:14 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties
+[Sun Dec 04 04:51:18 2005] [error] mod_jk child workerEnv in error state 6
+[Sun Dec 04 04:51:19 2005] [error] mod_jk child workerEnv in error state 7
+[Sun Dec 04 04:51:20 2005] [error] mod_jk child workerEnv in error state 6
+[Sun Dec 04 04:51:21 2005] [error] mod_jk child workerEnv in error state 8
+[Sun Dec 04 04:51:37 2005] [notice] jk2_init() Found child 6736 in scoreboard slot 10
+[Sun Dec 04 04:51:38 2005] [notice] jk2_init() Found child 6733 in scoreboard slot 7
+[Sun Dec 04 04:51:38 2005] [notice] jk2_init() Found child 6734 in scoreboard slot 9
+[Sun Dec 04 04:51:52 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties
+[Sun Dec 04 04:51:55 2005] [error] mod_jk child workerEnv in error state 6
+[Sun Dec 04 04:51:56 2005] [error] mod_jk child workerEnv in error state 7
+[Sun Dec 04 04:51:57 2005] [error] mod_jk child workerEnv in error state 6
+[Sun Dec 04 04:51:58 2005] [error] mod_jk child workerEnv in error state 7
+[Sun Dec 04 04:52:04 2005] [notice] jk2_init() Found child 6738 in scoreboard slot 6
+[Sun Dec 04 04:52:04 2005] [notice] jk2_init() Found child 6741 in scoreboard slot 9
+[Sun Dec 04 04:52:12 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties
+[Sun Dec 04 04:52:15 2005] [error] jk2_init() Can't find child 6748 in scoreboard
+[Sun Dec 04 04:52:16 2005] [error] jk2_init() Can't find child 6749 in scoreboard
+[Sun Dec 04 04:52:17 2005] [error] jk2_init() Can't find child 6750 in scoreboard
+[Sun Dec 04 04:52:49 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties
+[Sun Dec 04 04:52:52 2005] [error] mod_jk child init 1 -2
+[Sun Dec 04 04:52:53 2005] [error] mod_jk child init 1 -2
+[Mon Dec 05 19:14:09 2005] [error] [client 10.42.7.18] Directory index forbidden by rule: /var/www/html/
+[Mon Dec 05 19:14:10 2005] [error] [client 10.42.7.19] Directory index forbidden by rule: /var/www/html/
+[Mon Dec 05 19:14:11 2005] [error] [client 10.42.7.20] Directory index forbidden by rule: /var/www/html/

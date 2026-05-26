@@ -6,6 +6,8 @@ const ISO_TIME_PATTERN =
   /\b\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?)?\b/gu;
 const UTC_TIME_PATTERN =
   /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+(?:GMT|UTC)\b/giu;
+const APACHE_ERROR_TIME_PATTERN =
+  /\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\s+\d{4}\]/giu;
 const COMMON_LOG_TIME_PATTERN =
   /\b\d{1,2}\/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}\b/giu;
 const NGINX_ERROR_TIME_PATTERN = /\b\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\b/gu;
@@ -53,6 +55,7 @@ export function sanitizeLine(line: string): string {
     .replace(ANSI_ESCAPE_PATTERN, '')
     .replace(UUID_PATTERN, '[ID]')
     .replace(UTC_TIME_PATTERN, '[TIME]')
+    .replace(APACHE_ERROR_TIME_PATTERN, '[TIME]')
     .replace(COMMON_LOG_TIME_PATTERN, '[TIME]')
     .replace(NGINX_ERROR_TIME_PATTERN, '[TIME]')
     .replace(ISO_TIME_PATTERN, '[TIME]')

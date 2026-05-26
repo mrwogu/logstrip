@@ -5,10 +5,18 @@ exports.createRepeatGroup = createRepeatGroup;
 exports.addRepeatGroupLine = addRepeatGroupLine;
 exports.renderRepeatGroup = renderRepeatGroup;
 const constants_js_1 = require("../constants.js");
+const STANDALONE_REPEAT_VALUE_PATTERN = /^\d+(?:[.:,-]\d+)*$/u;
+const STANDALONE_REPEAT_LABELS = new Set([
+    'child',
+    'pid',
+    'slot',
+    'state',
+]);
 function createRepeatSignature(line) {
-    return tokenizeRepeatLine(line)
-        .map((token) => {
-        const tokenValue = splitRepeatToken(token);
+    const tokens = tokenizeRepeatLine(line);
+    return tokens
+        .map((token, index) => {
+        const tokenValue = splitRepeatToken(token, tokens[index - 1]);
         return tokenValue === undefined
             ? token
             : `${tokenValue.prefix}[VALUE]`;
@@ -27,8 +35,8 @@ function createRepeatGroup(line) {
 function addRepeatGroupLine(group, line) {
     const tokens = tokenizeRepeatLine(line);
     for (const [index, firstToken] of group.firstTokens.entries()) {
-        const firstValue = splitRepeatToken(firstToken);
-        const nextValue = splitRepeatToken(tokens[index]);
+        const firstValue = splitRepeatToken(firstToken, group.firstTokens[index - 1]);
+        const nextValue = splitRepeatToken(tokens[index], tokens[index - 1]);
         if (firstValue === undefined ||
             nextValue === undefined ||
             firstValue.prefix !== nextValue.prefix ||
@@ -71,13 +79,21 @@ function renderRepeatGroup(group) {
 function tokenizeRepeatLine(line) {
     return line.trim().split(/\s+/u);
 }
-function splitRepeatToken(token) {
+function splitRepeatToken(token, previousToken) {
     const separator = token.indexOf('=');
-    if (separator <= 0 || separator === token.length - 1) {
-        return undefined;
+    if (separator > 0 && separator < token.length - 1) {
+        return {
+            prefix: token.slice(0, separator + 1),
+            value: token.slice(separator + 1),
+        };
     }
-    return {
-        prefix: token.slice(0, separator + 1),
-        value: token.slice(separator + 1),
-    };
+    if (previousToken !== undefined &&
+        STANDALONE_REPEAT_LABELS.has(previousToken.toLowerCase()) &&
+        STANDALONE_REPEAT_VALUE_PATTERN.test(token)) {
+        return {
+            prefix: '',
+            value: token,
+        };
+    }
+    return undefined;
 }

@@ -164,6 +164,26 @@ const cases: readonly SmokeCase[] = [
     mustDetectSources: ["prometheus"],
   },
   {
+    fixture: 'apache-httpd-noisy.log',
+    minSavingsPercent: 70,
+    expectDeduplication: true,
+    expectInternalStackHidden: false,
+    mustContain: [
+      '[x8] [TIME] [error] mod_jk child workerEnv in error state [6 | 7 | 8]',
+      "[x3] [TIME] [error] jk2_init() Can't find child [6748 | 6749 | 6750] in scoreboard",
+      '[x2] [TIME] [error] mod_jk child init 1 -2',
+      '[x3] [TIME] [error] [client [IP]] Directory index forbidden by rule: /var/www/html/',
+    ],
+    mustNotContain: [
+      '[notice]',
+      'Sun Dec',
+      'Mon Dec',
+      '10.42.7.18',
+      '/etc/httpd/conf/workers2.properties',
+    ],
+    mustDetectSources: ["apache-httpd"],
+  },
+  {
     fixture: 'java-spring-boot-realistic.log',
     minSavingsPercent: 20,
     expectDeduplication: true,

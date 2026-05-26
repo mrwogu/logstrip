@@ -7,6 +7,8 @@ import type { Aggressiveness } from '../types.js';
 
 const IGNORED_LOG_TAG_PATTERN =
   /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
+const APACHE_ROUTINE_NOTICE_PATTERN =
+  /^(?:\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\s+\d{4}\]|\[TIME\])\s+\[notice\]\s+(?:workerEnv\.init\(\) ok\b|jk2_init\(\) Found child \d+ in scoreboard slot \d+\b)/iu;
 const IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/iu;
 const EXPLICIT_LOG_TAG_PATTERN = /\[[A-Z]+\]/iu;
 const STACK_FRAME_PATTERN = /^\s*at\s+.*(?:\(|\s).+:\d+:\d+\)?$/;
@@ -49,7 +51,10 @@ const AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/iu;
 const AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
 
 export function isIgnoredLogLine(line: string): boolean {
-  return IGNORED_LOG_TAG_PATTERN.test(line);
+  return (
+    IGNORED_LOG_TAG_PATTERN.test(line) ||
+    APACHE_ROUTINE_NOTICE_PATTERN.test(line)
+  );
 }
 
 export function shouldKeepLine(line: string): boolean {

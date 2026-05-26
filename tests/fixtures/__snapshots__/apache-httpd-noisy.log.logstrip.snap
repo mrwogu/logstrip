@@ -1,0 +1,4 @@
+[x8] [TIME] [error] mod_jk child workerEnv in error state [6 | 7 | 8]
+[x3] [TIME] [error] jk2_init() Can't find child [6748 | 6749 | 6750] in scoreboard
+[x2] [TIME] [error] mod_jk child init 1 -2
+[x3] [TIME] [error] [client [IP]] Directory index forbidden by rule: /var/www/html/

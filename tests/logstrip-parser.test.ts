@@ -324,10 +324,13 @@ describe('logstrip parser', () => {
     expect(detectLogSources(['meilisearch index creation failed'])).toContain('meilisearch');
     expect(detectLogSources(['typesense server crashed'])).toContain('typesense');
     expect(detectLogSources(['apache solr core load failed'])).toContain('solr');
+    expect(detectLogSources(['apache solr core load failed'])).not.toContain('apache-httpd');
     expect(detectLogSources(['algolia index error'])).toContain('algolia');
   });
 
   it('detects Java enterprise sources', () => {
+    expect(detectLogSources(['mod_jk child workerEnv in error state 6'])).toContain('apache-httpd');
+    expect(detectLogSources(['Apache/2.4.52 configured -- resuming normal operations'])).toContain('apache-httpd');
     expect(detectLogSources(['apache tomcat startup failed'])).toContain('tomcat');
     expect(detectLogSources(['eclipse jetty connector error'])).toContain('jetty');
     expect(detectLogSources(['wildfly deploy failed'])).toContain('wildfly');
@@ -719,6 +722,13 @@ describe('logstrip parser', () => {
         '2026/05/16 10:12:04 [error] connect() failed for upstream 10.44.2.19:8080',
       ),
     ).toBe('[TIME] [error] connect() failed for upstream [IP]:[PORT]');
+    expect(
+      sanitizeLine(
+        '[Sun Dec 04 04:47:44 2005] [error] [client 10.42.7.18] Directory index forbidden by rule: /var/www/html/',
+      ),
+    ).toBe(
+      '[TIME] [error] [client [IP]] Directory index forbidden by rule: /var/www/html/',
+    );
   });
 
   it('masks secret and credential patterns', () => {
@@ -756,6 +766,12 @@ describe('logstrip parser', () => {
         '[ERROR] checkout failed order_id=ord-88421 route=POST_/checkout',
       ),
     ).toBe('[ERROR] checkout failed order_id=[VALUE] route=[VALUE]');
+    expect(
+      createRepeatSignature('[TIME] [error] mod_jk child workerEnv in error state 6'),
+    ).toBe('[TIME] [error] mod_jk child workerEnv in error state [VALUE]');
+    expect(createRepeatSignature('[ERROR] status 503')).toBe(
+      '[ERROR] status 503',
+    );
   });
 
   it('classifies useful diagnostic lines', () => {
@@ -770,6 +786,11 @@ describe('logstrip parser', () => {
     expect(
       shouldKeepLine('{"level":"error","msg":"database timeout","status":503}'),
     ).toBe(true);
+    expect(
+      shouldKeepLine(
+        '[Sun Dec 04 04:47:44 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties',
+      ),
+    ).toBe(false);
     expect(shouldKeepLine('[NOTICE] noisy')).toBe(false);
     expect(shouldKeepLine('plain text')).toBe(false);
 
@@ -976,6 +997,32 @@ describe('logstrip parser', () => {
     );
   });
 
+  it('compresses Apache httpd noise while preserving error diagnostics', async () => {
+    const apacheLogs = [
+      '[Sun Dec 04 04:47:44 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties',
+      '[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10',
+      '[Sun Dec 04 04:51:18 2005] [error] mod_jk child workerEnv in error state 6',
+      '[Sun Dec 04 04:51:19 2005] [error] mod_jk child workerEnv in error state 7',
+      '[Sun Dec 04 04:51:20 2005] [error] mod_jk child workerEnv in error state 6',
+      '[Mon Dec 05 19:14:09 2005] [error] [client 10.42.7.18] Directory index forbidden by rule: /var/www/html/',
+      '[Mon Dec 05 19:14:10 2005] [error] [client 10.42.7.19] Directory index forbidden by rule: /var/www/html/',
+    ].join('\n');
+    const output = new MemoryWritable();
+
+    const result = await processLogStream(Readable.from([apacheLogs]), output);
+
+    expect(output.content()).toBe(
+      [
+        '[x3] [TIME] [error] mod_jk child workerEnv in error state [6 | 7]',
+        '[x2] [TIME] [error] [client [IP]] Directory index forbidden by rule: /var/www/html/',
+        '',
+      ].join('\n'),
+    );
+    expect(result.detectedSources).toContain('apache-httpd');
+    expect(result.stats.droppedLines).toBe(2);
+    expect(result.stats.duplicateLines).toBe(3);
+  });
+
   it('scoreLineRelevance assigns correct multi-signal scores', () => {
     // Exported constants have expected values
     expect(CONTEXT_WINDOW_BEFORE).toBe(3);
@@ -989,6 +1036,12 @@ describe('logstrip parser', () => {
     expect(scoreLineRelevance('[INFO] booted', 'high')).toBe(-Infinity);
     expect(scoreLineRelevance('[DEBUG] query', 'high')).toBe(-Infinity);
     expect(scoreLineRelevance('[TRACE] tick', 'high')).toBe(-Infinity);
+    expect(
+      scoreLineRelevance(
+        '[TIME] [notice] jk2_init() Found child 6725 in scoreboard slot 10',
+        'high',
+      ),
+    ).toBe(-Infinity);
     expect(scoreLineRelevance('', 'high')).toBe(-Infinity);
 
     // High-value signals exceed the threshold

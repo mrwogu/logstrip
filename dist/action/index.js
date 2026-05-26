@@ -25828,9 +25828,17 @@ var TFIDF_MAP_LIMIT = 5e4;
 var MAX_REPEAT_DELTA_VALUES = 3;
 
 // src/core/dedupe/repeat-grouper.ts
+var STANDALONE_REPEAT_VALUE_PATTERN = /^\d+(?:[.:,-]\d+)*$/u;
+var STANDALONE_REPEAT_LABELS = /* @__PURE__ */ new Set([
+  "child",
+  "pid",
+  "slot",
+  "state"
+]);
 function createRepeatSignature(line) {
-  return tokenizeRepeatLine(line).map((token) => {
-    const tokenValue = splitRepeatToken(token);
+  const tokens = tokenizeRepeatLine(line);
+  return tokens.map((token, index) => {
+    const tokenValue = splitRepeatToken(token, tokens[index - 1]);
     return tokenValue === void 0 ? token : `${tokenValue.prefix}[VALUE]`;
   }).join(" ");
 }
@@ -25846,8 +25854,11 @@ function createRepeatGroup(line) {
 function addRepeatGroupLine(group, line) {
   const tokens = tokenizeRepeatLine(line);
   for (const [index, firstToken] of group.firstTokens.entries()) {
-    const firstValue = splitRepeatToken(firstToken);
-    const nextValue = splitRepeatToken(tokens[index]);
+    const firstValue = splitRepeatToken(
+      firstToken,
+      group.firstTokens[index - 1]
+    );
+    const nextValue = splitRepeatToken(tokens[index], tokens[index - 1]);
     if (firstValue === void 0 || nextValue === void 0 || firstValue.prefix !== nextValue.prefix || firstValue.value === nextValue.value) {
       continue;
     }
@@ -25884,15 +25895,21 @@ function renderRepeatGroup(group) {
 function tokenizeRepeatLine(line) {
   return line.trim().split(/\s+/u);
 }
-function splitRepeatToken(token) {
+function splitRepeatToken(token, previousToken) {
   const separator = token.indexOf("=");
-  if (separator <= 0 || separator === token.length - 1) {
-    return void 0;
+  if (separator > 0 && separator < token.length - 1) {
+    return {
+      prefix: token.slice(0, separator + 1),
+      value: token.slice(separator + 1)
+    };
   }
-  return {
-    prefix: token.slice(0, separator + 1),
-    value: token.slice(separator + 1)
-  };
+  if (previousToken !== void 0 && STANDALONE_REPEAT_LABELS.has(previousToken.toLowerCase()) && STANDALONE_REPEAT_VALUE_PATTERN.test(token)) {
+    return {
+      prefix: "",
+      value: token
+    };
+  }
+  return void 0;
 }
 
 // src/core/sources/source-profile.ts
@@ -25900,6 +25917,11 @@ var SOURCE_DIAGNOSTIC_BOOST_PATTERNS = {
   typescript: [/\bTS\d{4}\b/u],
   pytest: [/^E\s+/u, /\bFAILED\b/u],
   nginx: [/\[(?:error|crit|alert|emerg)\]/iu],
+  "apache-httpd": [
+    /\[(?:error|crit|alert|emerg)\]/iu,
+    /\bAH\d{5}\b/u,
+    /\b(?:Directory index forbidden|client denied|mod_jk)\b/iu
+  ],
   kubernetes: [/\b(?:BackOff|Failed|ErrImagePull|CrashLoopBackOff)\b/u],
   "github-actions": [/^::(?:error|warning)\b/u]
 };
@@ -26078,7 +26100,7 @@ var LOG_SOURCE_SIGNATURES = [
   ["bandit", ["bandit"]],
   ["sonarqube", ["sonarqube", "sonar"]],
   ["nginx", ["nginx"]],
-  ["apache-httpd", ["apache", "httpd"]],
+  ["apache-httpd", ["httpd", "apache/", "apache2", "mod_jk", "scoreboard slot"]],
   ["caddy", ["caddy"]],
   ["varnish", ["varnish"]],
   ["traefik", ["traefik"]],
@@ -26823,6 +26845,7 @@ function groupHttpStatusCodes(line) {
 var UUID_PATTERN = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
 var ISO_TIME_PATTERN = /\b\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?)?\b/gu;
 var UTC_TIME_PATTERN = /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+(?:GMT|UTC)\b/giu;
+var APACHE_ERROR_TIME_PATTERN = /\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\s+\d{4}\]/giu;
 var COMMON_LOG_TIME_PATTERN = /\b\d{1,2}\/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}\b/giu;
 var NGINX_ERROR_TIME_PATTERN = /\b\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\b/gu;
 var ANSI_ESCAPE_PATTERN = /\u001b\[[0-9;]*m/gu;
@@ -26839,7 +26862,7 @@ var ALPHANUMERIC_HASH_PATTERN = /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-
 var AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/gu;
 var AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
 function sanitizeLine(line) {
-  let result = line.replace(ANSI_ESCAPE_PATTERN, "").replace(UUID_PATTERN, "[ID]").replace(UTC_TIME_PATTERN, "[TIME]").replace(COMMON_LOG_TIME_PATTERN, "[TIME]").replace(NGINX_ERROR_TIME_PATTERN, "[TIME]").replace(ISO_TIME_PATTERN, "[TIME]").replace(IPV4_WITH_PORT_PATTERN, "[IP]:[PORT]").replace(IPV4_PATTERN, "[IP]").replace(
+  let result = line.replace(ANSI_ESCAPE_PATTERN, "").replace(UUID_PATTERN, "[ID]").replace(UTC_TIME_PATTERN, "[TIME]").replace(APACHE_ERROR_TIME_PATTERN, "[TIME]").replace(COMMON_LOG_TIME_PATTERN, "[TIME]").replace(NGINX_ERROR_TIME_PATTERN, "[TIME]").replace(ISO_TIME_PATTERN, "[TIME]").replace(IPV4_WITH_PORT_PATTERN, "[IP]:[PORT]").replace(IPV4_PATTERN, "[IP]").replace(
     CONNECTION_STRING_PATTERN,
     (match, pwd) => match.replace(pwd, "[REDACTED]")
   ).replace(GITHUB_TOKEN_PATTERN, "[REDACTED]").replace(JWT_TOKEN_PATTERN, "[JWT]").replace(SLACK_TOKEN_PATTERN, "[REDACTED]").replace(AUTHORIZATION_HEADER_PATTERN, "Authorization: [REDACTED]").replace(SECRET_FIELD_PATTERN, (match) => {
@@ -26902,6 +26925,7 @@ function passesSeverityFilter(line, minLevel) {
 
 // src/core/scoring/relevance-score.ts
 var IGNORED_LOG_TAG_PATTERN = /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
+var APACHE_ROUTINE_NOTICE_PATTERN = /^(?:\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\s+\d{4}\]|\[TIME\])\s+\[notice\]\s+(?:workerEnv\.init\(\) ok\b|jk2_init\(\) Found child \d+ in scoreboard slot \d+\b)/iu;
 var IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/iu;
 var STACK_FRAME_PATTERN = /^\s*at\s+.*(?:\(|\s).+:\d+:\d+\)?$/;
 var JAVA_STACK_FRAME_PATTERN = /^\s*at\s+[\w$_.<>/]+\([^)]+:\d+\)$/;
@@ -26931,7 +26955,7 @@ var LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/iu;
 var AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/iu;
 var AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
 function isIgnoredLogLine(line) {
-  return IGNORED_LOG_TAG_PATTERN.test(line);
+  return IGNORED_LOG_TAG_PATTERN.test(line) || APACHE_ROUTINE_NOTICE_PATTERN.test(line);
 }
 function looksLikeDiagnosticLine(line) {
   return STACK_FRAME_PATTERN.test(line) || JAVA_STACK_FRAME_PATTERN.test(line) || PYTHON_STACK_FRAME_PATTERN.test(line) || GO_STACK_FRAME_PATTERN.test(line) || GO_FILE_FRAME_PATTERN.test(line) || GO_GOROUTINE_PATTERN.test(line) || PYTHON_TRACEBACK_PATTERN.test(line) || STACK_MORE_PATTERN.test(line) || DIAGNOSTIC_PATTERN.test(line) || JSON_SEVERITY_PATTERN.test(line) || NPM_ERROR_PATTERN.test(line) || YARN_ERROR_PATTERN.test(line) || SCANNER_FINDING_PATTERN.test(line) || CONTAINER_FAILURE_PATTERN.test(line) || GITHUB_ACTIONS_ANNOTATION_PATTERN.test(line) || GRADLE_FAILURE_PATTERN.test(line) || MAKE_ERROR_PATTERN.test(line) || GO_TEST_FAIL_PATTERN.test(line) || SYSTEMD_STATUS_PATTERN.test(line) || CIRCLECI_STEP_PATTERN.test(line) || JENKINS_MARKER_PATTERN.test(line) || AZURE_PIPELINE_PATTERN.test(line) || TEAMCITY_MARKER_PATTERN.test(line);

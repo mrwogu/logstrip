@@ -6,6 +6,11 @@ const SOURCE_DIAGNOSTIC_BOOST_PATTERNS = {
     typescript: [/\bTS\d{4}\b/u],
     pytest: [/^E\s+/u, /\bFAILED\b/u],
     nginx: [/\[(?:error|crit|alert|emerg)\]/iu],
+    'apache-httpd': [
+        /\[(?:error|crit|alert|emerg)\]/iu,
+        /\bAH\d{5}\b/u,
+        /\b(?:Directory index forbidden|client denied|mod_jk)\b/iu,
+    ],
     kubernetes: [/\b(?:BackOff|Failed|ErrImagePull|CrashLoopBackOff)\b/u],
     'github-actions': [/^::(?:error|warning)\b/u],
 };

@@ -154,7 +154,7 @@ exports.LOG_SOURCE_SIGNATURES = [
     ['bandit', ['bandit']],
     ['sonarqube', ['sonarqube', 'sonar']],
     ['nginx', ['nginx']],
-    ['apache-httpd', ['apache', 'httpd']],
+    ['apache-httpd', ['httpd', 'apache/', 'apache2', 'mod_jk', 'scoreboard slot']],
     ['caddy', ['caddy']],
     ['varnish', ['varnish']],
     ['traefik', ['traefik']],
