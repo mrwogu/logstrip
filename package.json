@@ -64,6 +64,7 @@
     "docs:serve": "mkdocs serve",
     "prepack": "npm run build",
     "smoke:cli": "node scripts/ci-cli-smoke.js",
+    "smoke:hooks": "node scripts/ci-plugin-hook-smoke.js",
     "test": "vitest run --coverage",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",

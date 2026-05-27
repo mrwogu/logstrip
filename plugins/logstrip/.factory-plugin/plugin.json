@@ -5,6 +5,7 @@
   "author": {
     "name": "mrwogu"
   },
+  "hooks": "./hooks/hooks.json",
   "homepage": "https://mrwogu.github.io/logstrip/",
   "repository": "https://github.com/mrwogu/logstrip",
   "license": "MIT"

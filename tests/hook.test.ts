@@ -1,23 +1,23 @@
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm, writeFile, readFile, mkdir, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { delimiter, join, resolve } from 'node:path';
 import * as process from 'node:process';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-const IS_WINDOWS = process.platform === 'win32';
-// Hook script requires bash + jq - skip on Windows where they're unavailable
-const describeBash = describe.skipIf(IS_WINDOWS);
-
 const HOOK_SCRIPT = resolve(
   __dirname,
-  '../plugins/logstrip/hooks/logstrip-hook.sh',
+  '../plugins/logstrip/hooks/logstrip-hook.js',
 );
 const HOOKS_JSON = resolve(__dirname, '../plugins/logstrip/hooks/hooks.json');
 const CURSOR_HOOKS_JSON = resolve(
   __dirname,
   '../plugins/logstrip/hooks/cursor-hooks.json',
+);
+const FACTORY_PLUGIN_JSON = resolve(
+  __dirname,
+  '../plugins/logstrip/.factory-plugin/plugin.json',
 );
 
 const CLI_PATH = resolve(__dirname, '../dist/cli/index.js');
@@ -34,14 +34,16 @@ interface HookResult {
 let binDir: string;
 let hookEnv: Record<string, string | undefined>;
 
-function runHook(input: object): Promise<HookResult> {
-  return new Promise((resolve, reject) => {
-    const stdin = JSON.stringify(input);
+function runHookRaw(
+  stdin: string,
+  env: Record<string, string | undefined> = hookEnv,
+): Promise<HookResult> {
+  return new Promise((resolve) => {
     const start = performance.now();
-    const child = spawn('bash', [HOOK_SCRIPT], {
+    const child = spawn(process.execPath, [HOOK_SCRIPT], {
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 30_000,
-      env: hookEnv,
+      env,
     });
 
     let stdout = '';
@@ -76,6 +78,10 @@ function runHook(input: object): Promise<HookResult> {
     child.stdin.write(stdin);
     child.stdin.end();
   });
+}
+
+function runHook(input: object): Promise<HookResult> {
+  return runHookRaw(JSON.stringify(input));
 }
 
 function parseJson<T>(raw: string): T | null {
@@ -167,27 +173,28 @@ const SINGLE_HEURISTIC = [
 let workDir: string;
 
 beforeAll(async () => {
-  // Hook script is bash-only - skip all hook tests on Windows
-  if (IS_WINDOWS) return;
-
   workDir = await mkdtemp(join(tmpdir(), 'logstrip-hook-'));
 
-  // Create a wrapper script so `logstrip` is discoverable via PATH
   binDir = join(workDir, 'bin');
   await mkdir(binDir, { recursive: true });
-  const wrapper = join(binDir, 'logstrip');
-  await writeFile(wrapper, `#!/bin/sh\nexec node ${CLI_PATH} "$@"\n`);
-  await chmod(wrapper, 0o755);
+  if (process.platform === 'win32') {
+    await writeFile(
+      join(binDir, 'logstrip.cmd'),
+      `@echo off\r\nnode "${CLI_PATH}" %*\r\n`,
+    );
+  } else {
+    const wrapper = join(binDir, 'logstrip');
+    await writeFile(wrapper, `#!/bin/sh\nexec node "${CLI_PATH}" "$@"\n`);
+    await chmod(wrapper, 0o755);
+  }
 
-  // Build env with augmented PATH so the hook script finds `logstrip`
   hookEnv = {
     ...process.env,
-    PATH: `${binDir}:${process.env.PATH ?? '/usr/bin:/bin'}`,
+    PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}`,
   };
 });
 
 afterAll(async () => {
-  if (IS_WINDOWS) return;
   await rm(workDir, { force: true, recursive: true });
 });
 
@@ -195,7 +202,7 @@ afterAll(async () => {
 // PreToolUse - file extension matching
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse - extension matching', () => {
+describe('PreToolUse - extension matching', () => {
   const logExtensions = ['.log', '.out', '.txt', '.trace', '.err'];
 
   it.each(logExtensions)('denies Read on %s file and redirects', async (ext) => {
@@ -239,7 +246,7 @@ describeBash('PreToolUse - extension matching', () => {
 // PreToolUse - skip already-compressed files
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse - skip already-compressed files', () => {
+describe('PreToolUse - skip already-compressed files', () => {
   it('skips .logstrip.log files', async () => {
     const filePath = join(workDir, 'already.logstrip.log');
     await writeFile(filePath, 'compressed content');
@@ -263,7 +270,7 @@ describeBash('PreToolUse - skip already-compressed files', () => {
 // PreToolUse - non-existent files
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse - non-existent files', () => {
+describe('PreToolUse - non-existent files', () => {
   it('skips non-existent .log file', async () => {
     const filePath = join(workDir, 'nonexistent.log');
 
@@ -277,7 +284,7 @@ describeBash('PreToolUse - non-existent files', () => {
 // PreToolUse - non-Read tools
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse - non-Read tools', () => {
+describe('PreToolUse - non-Read tools', () => {
   it('skips Write tool even on .log file', async () => {
     const filePath = join(workDir, 'target.log');
     await writeFile(filePath, CI_LOG_PASTE);
@@ -311,7 +318,7 @@ describeBash('PreToolUse - non-Read tools', () => {
 // PreToolUse - empty file_path
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse - missing file_path', () => {
+describe('PreToolUse - missing file_path', () => {
   it('skips when tool_input has no file_path', async () => {
     const result = await runHook({
       hook_event_name: 'PreToolUse',
@@ -327,7 +334,7 @@ describeBash('PreToolUse - missing file_path', () => {
 // PreToolUse - compression output
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse - compression output', () => {
+describe('PreToolUse - compression output', () => {
   it('creates .logstrip.log output file on disk', async () => {
     const filePath = join(workDir, 'compress-me.log');
     await writeFile(filePath, CI_LOG_PASTE);
@@ -365,36 +372,14 @@ describeBash('PreToolUse - compression output', () => {
 // PreToolUse - logstrip unavailable
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('PreToolUse - logstrip not in PATH', () => {
+describe('PreToolUse - logstrip not in PATH', () => {
   it('returns additionalContext suggesting install when logstrip missing', async () => {
     const filePath = join(workDir, 'no-cli.log');
     await writeFile(filePath, CI_LOG_PASTE);
 
-    const result = await new Promise<HookResult>((resolve) => {
-      const start = performance.now();
-      const child = spawn('env', [
-        '-i',
-        'PATH=/bin:/usr/bin',
-        'HOME=/tmp',
-        'bash',
-        HOOK_SCRIPT,
-      ], { stdio: ['pipe', 'pipe', 'pipe'] });
-
-      let stdout = '';
-      let stderr = '';
-      child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
-      child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
-      child.on('close', (code) => {
-        resolve({
-          stdout,
-          stderr,
-          exitCode: code ?? 1,
-          durationMs: performance.now() - start,
-        });
-      });
-
-      child.stdin.write(JSON.stringify(makePreToolUseInput(filePath)));
-      child.stdin.end();
+    const result = await runHookRaw(JSON.stringify(makePreToolUseInput(filePath)), {
+      ...process.env,
+      PATH: '',
     });
 
     const json = parseJson<{
@@ -404,14 +389,11 @@ describeBash('PreToolUse - logstrip not in PATH', () => {
       };
     }>(result.stdout);
 
-    // When logstrip is missing, the hook should return additionalContext
-    // (but only if jq is available; otherwise it exits silently)
-    if (json) {
-      expect(json.hookSpecificOutput.hookEventName).toBe('PreToolUse');
-      expect(json.hookSpecificOutput.additionalContext).toContain(
-        'npm i -g logstrip',
-      );
-    }
+    expect(json).not.toBeNull();
+    expect(json!.hookSpecificOutput.hookEventName).toBe('PreToolUse');
+    expect(json!.hookSpecificOutput.additionalContext).toContain(
+      'npm i -g logstrip',
+    );
   });
 });
 
@@ -419,7 +401,7 @@ describeBash('PreToolUse - logstrip not in PATH', () => {
 // UserPromptSubmit - log detection
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('UserPromptSubmit - positive detection', () => {
+describe('UserPromptSubmit - positive detection', () => {
   it('detects CI log paste (timestamps + log levels)', async () => {
     const result = await runHook(makeUserPromptSubmitInput(CI_LOG_PASTE));
     expect(result.exitCode).toBe(0);
@@ -481,7 +463,7 @@ describeBash('UserPromptSubmit - positive detection', () => {
 // UserPromptSubmit - negative cases
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('UserPromptSubmit - negative cases', () => {
+describe('UserPromptSubmit - negative cases', () => {
   it('skips short messages (< 5 lines)', async () => {
     const result = await runHook(
       makeUserPromptSubmitInput(SHORT_NON_LOG),
@@ -534,7 +516,7 @@ describeBash('UserPromptSubmit - negative cases', () => {
 // UserPromptSubmit - boundary conditions
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('UserPromptSubmit - boundary conditions', () => {
+describe('UserPromptSubmit - boundary conditions', () => {
   const boundaryLogLines = [
     '2024-01-15 10:23:45 [ERROR] line 1',
     '2024-01-15 10:23:46 [ERROR] line 2',
@@ -593,7 +575,7 @@ describeBash('UserPromptSubmit - boundary conditions', () => {
 // Unknown events
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('Unknown events', () => {
+describe('Unknown events', () => {
   it('silently skips PostToolUse event', async () => {
     const result = await runHook({
       hook_event_name: 'PostToolUse',
@@ -618,27 +600,7 @@ describeBash('Unknown events', () => {
 
   it('silently skips malformed JSON gracefully', async () => {
     const start = performance.now();
-    const result = await new Promise<HookResult>((resolve) => {
-      const child = spawn('bash', [HOOK_SCRIPT], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-
-      let stdout = '';
-      let stderr = '';
-      child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
-      child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
-      child.on('close', (code) => {
-        resolve({
-          stdout,
-          stderr,
-          exitCode: code ?? 1,
-          durationMs: performance.now() - start,
-        });
-      });
-
-      child.stdin.write('{not valid json');
-      child.stdin.end();
-    });
+    const result = await runHookRaw('{not valid json');
 
     const elapsed = performance.now() - start;
     expect(elapsed).toBeLessThan(3_000);
@@ -663,12 +625,16 @@ describe('hook config files', () => {
     const preToolUse = config.hooks.PreToolUse[0];
     expect(preToolUse.matcher).toBe('Read');
     expect(preToolUse.hooks[0].type).toBe('command');
-    expect(preToolUse.hooks[0].command).toContain('logstrip-hook.sh');
+    expect(preToolUse.hooks[0].command).toBe(
+      'node "${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js"',
+    );
     expect(preToolUse.hooks[0].timeout).toBeTypeOf('number');
 
     const userPrompt = config.hooks.UserPromptSubmit[0];
     expect(userPrompt.hooks[0].type).toBe('command');
-    expect(userPrompt.hooks[0].command).toContain('logstrip-hook.sh');
+    expect(userPrompt.hooks[0].command).toBe(
+      'node "${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js"',
+    );
   });
 
   it('cursor-hooks.json is valid JSON with Cursor format', async () => {
@@ -682,8 +648,17 @@ describe('hook config files', () => {
 
     const preToolUse = config.hooks.preToolUse[0];
     expect(preToolUse.matcher).toBe('Read');
-    expect(preToolUse.command).toContain('logstrip-hook.sh');
+    expect(preToolUse.command).toBe(
+      'node "${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js"',
+    );
     expect(preToolUse.timeout).toBeTypeOf('number');
+  });
+
+  it('factory plugin manifest explicitly wires the shared hooks file', async () => {
+    const raw = await readFile(FACTORY_PLUGIN_JSON, 'utf8');
+    const config = JSON.parse(raw);
+
+    expect(config.hooks).toBe('./hooks/hooks.json');
   });
 });
 
@@ -691,7 +666,7 @@ describe('hook config files', () => {
 // Performance - latency budgets
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('performance - latency budgets', () => {
+describe('performance - latency budgets', () => {
   it('negative path (non-log .ts file) completes under 100ms', async () => {
     const filePath = join(workDir, 'perf-skip.ts');
     await writeFile(filePath, 'const x = 1;');
@@ -768,7 +743,7 @@ describeBash('performance - latency budgets', () => {
 // Performance - throughput (sequential)
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('performance - sequential throughput', () => {
+describe('performance - sequential throughput', () => {
   it('processes 100 negative UserPromptSubmit calls under 10s', async () => {
     const start = performance.now();
     for (let i = 0; i < 100; i++) {
@@ -798,7 +773,7 @@ describeBash('performance - sequential throughput', () => {
 // Integration - end-to-end flow
 // ═══════════════════════════════════════════════════════════════════════
 
-describeBash('integration - end-to-end compression flow', () => {
+describe('integration - end-to-end compression flow', () => {
   it('compressed file contains diagnostic signal from original', async () => {
     const filePath = join(workDir, 'e2e-signal.log');
     await writeFile(filePath, CI_LOG_PASTE);
