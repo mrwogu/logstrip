@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.6.0](https://github.com/mrwogu/logstrip/compare/v1.5.0...v1.6.0) (2026-05-27)
+
+
+### Features
+
+* improve apache httpd log compression ([31fae8d](https://github.com/mrwogu/logstrip/commit/31fae8de5cbf63a394155e788662e4da671f7462))
+
+
+### Bug Fixes
+
+* harden hook loader path quoting ([a7d5336](https://github.com/mrwogu/logstrip/commit/a7d5336b5d764d0f6107c75f0d236fa181f052a1))
+* harden hook loader path quoting ([9884e01](https://github.com/mrwogu/logstrip/commit/9884e0126e8fe7c10f310e71a0861e3e7b19a8b7))
+* make plugin hooks work on Windows ([f8436b0](https://github.com/mrwogu/logstrip/commit/f8436b0af442a0e23669dd2331a14a693a9516ac))
+* make plugin hooks work on Windows ([8bbe97a](https://github.com/mrwogu/logstrip/commit/8bbe97a59bbfd7ba9dccdd7a4c5483432c31fb13))
+
 ## [1.5.0](https://github.com/mrwogu/logstrip/compare/v1.4.0...v1.5.0) (2026-05-21)
 
 
