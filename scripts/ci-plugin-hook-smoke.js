@@ -176,6 +176,8 @@ function main() {
 
     const env = {
       ...process.env,
+      DROID_PLUGIN_ROOT: pluginRoot,
+      CLAUDE_PLUGIN_ROOT: pluginRoot,
       PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}`,
     };
 

@@ -33,6 +33,8 @@ interface HookResult {
 
 let binDir: string;
 let hookEnv: Record<string, string | undefined>;
+const HOOK_COMMAND =
+  'node -e "require(require(\'node:path\').join(process.env.DROID_PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,\'hooks\',\'logstrip-hook.js\'))"';
 
 function runHookRaw(
   stdin: string,
@@ -190,6 +192,8 @@ beforeAll(async () => {
 
   hookEnv = {
     ...process.env,
+    CLAUDE_PLUGIN_ROOT: resolve(__dirname, '../plugins/logstrip'),
+    DROID_PLUGIN_ROOT: resolve(__dirname, '../plugins/logstrip'),
     PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}`,
   };
 });
@@ -625,16 +629,12 @@ describe('hook config files', () => {
     const preToolUse = config.hooks.PreToolUse[0];
     expect(preToolUse.matcher).toBe('Read');
     expect(preToolUse.hooks[0].type).toBe('command');
-    expect(preToolUse.hooks[0].command).toBe(
-      'node "${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js"',
-    );
+    expect(preToolUse.hooks[0].command).toBe(HOOK_COMMAND);
     expect(preToolUse.hooks[0].timeout).toBeTypeOf('number');
 
     const userPrompt = config.hooks.UserPromptSubmit[0];
     expect(userPrompt.hooks[0].type).toBe('command');
-    expect(userPrompt.hooks[0].command).toBe(
-      'node "${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js"',
-    );
+    expect(userPrompt.hooks[0].command).toBe(HOOK_COMMAND);
   });
 
   it('cursor-hooks.json is valid JSON with Cursor format', async () => {
@@ -648,9 +648,7 @@ describe('hook config files', () => {
 
     const preToolUse = config.hooks.preToolUse[0];
     expect(preToolUse.matcher).toBe('Read');
-    expect(preToolUse.command).toBe(
-      'node "${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js"',
-    );
+    expect(preToolUse.command).toBe(HOOK_COMMAND);
     expect(preToolUse.timeout).toBeTypeOf('number');
   });
 
