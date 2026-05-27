@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1](https://github.com/mrwogu/logstrip/compare/v1.6.0...v1.6.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* restore hook loading and release workflow ([b968cbf](https://github.com/mrwogu/logstrip/commit/b968cbfa82e87936bd56a5e67414dda38e63a6bd))
+* switch plugin hooks to logstrip hook subcommand ([d340252](https://github.com/mrwogu/logstrip/commit/d34025269a70a6945286e7d76323d2eea6f76022))
+
 ## [1.6.0](https://github.com/mrwogu/logstrip/compare/v1.5.0...v1.6.0) (2026-05-27)
 
 
