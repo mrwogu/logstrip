@@ -8,6 +8,7 @@ const repoRoot = resolve(__dirname, '..');
 const sourcePluginRoot = resolve(repoRoot, 'plugins', 'logstrip');
 const cliPath = resolve(repoRoot, 'dist', 'cli', 'index.js');
 const expectedLine = '[x2] [ERROR] request [ID] failed';
+const expectedHookCommand = 'logstrip hook';
 const pluginManifestPaths = [
   '.factory-plugin/plugin.json',
   '.claude-plugin/plugin.json',
@@ -51,14 +52,12 @@ function createCliWrapper(binDir) {
   chmodSync(wrapperPath, 0o755);
 }
 
-function resolveHookCommand(command, pluginRoot) {
-  return command
-    .replaceAll('${CLAUDE_PLUGIN_ROOT}', pluginRoot)
-    .replaceAll('${DROID_PLUGIN_ROOT}', pluginRoot);
-}
+function runHook(command, env, input, label) {
+  if (command !== expectedHookCommand) {
+    fail(`${label} hook command is not "${expectedHookCommand}": ${command}`);
+  }
 
-function runHook(command, pluginRoot, env, input, label) {
-  const result = spawnSync(resolveHookCommand(command, pluginRoot), {
+  const result = spawnSync(command, {
     shell: true,
     encoding: 'utf8',
     input: JSON.stringify(input),
@@ -85,7 +84,6 @@ function smokePreToolUse(command, pluginRoot, env, label) {
 
   const preToolUseResult = runHook(
     command,
-    pluginRoot,
     env,
     {
       hook_event_name: 'PreToolUse',
@@ -130,7 +128,6 @@ function smokeSharedHooks(manifestPath, pluginRoot, manifest, env) {
 
   const userPromptResult = runHook(
     userPromptCommand,
-    pluginRoot,
     env,
     {
       hook_event_name: 'UserPromptSubmit',
@@ -176,8 +173,6 @@ function main() {
 
     const env = {
       ...process.env,
-      DROID_PLUGIN_ROOT: pluginRoot,
-      CLAUDE_PLUGIN_ROOT: pluginRoot,
       PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}`,
     };
 

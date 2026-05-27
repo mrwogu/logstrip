@@ -18,10 +18,14 @@ import {
   loadTelemetry,
   recordTelemetry,
 } from '../core/telemetry/telemetry-store';
+import { runHookCommand } from './hook-runner';
 
 export const CLI_VERSION = '1.6.0'; // x-release-please-version
 
+export const HOOK_SUBCOMMAND = 'hook';
+
 export const HELP_TEXT = `Usage: logstrip [INPUT] [options]
+       logstrip hook
 
 Stream-based log compression that trims noisy server logs, build
 pipelines, vulnerability scanners, and container workloads down to the
@@ -29,6 +33,13 @@ diagnostic context an LLM actually needs.
 
 Arguments:
   INPUT                    Path to the raw log. When omitted, reads from stdin.
+
+Subcommands:
+  hook                     Run as an AI assistant plugin hook. Reads a JSON event
+                           from stdin (PreToolUse or UserPromptSubmit) and emits
+                           the matching hookSpecificOutput JSON to stdout. Used
+                           by the bundled Droid, Claude, Codex, Copilot, and
+                           Cursor plugin manifests.
 
 Options:
   -o, --output <path>      Write the compressed log to <path>. Defaults to stdout.
@@ -330,6 +341,10 @@ export async function runCli(
   argv: readonly string[],
   io: CliIo,
 ): Promise<number> {
+  if (argv[0] === HOOK_SUBCOMMAND) {
+    return runHookCommand(io);
+  }
+
   let options: CliOptions;
   try {
     options = parseCliOptions(argv);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CliError = exports.HELP_TEXT = exports.CLI_VERSION = void 0;
+exports.CliError = exports.HELP_TEXT = exports.HOOK_SUBCOMMAND = exports.CLI_VERSION = void 0;
 exports.parseMultilineMode = parseMultilineMode;
 exports.messageOf = messageOf;
 exports.parseCliOptions = parseCliOptions;
@@ -14,8 +14,11 @@ const node_fs_1 = require("node:fs");
 const node_util_1 = require("node:util");
 const logstrip_parser_1 = require("../core/logstrip-parser");
 const telemetry_store_1 = require("../core/telemetry/telemetry-store");
+const hook_runner_1 = require("./hook-runner");
 exports.CLI_VERSION = '1.6.0'; // x-release-please-version
+exports.HOOK_SUBCOMMAND = 'hook';
 exports.HELP_TEXT = `Usage: logstrip [INPUT] [options]
+       logstrip hook
 
 Stream-based log compression that trims noisy server logs, build
 pipelines, vulnerability scanners, and container workloads down to the
@@ -23,6 +26,13 @@ diagnostic context an LLM actually needs.
 
 Arguments:
   INPUT                    Path to the raw log. When omitted, reads from stdin.
+
+Subcommands:
+  hook                     Run as an AI assistant plugin hook. Reads a JSON event
+                           from stdin (PreToolUse or UserPromptSubmit) and emits
+                           the matching hookSpecificOutput JSON to stdout. Used
+                           by the bundled Droid, Claude, Codex, Copilot, and
+                           Cursor plugin manifests.
 
 Options:
   -o, --output <path>      Write the compressed log to <path>. Defaults to stdout.
@@ -269,6 +279,9 @@ function attachProgress(input, stderr, totalBytes) {
     };
 }
 async function runCli(argv, io) {
+    if (argv[0] === exports.HOOK_SUBCOMMAND) {
+        return (0, hook_runner_1.runHookCommand)(io);
+    }
     let options;
     try {
         options = parseCliOptions(argv);
