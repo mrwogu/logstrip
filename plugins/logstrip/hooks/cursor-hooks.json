@@ -3,7 +3,7 @@
   "hooks": {
     "preToolUse": [
       {
-        "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js\"",
+        "command": "node -e \"require(require('node:path').join(process.env.DROID_PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','logstrip-hook.js'))\"",
         "matcher": "Read",
         "timeout": 10
       }
