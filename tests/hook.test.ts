@@ -1,15 +1,22 @@
-import { spawn } from 'node:child_process';
-import { mkdtemp, rm, writeFile, readFile, mkdir, chmod } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { delimiter, join, resolve } from 'node:path';
-import * as process from 'node:process';
+import { join, resolve } from 'node:path';
+import { Readable, Writable } from 'node:stream';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
-const HOOK_SCRIPT = resolve(
-  __dirname,
-  '../plugins/logstrip/hooks/logstrip-hook.js',
-);
+import { runCli, type CliIo } from '../src/cli/index';
+
+import * as parser from '../src/core/logstrip-parser';
+
 const HOOKS_JSON = resolve(__dirname, '../plugins/logstrip/hooks/hooks.json');
 const CURSOR_HOOKS_JSON = resolve(
   __dirname,
@@ -19,8 +26,14 @@ const FACTORY_PLUGIN_JSON = resolve(
   __dirname,
   '../plugins/logstrip/.factory-plugin/plugin.json',
 );
+const PLUGIN_MANIFEST_PATHS: readonly string[] = [
+  '.factory-plugin/plugin.json',
+  '.claude-plugin/plugin.json',
+  '.github/plugin.json',
+  '.codex-plugin/plugin.json',
+];
 
-const CLI_PATH = resolve(__dirname, '../dist/cli/index.js');
+const HOOK_COMMAND = 'logstrip hook';
 
 // ── helpers ──────────────────────────────────────────────────────────
 
@@ -31,58 +44,52 @@ interface HookResult {
   durationMs: number;
 }
 
-let binDir: string;
-let hookEnv: Record<string, string | undefined>;
-const HOOK_COMMAND =
-  'node -e "require(process.argv.slice(1).join(\' \'))" -- ${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js';
+function bufferWritable(): Writable & { value(): string } {
+  const chunks: Buffer[] = [];
+  const stream = new Writable({
+    write(chunk, _encoding, cb) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      cb();
+    },
+  }) as Writable & { value(): string };
 
-function runHookRaw(
-  stdin: string,
-  env: Record<string, string | undefined> = hookEnv,
-): Promise<HookResult> {
-  return new Promise((resolve) => {
-    const start = performance.now();
-    const child = spawn(process.execPath, [HOOK_SCRIPT], {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 30_000,
-      env,
-    });
-
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-
-    child.on('close', (code: number | null) => {
-      const durationMs = performance.now() - start;
-      resolve({
-        stdout,
-        stderr,
-        exitCode: code ?? 1,
-        durationMs,
-      });
-    });
-
-    child.on('error', (err: Error) => {
-      const durationMs = performance.now() - start;
-      resolve({
-        stdout,
-        stderr: stderr + err.message,
-        exitCode: -1,
-        durationMs,
-      });
-    });
-
-    child.stdin.write(stdin);
-    child.stdin.end();
-  });
+  stream.value = () => Buffer.concat(chunks).toString('utf8');
+  return stream;
 }
 
-function runHook(input: object): Promise<HookResult> {
+function makeIo(stdinPayload: string): {
+  io: CliIo;
+  stdout: ReturnType<typeof bufferWritable>;
+  stderr: ReturnType<typeof bufferWritable>;
+} {
+  const stdout = bufferWritable();
+  const stderr = bufferWritable();
+  return {
+    io: {
+      stdin: Readable.from([stdinPayload]),
+      stdout,
+      stderr,
+      stdinIsTTY: false,
+    },
+    stdout,
+    stderr,
+  };
+}
+
+async function runHookRaw(stdinPayload: string): Promise<HookResult> {
+  const start = performance.now();
+  const { io, stdout, stderr } = makeIo(stdinPayload);
+  const exitCode = await runCli(['hook'], io);
+  const durationMs = performance.now() - start;
+  return {
+    stdout: stdout.value(),
+    stderr: stderr.value(),
+    exitCode,
+    durationMs,
+  };
+}
+
+function runHook(input: unknown): Promise<HookResult> {
   return runHookRaw(JSON.stringify(input));
 }
 
@@ -108,7 +115,7 @@ function makePreToolUseInput(
   };
 }
 
-function makeUserPromptSubmitInput(prompt: string): object {
+function makeUserPromptSubmitInput(prompt: unknown): object {
   return {
     hook_event_name: 'UserPromptSubmit',
     prompt,
@@ -176,30 +183,14 @@ let workDir: string;
 
 beforeAll(async () => {
   workDir = await mkdtemp(join(tmpdir(), 'logstrip-hook-'));
-
-  binDir = join(workDir, 'bin');
-  await mkdir(binDir, { recursive: true });
-  if (process.platform === 'win32') {
-    await writeFile(
-      join(binDir, 'logstrip.cmd'),
-      `@echo off\r\nnode "${CLI_PATH}" %*\r\n`,
-    );
-  } else {
-    const wrapper = join(binDir, 'logstrip');
-    await writeFile(wrapper, `#!/bin/sh\nexec node "${CLI_PATH}" "$@"\n`);
-    await chmod(wrapper, 0o755);
-  }
-
-  hookEnv = {
-    ...process.env,
-    CLAUDE_PLUGIN_ROOT: resolve(__dirname, '../plugins/logstrip'),
-    DROID_PLUGIN_ROOT: resolve(__dirname, '../plugins/logstrip'),
-    PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}`,
-  };
 });
 
 afterAll(async () => {
   await rm(workDir, { force: true, recursive: true });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -319,7 +310,7 @@ describe('PreToolUse - non-Read tools', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// PreToolUse - empty file_path
+// PreToolUse - missing/invalid file_path
 // ═══════════════════════════════════════════════════════════════════════
 
 describe('PreToolUse - missing file_path', () => {
@@ -328,6 +319,32 @@ describe('PreToolUse - missing file_path', () => {
       hook_event_name: 'PreToolUse',
       tool_name: 'Read',
       tool_input: {},
+    });
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+
+  it('skips when file_path is an empty string', async () => {
+    const result = await runHook(makePreToolUseInput(''));
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+
+  it('skips when file_path is not a string', async () => {
+    const result = await runHook({
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Read',
+      tool_input: { file_path: 123 },
+    });
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+
+  it('skips when tool_input itself is null', async () => {
+    const result = await runHook({
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Read',
+      tool_input: null,
     });
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBe('');
@@ -373,18 +390,20 @@ describe('PreToolUse - compression output', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// PreToolUse - logstrip unavailable
+// PreToolUse - compression failure path
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('PreToolUse - logstrip not in PATH', () => {
-  it('returns additionalContext suggesting install when logstrip missing', async () => {
-    const filePath = join(workDir, 'no-cli.log');
+describe('PreToolUse - compression failure', () => {
+  it('emits additionalContext when processLogFile throws', async () => {
+    const filePath = join(workDir, 'fails-to-compress.log');
     await writeFile(filePath, CI_LOG_PASTE);
 
-    const result = await runHookRaw(JSON.stringify(makePreToolUseInput(filePath)), {
-      ...process.env,
-      PATH: '',
-    });
+    vi.spyOn(parser, 'processLogFile').mockRejectedValueOnce(
+      new Error('simulated compression failure'),
+    );
+
+    const result = await runHook(makePreToolUseInput(filePath));
+    expect(result.exitCode).toBe(0);
 
     const json = parseJson<{
       hookSpecificOutput: {
@@ -392,11 +411,10 @@ describe('PreToolUse - logstrip not in PATH', () => {
         additionalContext: string;
       };
     }>(result.stdout);
-
     expect(json).not.toBeNull();
     expect(json!.hookSpecificOutput.hookEventName).toBe('PreToolUse');
     expect(json!.hookSpecificOutput.additionalContext).toContain(
-      'npm i -g logstrip',
+      'compression failed',
     );
   });
 });
@@ -573,6 +591,24 @@ describe('UserPromptSubmit - boundary conditions', () => {
     }>(result.stdout);
     expect(json).not.toBeNull();
   });
+
+  it('awards the deep stack-trace bonus when 3+ stack lines are present', async () => {
+    const deepStackPaste = [
+      'java.lang.NullPointerException',
+      '    at com.example.A.run(A.java:1)',
+      '    at com.example.B.run(B.java:2)',
+      '    at com.example.C.run(C.java:3)',
+      '    at com.example.D.run(D.java:4)',
+    ].join('\n');
+
+    const result = await runHook(
+      makeUserPromptSubmitInput(deepStackPaste),
+    );
+    const json = parseJson<{
+      hookSpecificOutput: { additionalContext: string };
+    }>(result.stdout);
+    expect(json).not.toBeNull();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -605,9 +641,80 @@ describe('Unknown events', () => {
   it('silently skips malformed JSON gracefully', async () => {
     const start = performance.now();
     const result = await runHookRaw('{not valid json');
-
     const elapsed = performance.now() - start;
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
     expect(elapsed).toBeLessThan(3_000);
+  });
+
+  it('silently skips empty stdin', async () => {
+    const result = await runHookRaw('');
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+
+  it('silently skips JSON that is not an object', async () => {
+    const result = await runHookRaw('"plain string"');
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// stdin chunking
+// ═══════════════════════════════════════════════════════════════════════
+
+describe('stdin chunking', () => {
+  it('decodes Buffer chunks delivered without an explicit utf-8 encoding', async () => {
+    const payload = JSON.stringify(makePreToolUseInput('/tmp/none.log'));
+    const stdin = Readable.from(
+      (async function* generate() {
+        for (const part of [payload.slice(0, 5), payload.slice(5)]) {
+          yield Buffer.from(part, 'utf8');
+        }
+      })(),
+    );
+
+    const stdout = bufferWritable();
+    const stderr = bufferWritable();
+    const exitCode = await runCli(['hook'], {
+      stdin,
+      stdout,
+      stderr,
+      stdinIsTTY: false,
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.value().trim()).toBe('');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// stdout error propagation
+// ═══════════════════════════════════════════════════════════════════════
+
+describe('stdout error propagation', () => {
+  it('propagates errors from the stdout write callback', async () => {
+    const filePath = join(workDir, 'broken-stdout.log');
+    await writeFile(filePath, CI_LOG_PASTE);
+
+    const brokenStdout = new Writable({
+      write(_chunk, _encoding, cb) {
+        cb(new Error('stdout write broken'));
+      },
+    });
+    brokenStdout.on('error', () => undefined);
+
+    await expect(
+      runCli(['hook'], {
+        stdin: Readable.from([
+          JSON.stringify(makePreToolUseInput(filePath)),
+        ]),
+        stdout: brokenStdout,
+        stderr: bufferWritable(),
+        stdinIsTTY: false,
+      }),
+    ).rejects.toThrow('stdout write broken');
   });
 });
 
@@ -657,6 +764,27 @@ describe('hook config files', () => {
     const config = JSON.parse(raw);
 
     expect(config.hooks).toBe('./hooks/hooks.json');
+  });
+
+  it.each(PLUGIN_MANIFEST_PATHS)(
+    '%s wires shared hooks via ./hooks/hooks.json',
+    async (relPath) => {
+      const raw = await readFile(
+        resolve(__dirname, '../plugins/logstrip', relPath),
+        'utf8',
+      );
+      const config = JSON.parse(raw);
+      expect(config.hooks).toBe('./hooks/hooks.json');
+    },
+  );
+
+  it('cursor plugin manifest wires the cursor hooks file', async () => {
+    const raw = await readFile(
+      resolve(__dirname, '../plugins/logstrip/.cursor-plugin/plugin.json'),
+      'utf8',
+    );
+    const config = JSON.parse(raw);
+    expect(config.hooks).toBe('./hooks/cursor-hooks.json');
   });
 });
 
@@ -782,7 +910,6 @@ describe('integration - end-to-end compression flow', () => {
       `${filePath}.logstrip.log`,
       'utf8',
     );
-    // Original has [ERROR] lines - those must survive compression
     expect(compressed).toContain('[ERROR]');
   });
 
@@ -804,25 +931,38 @@ describe('integration - end-to-end compression flow', () => {
     const filePath = join(workDir, 'e2e-no-recompress.log');
     await writeFile(filePath, CI_LOG_PASTE);
 
-    // First run compresses
     await runHook(makePreToolUseInput(filePath));
     const compressed = await readFile(
       `${filePath}.logstrip.log`,
       'utf8',
     );
 
-    // Second run on the compressed file should skip
     const result = await runHook(
       makePreToolUseInput(`${filePath}.logstrip.log`),
     );
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBe('');
 
-    // Verify compressed content unchanged
     const rechecked = await readFile(
       `${filePath}.logstrip.log`,
       'utf8',
     );
     expect(rechecked).toBe(compressed);
+  });
+
+  it('refuses to read a directory disguised as a .log file (catch path)', async () => {
+    const filePath = join(workDir, 'dir.log');
+    await mkdir(filePath, { recursive: true });
+
+    const result = await runHook(makePreToolUseInput(filePath));
+    expect(result.exitCode).toBe(0);
+
+    const json = parseJson<{
+      hookSpecificOutput: { additionalContext: string };
+    }>(result.stdout);
+    expect(json).not.toBeNull();
+    expect(json!.hookSpecificOutput.additionalContext).toContain(
+      'compression failed',
+    );
   });
 });

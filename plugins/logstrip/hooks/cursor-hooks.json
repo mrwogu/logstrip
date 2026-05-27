@@ -3,7 +3,7 @@
   "hooks": {
     "preToolUse": [
       {
-        "command": "node -e \"require(process.argv.slice(1).join(' '))\" -- ${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js",
+        "command": "logstrip hook",
         "matcher": "Read",
         "timeout": 10
       }

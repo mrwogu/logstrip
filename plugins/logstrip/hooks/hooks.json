@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(process.argv.slice(1).join(' '))\" -- ${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js",
+            "command": "logstrip hook",
             "timeout": 10,
             "statusMessage": "LogStrip: compressing log file..."
           }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(process.argv.slice(1).join(' '))\" -- ${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js",
+            "command": "logstrip hook",
             "timeout": 5,
             "statusMessage": "LogStrip: checking for pasted logs..."
           }
