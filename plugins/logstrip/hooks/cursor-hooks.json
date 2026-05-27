@@ -3,7 +3,7 @@
   "hooks": {
     "preToolUse": [
       {
-        "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/logstrip-hook.sh",
+        "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js\"",
         "matcher": "Read",
         "timeout": 10
       }
