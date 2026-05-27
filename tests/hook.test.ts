@@ -34,7 +34,7 @@ interface HookResult {
 let binDir: string;
 let hookEnv: Record<string, string | undefined>;
 const HOOK_COMMAND =
-  'node -e "require(require(\'node:path\').join(process.env.DROID_PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,\'hooks\',\'logstrip-hook.js\'))"';
+  'node -e "require(process.argv.slice(1).join(\' \'))" -- ${CLAUDE_PLUGIN_ROOT}/hooks/logstrip-hook.js';
 
 function runHookRaw(
   stdin: string,
