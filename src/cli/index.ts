@@ -19,7 +19,7 @@ import {
   recordTelemetry,
 } from '../core/telemetry/telemetry-store';
 
-export const CLI_VERSION = '1.5.0'; // x-release-please-version
+export const CLI_VERSION = '1.6.0'; // x-release-please-version
 
 export const HELP_TEXT = `Usage: logstrip [INPUT] [options]
 
