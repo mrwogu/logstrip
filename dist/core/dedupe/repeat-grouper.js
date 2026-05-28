@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createRepeatSignature = createRepeatSignature;
 exports.createRepeatGroup = createRepeatGroup;
 exports.addRepeatGroupLine = addRepeatGroupLine;
+exports.getRepeatGroupSpreadMs = getRepeatGroupSpreadMs;
 exports.renderRepeatGroup = renderRepeatGroup;
 const constants_js_1 = require("../constants.js");
 const STANDALONE_REPEAT_VALUE_PATTERN = /^\d+(?:[.:,-]\d+)*$/u;
@@ -24,12 +25,15 @@ function createRepeatSignature(line) {
         .join(' ');
 }
 function createRepeatGroup(line) {
+    const ts = extractTimestampMs(line);
     return {
         firstLine: line,
         firstTokens: tokenizeRepeatLine(line),
         signature: createRepeatSignature(line),
         deltas: new Map(),
         count: 1,
+        firstSeen: ts,
+        lastSeen: ts,
     };
 }
 function addRepeatGroupLine(group, line) {
@@ -61,12 +65,36 @@ function addRepeatGroupLine(group, line) {
             delta.hasMoreValues = true;
         }
     }
+    const ts = extractTimestampMs(line);
+    if (ts !== null && (group.lastSeen === null || ts > group.lastSeen)) {
+        group.lastSeen = ts;
+    }
     group.count += 1;
 }
+const TIMESTAMP_CANDIDATE = /\b(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z?)\b/u;
+function extractTimestampMs(line) {
+    const match = TIMESTAMP_CANDIDATE.exec(line);
+    if (!match)
+        return null;
+    const ms = Date.parse(match[1]);
+    return Number.isFinite(ms) ? ms : null;
+}
+function getRepeatGroupSpreadMs(group) {
+    if (group.firstSeen === null || group.lastSeen === null)
+        return null;
+    return group.lastSeen - group.firstSeen;
+}
 function renderRepeatGroup(group) {
-    if (group.deltas.size === 0) {
-        return group.firstLine;
+    const baseTokens = group.deltas.size === 0 ? group.firstTokens : mergeDeltaTokens(group);
+    let line = baseTokens.join(' ');
+    const spread = getRepeatGroupSpreadMs(group);
+    if (spread !== null && spread > 5000) {
+        const spreadStr = formatDurationMs(spread);
+        line += ` [~${spreadStr}]`;
     }
+    return line;
+}
+function mergeDeltaTokens(group) {
     const tokens = [...group.firstTokens];
     for (const [index, delta] of group.deltas) {
         const values = delta.hasMoreValues
@@ -74,7 +102,14 @@ function renderRepeatGroup(group) {
             : delta.values;
         tokens[index] = `${delta.prefix}[${values.join(' | ')}]`;
     }
-    return tokens.join(' ');
+    return tokens;
+}
+function formatDurationMs(ms) {
+    if (ms < 60_000)
+        return `${Math.round(ms / 1000)}s`;
+    if (ms < 3_600_000)
+        return `${Math.round(ms / 60_000)}m`;
+    return `${Math.round(ms / 3_600_000)}h`;
 }
 function tokenizeRepeatLine(line) {
     return line.trim().split(/\s+/u);

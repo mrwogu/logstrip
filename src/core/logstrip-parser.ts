@@ -19,7 +19,6 @@ import {
   CONTEXT_WINDOW_BEFORE,
   INTERNAL_STACK_MARKER,
   SCORE_KEEP_THRESHOLD,
-  TFIDF_MAP_LIMIT,
   TFIDF_PENALTY,
   TFIDF_REPEAT_THRESHOLD,
 } from './constants.js';
@@ -37,12 +36,27 @@ import {
   scoreSourceDiagnosticBoost,
 } from './detection/source-detector.js';
 import {
+  type ContinuationContext,
   type MultilineMode,
   createContinuationContext,
   isContinuationLine,
 } from './multiline/multiline-buffer.js';
+import { effectiveMultilineMode } from './multiline/auto-multiline-resolver.js';
+import {
+  accessBucketPush,
+  flushAccessBucket,
+  type AccessBucket,
+} from './formats/access-log-bucket.js';
+import { CountMinSketch } from './dedupe/count-min-sketch.js';
 import { detectFormat } from './formats/format-detector.js';
+import { scoreJsonLine } from './formats/json-line-extractor.js';
+import { normalizeStackFrameLineCol } from './dedupe/stack-fingerprint.js';
 import { sanitizeLine } from './sanitize/sanitize-line.js';
+import {
+  createPemBlockState,
+  maskPemBlock,
+  type PemBlockState,
+} from './sanitize/pem-block.js';
 import { passesSeverityFilter } from './severity/severity-filter.js';
 import type { SeverityLevel } from './severity/severity-filter.js';
 import {
@@ -83,12 +97,22 @@ export {
   TFIDF_REPEAT_THRESHOLD,
 } from './constants.js';
 export { createRepeatSignature } from './dedupe/repeat-grouper.js';
+export { normalizeStackFrameLineCol } from './dedupe/stack-fingerprint.js';
 export { detectLogSources } from './detection/source-detector.js';
 export {
   type MultilineMode,
   isContinuationLine,
 } from './multiline/multiline-buffer.js';
+export {
+  effectiveMultilineMode,
+  resolveAutoMultiline,
+} from './multiline/auto-multiline-resolver.js';
 export { sanitizeLine } from './sanitize/sanitize-line.js';
+export {
+  createPemBlockState,
+  maskPemBlock,
+  type PemBlockState,
+} from './sanitize/pem-block.js';
 export {
   estimateTokens,
   isAccessLogNoiseLine,
@@ -145,20 +169,21 @@ export class LogStripError extends Error {
 async function* readLogicalLines(
   lines: AsyncIterable<string>,
   multilineMode: MultilineMode,
+  ctx?: ContinuationContext,
 ): AsyncIterable<string> {
   if (multilineMode === 'off') {
     yield* lines;
     return;
   }
 
-  const ctx = createContinuationContext(multilineMode);
+  const continuationContext = ctx ?? createContinuationContext(multilineMode);
   let buffer: string[] = [];
 
   for await (const line of lines) {
-    if (buffer.length > 0 && isContinuationLine(line, ctx)) {
+    if (buffer.length > 0 && isContinuationLine(line, continuationContext)) {
       buffer.push(line);
-      ctx.groupLineCount += 1;
-      ctx.groupByteCount += Buffer.byteLength(line, 'utf8');
+      continuationContext.groupLineCount += 1;
+      continuationContext.groupByteCount += Buffer.byteLength(line, 'utf8');
       continue;
     }
 
@@ -166,9 +191,9 @@ async function* readLogicalLines(
       yield buffer.join('\n');
     }
 
-    ctx.previousLine = line;
-    ctx.groupLineCount = 1;
-    ctx.groupByteCount = Buffer.byteLength(line, 'utf8');
+    continuationContext.previousLine = line;
+    continuationContext.groupLineCount = 1;
+    continuationContext.groupByteCount = Buffer.byteLength(line, 'utf8');
     buffer = [line];
   }
 
@@ -274,17 +299,30 @@ export async function processLogStream(
   );
 
   const stats = createEmptyStats();
+  const pemState: PemBlockState = createPemBlockState();
   const detectedSourceState = createSourceDetectionState(merged.mergedSources);
 
-  // TF-IDF: frequency map for sanitized lines (bounded for memory safety)
-  const seenLines = new Map<string, number>();
+  // TF-IDF: frequency counter for sanitized lines.
+  // Count-Min Sketch provides constant-memory approximate counting
+  // (~128 KB regardless of stream size).
+  const seenLines = new CountMinSketch(8192, 4);
 
   // Context window: ring-buffer of soft-scored lines pending near-error promotion
   const contextBefore: string[] = [];
+
+  // Access-log burst bucket: collapse repeated 2xx/3xx access-log lines in
+  // the context-before buffer so error context is not drowned by health checks.
+  let accessBucket: AccessBucket | null = null;
   let afterContextRemaining = 0;
 
+  // Auto-source multiline: share the context so detected sources can steer grouping.
+  const multilineCtx: ContinuationContext | undefined =
+    multilineMode === 'auto-source'
+      ? createContinuationContext(multilineMode)
+      : undefined;
+
   const rawLines = createInterface({ input, crlfDelay: Infinity });
-  const lines = readLogicalLines(rawLines, multilineMode);
+  const lines = readLogicalLines(rawLines, multilineMode, multilineCtx);
   let previousGroup: RepeatGroup | undefined;
   let hidingInternalStack = false;
   let detectedFormat: string | undefined;
@@ -354,6 +392,10 @@ export async function processLogStream(
 
   // Flush buffered context lines (retroactive promotion near an error)
   const flushContextBefore = async (): Promise<void> => {
+    const ejected = flushAccessBucket(accessBucket);
+    if (ejected !== null) contextBefore.push(ejected);
+    accessBucket = null;
+
     for (const buffered of contextBefore) {
       await emitCandidate(buffered);
     }
@@ -383,6 +425,16 @@ export async function processLogStream(
     let line = String(rawLine);
     const physicalLineCount = line.split('\n').length;
     collectDetectedSourceHits(line, detectedSourceState);
+
+    // Update auto-source multiline context when the top detected source changes.
+    if (multilineCtx !== undefined) {
+      const [top] = rankDetectedSources(detectedSourceState, 1);
+      const resolved = effectiveMultilineMode('auto-source', top !== undefined ? [top] : []);
+      if (resolved !== multilineCtx.effectiveMode) {
+        multilineCtx.effectiveMode = resolved;
+      }
+    }
+
     stats.inputLines += physicalLineCount;
     stats.inputWords += countWords(line);
     stats.inputBytes += Buffer.byteLength(`${line}\n`, 'utf8');
@@ -462,7 +514,15 @@ export async function processLogStream(
       continue;
     }
 
-    let sanitized = sanitizeLine(line);
+    // PEM block masking (before sanitizeLine so IPs inside PEM are not double-annotated)
+    const masked = maskPemBlock(line, pemState);
+    if (masked === null) {
+      dropLine(line, physicalLineCount, 'custom-ignore');
+      continue;
+    }
+    line = masked;
+
+    let sanitized = sanitizeLine(line, options.preserveIdSuffix ?? 0);
 
     // Apply custom sanitize rules
     for (const rule of customSanitizeRules) {
@@ -473,7 +533,12 @@ export async function processLogStream(
     const isCustomInternalStack =
       customInternalStackRegexes.length > 0 &&
       customInternalStackRegexes.some((r) => testRegex(r, sanitized));
-    if (isInternalStackTraceLine(sanitized) || isCustomInternalStack) {
+    const skipInternalStack =
+      detectedFormat === 'json' && sanitized.startsWith('{');
+    if (
+      !skipInternalStack &&
+      (isInternalStackTraceLine(sanitized) || isCustomInternalStack)
+    ) {
       stats.hiddenInternalStackLines += physicalLineCount;
 
       if (!hidingInternalStack) {
@@ -497,19 +562,54 @@ export async function processLogStream(
 
     hidingInternalStack = false;
 
+    // Normalize stack-frame line:column references so repeated
+    // stack traces with identical structure collapse via deduplication.
+    // Runs after internal-stack hiding so line/col in internal frames
+    // are already collapsed.
+    sanitized = normalizeStackFrameLineCol(sanitized);
+
     // TF-IDF: track how many times this sanitized form has appeared.
-    let seenCount = (seenLines.get(sanitized) ?? 0) + 1;
-    if (seenCount === 1 && seenLines.size >= TFIDF_MAP_LIMIT) {
-      seenLines.clear();
-      seenCount = 1;
+    // Count-Min Sketch provides approximate counts in constant memory.
+    const seenCount = seenLines.increment(sanitized);
+
+    // Structured JSON-line scoring (pino/winston/bunyan): when the detected
+    // format is JSON, use the parsed level field for deterministic keep/drop
+    // decisions instead of regex-matching the raw text.
+    let jsonParsedScore: number | undefined;
+    if (detectedFormat === 'json') {
+      const parsed = scoreJsonLine(sanitized);
+      if (parsed === null) {
+        dropLine(line, physicalLineCount, 'ignored-tag');
+        continue;
+      }
+      if (parsed !== undefined) {
+        // Hard-keep error/fatal/critical JSON lines; warn lines (50) fall
+        // through to standard context-window buffering.
+        if (parsed >= 80) {
+          await flushContextBefore();
+          await emitCandidate(sanitized);
+          afterContextRemaining = contextWindowAfter;
+          recordDecision({
+            line,
+            sanitizedLine: sanitized,
+            kept: true,
+            dropped: false,
+            hardKeep: false,
+            repeated: false,
+            reason: 'hard-keep',
+          });
+          continue;
+        }
+        jsonParsedScore = parsed;
+      }
     }
 
-    seenLines.set(sanitized, seenCount);
-
-    // Score the sanitized line (built-in + custom diagnostic patterns)
+    // Score the sanitized line (built-in + custom diagnostic patterns).
+    // Skip regex-based scoring for JSON lines that were successfully parsed
+    // (their level-based score is used instead).
     const effectiveAggressiveness: StaticAggressiveness =
       dynamicAggressiveness.effective;
-    let score = scoreLineRelevance(
+    let score = jsonParsedScore ?? scoreLineRelevance(
       sanitized,
       effectiveAggressiveness,
       seenCount,
@@ -522,7 +622,7 @@ export async function processLogStream(
         break;
       }
     }
-    score += scoreSourceDiagnosticBoost(sanitized, detectedSourceState);
+    score += scoreSourceDiagnosticBoost(sanitized, detectedSourceState, stats.inputLines);
 
     if (score >= SCORE_KEEP_THRESHOLD) {
       // Hard keep: flush buffered context, emit, open after-context window
@@ -577,7 +677,22 @@ export async function processLogStream(
         droppedBufferedLine = true;
       }
 
-      contextBefore.push(sanitized);
+      // Collapse access-log 2xx/3xx bursts: successive health-check lines
+      // for the same endpoint are folded into a single `[xN access-log 2xx]`
+      // entry so error context is not drowned by request noise.
+      if (detectedFormat !== 'json') {
+        const { bucket, ejected, passThrough } = accessBucketPush(accessBucket, sanitized);
+        accessBucket = bucket;
+        if (ejected !== null) {
+          contextBefore.push(ejected);
+        }
+        if (passThrough !== null) {
+          contextBefore.push(passThrough);
+        }
+      } else {
+        contextBefore.push(sanitized);
+      }
+
       recordDecision({
         line,
         sanitizedLine: sanitized,
@@ -608,6 +723,15 @@ export async function processLogStream(
   // Context lines left without a triggering error are discarded
   stats.droppedLines += contextBefore.length;
   contextBefore.length = 0;
+
+  // Unterminated PEM block guard
+  if (pemState.inside) {
+    const warningLine = '[PEM block unterminated - input redacted]';
+    stats.outputWords += countWords(warningLine);
+    stats.outputBytes += Buffer.byteLength(`${warningLine}\n`, 'utf8');
+    stats.truncatedLines = stats.truncatedLines! + 1;
+    await emitOutputLine(warningLine);
+  }
 
   await flushPreviousLine();
 
@@ -790,7 +914,7 @@ export function explainLogLine(
     return createDecision(line, undefined, false, 'ignored-tag');
   }
 
-  let sanitized = sanitizeLine(line);
+  let sanitized = sanitizeLine(line, options.preserveIdSuffix ?? 0);
   for (const rule of merged.sanitizePatterns) {
     sanitized = sanitized.replace(
       compileConfigRegex(rule.pattern, rule.flags ?? 'gu'),

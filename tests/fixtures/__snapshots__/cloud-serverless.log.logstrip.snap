@@ -1,5 +1,5 @@
 START RequestId: [ID] Version: $LATEST
-[x2] [TIME] [ERROR] ERROR Invoke Error {"errorType":"TimeoutError","errorMessage":"Task timed out after 5.01 seconds","stackTrace":["at Timeout._onTimeout (/var/task/node_modules/pg/client.js:42:18)","at listOnTimeout (internal/timers.js:559:11)","at processTimers (internal/timers.js:502:5)"]}
+[x2] [TIME] [ERROR] ERROR Invoke Error {"errorType":"TimeoutError","errorMessage":"Task timed out after 5.01 seconds","stackTrace":["at Timeout._onTimeout (/var/task/node_modules/pg/client.js:[NN]:[NN])","at listOnTimeout (internal/timers.js:[NN]:[NN])","at processTimers (internal/timers.js:[NN]:[NN])"]}
 END RequestId: [ID]
 REPORT RequestId: [ID] Duration: 5001.23ms Billed Duration: 5002ms Memory Size: 256 MB Max Memory Used: 128 MB
 [x2] [TIME] {"timestamp":"[TIME]","level":"error","msg":"database timeout","requestId":"[ID]","error":"connect ECONNREFUSED [IP]:[PORT]"}

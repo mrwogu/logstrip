@@ -12,6 +12,7 @@ import {
   SOURCE_DIAGNOSTIC_BOOST,
   collectDetectedSourceHits,
   createSourceDetectionState,
+  getEffectiveActiveConfidence,
   rankDetectedSources,
   scoreSourceDiagnosticBoost,
 } from '../src/core/detection/source-detector';
@@ -48,10 +49,18 @@ import {
   processLogStream,
   processLogStreamWithTimeout,
   sanitizeLine,
+  createPemBlockState,
+  maskPemBlock,
   scoreLineRelevance,
   shouldKeepLine,
   LogStripError,
 } from '../src/core/logstrip-parser';
+import {
+  addRepeatGroupLine,
+  createRepeatGroup,
+  getRepeatGroupSpreadMs,
+  renderRepeatGroup,
+} from '../src/core/dedupe/repeat-grouper.js';
 
 class MemoryWritable extends Writable {
   private readonly chunks: Buffer[] = [];
@@ -649,6 +658,28 @@ describe('logstrip parser', () => {
     expect(scoreSourceDiagnosticBoost('TS9999: Type mismatch', weakTypeScript)).toBe(0);
   });
 
+  it('lowers source active threshold for short logs', () => {
+    expect(getEffectiveActiveConfidence(10)).toBe(4);
+    expect(getEffectiveActiveConfidence(49)).toBe(4);
+    expect(getEffectiveActiveConfidence(50)).toBe(6);
+    expect(getEffectiveActiveConfidence(199)).toBe(6);
+    expect(getEffectiveActiveConfidence(200)).toBe(12);
+    expect(getEffectiveActiveConfidence(10_000)).toBe(12);
+  });
+
+  it('applies diagnostic boost with lowered threshold on short logs', () => {
+    // "ts" marker has weight 6 (< normal threshold 12, >= short-log threshold 4)
+    const state = createSourceDetectionState([['typescript', ['ts']]]);
+    collectDetectedSourceHits('ts', state);
+
+    // Normal threshold 12: no boost (confidence=6 < 12)
+    expect(scoreSourceDiagnosticBoost('TS9999: Type mismatch', state)).toBe(0);
+
+    // Short-log threshold 4: boost activates (confidence=6 >= 4)
+    expect(scoreSourceDiagnosticBoost('TS9999: Type mismatch', state, 30)).toBe(SOURCE_DIAGNOSTIC_BOOST);
+    expect(scoreSourceDiagnosticBoost('plain text', state, 30)).toBe(0);
+  });
+
   it('adjusts auto aggressiveness deterministically from recent decisions', () => {
     const auto = createDynamicAggressivenessState('auto');
     expect(auto.effective).toBe('high');
@@ -731,6 +762,29 @@ describe('logstrip parser', () => {
     );
   });
 
+  it('normalizes Kubernetes-style relative durations', () => {
+    expect(sanitizeLine('Warning BackOff 38s kubelet Back-off restarting failed container')).toBe('Warning BackOff [AGO] kubelet Back-off restarting failed container');
+    expect(sanitizeLine('Warning BackOff 2m34s kubelet Back-off restarting failed container')).toBe('Warning BackOff [AGO] kubelet Back-off restarting failed container');
+    expect(sanitizeLine('Liveness probe failed 1h5m12s')).toBe('Liveness probe failed [AGO]');
+    expect(sanitizeLine('Pulling image 2d3h15m42s')).toBe('Pulling image [AGO]');
+  });
+
+  it('preserves UUID/HASH suffix when preserveIdSuffix is set', () => {
+    const uuid = 'req=123e4567-e89b-12d3-a456-426614174000';
+    expect(sanitizeLine(uuid)).toBe('req=[ID]');
+    expect(sanitizeLine(uuid, 0)).toBe('req=[ID]');
+    expect(sanitizeLine(uuid, 8)).toBe('req=[ID:14174000]');
+
+    const hash = 'commit=abcdef1234567890abcdef1234567890abcdef12';
+    expect(sanitizeLine(hash)).toBe('commit=[HASH]');
+    expect(sanitizeLine(hash, 6)).toBe('commit=[HASH:cdef12]');
+
+    // Alphanumeric hash (uppercase letters -> won't match hex-only pattern)
+    const alnumHash = 'someId XyZ1XyZ1XyZ1XyZ1XyZ1XyZ1XyZ1XyZ1';
+    expect(sanitizeLine(alnumHash)).toBe('someId [HASH]');
+    expect(sanitizeLine(alnumHash, 4)).toBe('someId [HASH:XyZ1]');
+  });
+
   it('masks secret and credential patterns', () => {
     // GitHub tokens
     expect(sanitizeLine('auth ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn')).toBe('auth [REDACTED]');
@@ -750,6 +804,249 @@ describe('logstrip parser', () => {
     expect(sanitizeLine('key=AKIAIOSFODNN7EXAMPLE')).toBe('key=[REDACTED]');
     // AWS ARN with account ID
     expect(sanitizeLine('arn:aws:s3:us-east-1:123456789012:bucket/object')).toBe('arn:aws:s3:us-east-1:[ACCOUNT]:bucket/object');
+  });
+
+  it('sanitizes IPv6 addresses, emails, and additional secret tokens', () => {
+    // IPv6 (full form)
+    expect(sanitizeLine('from 2001:db8:85a3:0:0:8a2e:370:7334')).toBe('from [IPV6]');
+    // IPv6 (compressed-middle, with one trailing group)
+    expect(sanitizeLine('from 2001:db8:85a3::7334')).toBe('from [IPV6]');
+    // IPv6 (bracketed, typical log format)
+    expect(sanitizeLine('connect ECONNREFUSED [2001:db8:85a3:0:0:8a2e:370:7334]:5432')).toBe('connect ECONNREFUSED [[IPV6]]:5432');
+    // Email
+    expect(sanitizeLine('auth failed for user@example.com')).toBe('auth failed for [EMAIL]');
+    expect(sanitizeLine('sent to admin@company.co.uk')).toBe('sent to [EMAIL]');
+    // Stripe
+    expect(sanitizeLine('rejected rk_test_aaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('rejected [REDACTED]');
+    expect(sanitizeLine('key=pk_live_aaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('key=[REDACTED]');
+    // npm
+    expect(sanitizeLine('token=npm_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('token=[REDACTED]');
+    // Google API
+    expect(sanitizeLine('blocked AIzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('blocked [REDACTED]');
+    // Twilio
+    expect(sanitizeLine('sid=TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')).toBe('sid=[REDACTED]');
+    expect(sanitizeLine('key=TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')).toBe('key=[REDACTED]');
+    // SendGrid
+    expect(sanitizeLine('key=SG.aaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('key=[REDACTED]');
+  });
+
+  it('masks PEM private key blocks', () => {
+    const state = createPemBlockState();
+    expect(maskPemBlock('[ERROR] something failed', state)).toBe('[ERROR] something failed');
+    expect(state.inside).toBe(false);
+    expect(maskPemBlock('-----BEGIN RSA PRIVATE KEY-----', state)).toBe('[PEM PRIVATE KEY REDACTED]');
+    expect(state.inside).toBe(true);
+    expect(maskPemBlock('MIIEowIBAAKCAQEAo3b8nJBC8ZwB6YyxGQZBnCl2', state)).toBeNull();
+    expect(maskPemBlock('9Chb8hdk/0BiOgtL8PZjkzyjyjg+vYME7E9vob7d', state)).toBeNull();
+    expect(maskPemBlock('-----END RSA PRIVATE KEY-----', state)).toBeNull();
+    expect(state.inside).toBe(false);
+    expect(maskPemBlock('[ERROR] process exited', state)).toBe('[ERROR] process exited');
+  });
+
+  it('handles unterminated PEM block', () => {
+    const state = createPemBlockState();
+    maskPemBlock('-----BEGIN EC PRIVATE KEY-----', state);
+    expect(state.inside).toBe(true);
+    maskPemBlock('MIIEpAIBAAKCAQEArandombodyhere', state);
+    expect(state.inside).toBe(true);
+  });
+
+  it('handles PEM block with different key types', () => {
+    const s1 = createPemBlockState();
+    expect(maskPemBlock('-----BEGIN DSA PRIVATE KEY-----', s1)).toBe('[PEM PRIVATE KEY REDACTED]');
+    expect(s1.inside).toBe(true);
+    expect(maskPemBlock('-----END DSA PRIVATE KEY-----', s1)).toBeNull();
+    expect(s1.inside).toBe(false);
+    const s2 = createPemBlockState();
+    expect(maskPemBlock('-----BEGIN OPENSSH PRIVATE KEY-----', s2)).toBe('[PEM PRIVATE KEY REDACTED]');
+    expect(s2.inside).toBe(true);
+    expect(maskPemBlock('-----END OPENSSH PRIVATE KEY-----', s2)).toBeNull();
+    expect(s2.inside).toBe(false);
+    const s3 = createPemBlockState();
+    expect(maskPemBlock('-----BEGIN PGP PRIVATE KEY-----', s3)).toBe('[PEM PRIVATE KEY REDACTED]');
+    expect(s3.inside).toBe(true);
+    expect(maskPemBlock('-----END PGP PRIVATE KEY-----', s3)).toBeNull();
+    expect(s3.inside).toBe(false);
+    const s4 = createPemBlockState();
+    expect(maskPemBlock('-----BEGIN ENCRYPTED PRIVATE KEY-----', s4)).toBe('[PEM PRIVATE KEY REDACTED]');
+    expect(s4.inside).toBe(true);
+    expect(maskPemBlock('-----END ENCRYPTED PRIVATE KEY-----', s4)).toBeNull();
+    expect(s4.inside).toBe(false);
+    const s5 = createPemBlockState();
+    expect(maskPemBlock('-----BEGIN PRIVATE KEY-----', s5)).toBe('[PEM PRIVATE KEY REDACTED]');
+    expect(s5.inside).toBe(true);
+    expect(maskPemBlock('-----END PRIVATE KEY-----', s5)).toBeNull();
+    expect(s5.inside).toBe(false);
+  });
+
+  it('emits unterminated PEM block warning in streaming mode', async () => {
+    const input = [
+      '[ERROR] auth failed\n',
+      '-----BEGIN RSA PRIVATE KEY-----\n',
+      'MIIEowIBAAKCAQEAo3b8nJBC8ZwB6YyxGQZBnCl2\n',
+    ].join('');
+    const { output, stats } = await processLogString(input);
+    expect(output).toContain('[ERROR] auth failed');
+    expect(output).toContain('[PEM PRIVATE KEY REDACTED]');
+    expect(output).toContain('[PEM block unterminated - input redacted]');
+    expect(output).not.toContain('MIIEow');
+    expect(output).not.toContain('-----BEGIN');
+    expect(stats.truncatedLines).toBe(1);
+  });
+
+  it('auto-source multiline groups python stack frames when pytest is detected', async () => {
+    const input = [
+      '[ERROR] tests/test_orders.py::test_create_order - AssertionError\n',
+      '    File "/repo/tests/test_orders.py", line 42, in test_create_order\n',
+      '    File "/repo/tests/conftest.py", line 18, in setup\n',
+      '[ERROR] another error\n',
+    ].join('');
+
+    const { output } = await processLogString(input, { multiline: 'auto-source' });
+
+    // The two indented File lines should be joined with the error line
+    expect(output).toContain('[ERROR] tests/test_orders.py::test_create_order - AssertionError');
+    expect(output).toContain('File "/repo/tests/test_orders.py", line [NN]');
+    expect(output).toContain('[ERROR] another error');
+  });
+
+  it('auto-source multiline does not re-resolve when source stays the same', async () => {
+    const input = [
+      '[ERROR] tests/test_first.py::test_a - fail\n',
+      '    File "/repo/tests/test_first.py", line 10\n',
+      '[ERROR] tests/test_second.py::test_b - fail\n',
+      '    File "/repo/tests/test_second.py", line 20\n',
+    ].join('');
+
+    const { output } = await processLogString(input, { multiline: 'auto-source' });
+
+    expect(output).toContain('[ERROR] tests/test_first.py::test_a - fail');
+    expect(output).toContain('[ERROR] tests/test_second.py::test_b - fail');
+  });
+
+  it('auto-source multiline handles undetected source fallback', async () => {
+    const input = [
+      '[ERROR] generic failure message\n',
+      '[ERROR] another generic failure\n',
+    ].join('');
+
+    const { output } = await processLogString(input, { multiline: 'auto-source' });
+
+    expect(output).toContain('[ERROR] generic failure message');
+    expect(output).toContain('[ERROR] another generic failure');
+  });
+
+  it('preserves UUID suffix for trace correlation while still deduplicating', async () => {
+    const input = [
+      '[ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed\n',
+      '[ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed\n',
+    ].join('');
+
+    const { output } = await processLogString(input, { preserveIdSuffix: 6 });
+
+    // Different suffixes → no dedup
+    expect(output).toContain('[ID:174000]');
+    expect(output).toContain('[ID:174111]');
+  });
+
+  it('preserveIdSuffix allows exact trace matching on repeated requests', async () => {
+    // Two identical errors for the SAME request UUID
+    const input = [
+      '[ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed\n',
+      '[ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed\n',
+    ].join('');
+
+    const { output } = await processLogString(input, { preserveIdSuffix: 6 });
+
+    // Same suffix, so they dedup to [x2]
+    expect(output).toContain('[x2] [ERROR] request [ID:174000]');
+  });
+
+  it('drops JSON info/debug/trace lines via structured level scoring', async () => {
+    // Pino numeric levels: 30=info should be dropped, 50=error kept
+    const input = [
+      '{"level":30,"msg":"server started"}\n',
+      '{"level":50,"msg":"database timeout"}\n',
+    ].join('');
+
+    const { output } = await processLogString(input);
+    expect(output).not.toContain('server started');
+    expect(output).toContain('database timeout');
+  });
+
+  it('keeps JSON warn lines through standard buffering', async () => {
+    // Pino numeric level 40=warn: score 50, goes through context buffering
+    const input = [
+      '{"level":40,"msg":"slow query"}\n',
+      '{"level":50,"msg":"unhandled error"}\n',
+    ].join('');
+
+    const { output } = await processLogString(input);
+    expect(output).toContain('slow query');
+    expect(output).toContain('unhandled error');
+  });
+
+  it('drops JSON info line even with numeric pino level', async () => {
+    // pino level 30 is "info" — should be dropped even though not string quoted
+    const input = '{"level":30,"msg":"listening","hostname":"app-1"}\n';
+    const { output } = await processLogString(input);
+    expect(output).not.toContain('listening');
+  });
+
+  it('context-buffers non-JSON lines in a JSON stream', async () => {
+    // A non-JSON line in a JSON-detected stream goes through standard scoring
+    // and the soft-buffering JSON else path.
+    const input = [
+      '{"level":30,"msg":"started"}\n', // dropped as info
+      'some plain text context line\n', // soft, gets buffered
+      '{"level":50,"msg":"error occurred"}\n', // triggers context flush
+    ].join('');
+
+    const { output } = await processLogString(input);
+    expect(output).toContain('some plain text context line');
+    expect(output).toContain('error occurred');
+    expect(output).not.toContain('started');
+  });
+
+  it('collapses 2xx access-log bursts in context window', async () => {
+    const getLine = (n: number) =>
+      `192.168.1.${n} - - [15/May/2026:10:00:${String(n).padStart(2, '0')} +0000] "GET /api/users HTTP/1.1" 200 42 "-" "Mozilla/5.0"`;
+    const input = [
+      getLine(1),
+      getLine(2),
+      getLine(3),
+      '[ERROR] something broke', // triggers context flush of access bucket
+    ].join('\n');
+
+    const { output } = await processLogString(input);
+    expect(output).toContain('[x2 access-log 2xx]');
+    expect(output).toContain('[ERROR] something broke');
+  });
+
+  it('does not collapse 4xx access log errors', async () => {
+    const input = [
+      '10.0.0.1 - - [15/May/2026:10:00:01 +0000] "GET /api/missing HTTP/1.1" 404 0 "-" "Mozilla/5.0"\n',
+      '[ERROR] something broke\n',
+    ].join('');
+
+    const { output } = await processLogString(input);
+    // 4xx should appear as-is, not be collapsed into a bucket
+    expect(output).toContain('404');
+    expect(output).toContain('[ERROR] something broke');
+  });
+
+  it('flushes access bucket on different-path access log', async () => {
+    const input = [
+      '192.168.1.1 - - [15/May/2026:10:00:01 +0000] "GET /api/users HTTP/1.1" 200 42 "-" "Mozilla/5.0"\n',
+      '10.0.0.1 - - [15/May/2026:10:00:02 +0000] "GET /api/orders HTTP/1.1" 200 43 "-" "Mozilla/5.0"\n',
+      '[ERROR] boom\n',
+    ].join('');
+
+    const { output } = await processLogString(input);
+    // Different path triggers ejected flush of first bucket, then creates new
+    expect(output).toContain('/api/users');
+    expect(output).toContain('/api/orders');
+    expect(output).toContain('[ERROR]');
   });
 
   it('builds generic repeat signatures from structured fields', () => {
@@ -772,6 +1069,55 @@ describe('logstrip parser', () => {
     expect(createRepeatSignature('[ERROR] status 503')).toBe(
       '[ERROR] status 503',
     );
+  });
+
+  it('tracks timestamp spread in repeat groups', () => {
+    const group = createRepeatGroup('2026-05-10T10:00:00Z [ERROR] timeout');
+
+    expect(group.firstSeen).toBeGreaterThan(0);
+    expect(group.lastSeen).toBe(group.firstSeen);
+    expect(getRepeatGroupSpreadMs(group)).toBe(0);
+
+    addRepeatGroupLine(group, '2026-05-10T10:01:05Z [ERROR] timeout');
+    // 1m5s = 65s = 65000ms spread
+    expect(getRepeatGroupSpreadMs(group)).toBeGreaterThanOrEqual(64000);
+
+    const rendered = renderRepeatGroup(group);
+    expect(rendered).toContain('[~1m]');
+  });
+
+  it('omits timestamp spread for sub-threshold durations', () => {
+    const group = createRepeatGroup('2026-05-10T10:00:00Z [ERROR] timeout');
+    addRepeatGroupLine(group, '2026-05-10T10:00:02Z [ERROR] timeout');
+    // 2s < 5s threshold
+    const rendered = renderRepeatGroup(group);
+    expect(rendered).not.toContain('[~');
+  });
+
+  it('handles invalid timestamps gracefully', () => {
+    const group = createRepeatGroup('2026-13-99T99:99:99Z [ERROR] invalid date');
+    expect(group.firstSeen).toBeNull();
+    expect(group.lastSeen).toBeNull();
+    expect(getRepeatGroupSpreadMs(group)).toBeNull();
+  });
+
+  it('formats timestamp spread in seconds for short durations', () => {
+    const group = createRepeatGroup('2026-05-10T10:00:00Z [ERROR] timeout');
+    addRepeatGroupLine(group, '2026-05-10T10:00:10Z [ERROR] timeout');
+    const rendered = renderRepeatGroup(group);
+    expect(rendered).toContain('[~10s]');
+  });
+
+  it('formats timestamp spread in minutes and hours', () => {
+    const group = createRepeatGroup('2026-05-10T10:00:00Z [ERROR] timeout');
+    addRepeatGroupLine(group, '2026-05-10T10:30:00Z [ERROR] timeout');
+    const rendered = renderRepeatGroup(group);
+    expect(rendered).toContain('[~30m]');
+
+    const group2 = createRepeatGroup('2026-05-10T10:00:00Z [ERROR] timeout');
+    addRepeatGroupLine(group2, '2026-05-10T12:00:00Z [ERROR] timeout');
+    const rendered2 = renderRepeatGroup(group2);
+    expect(rendered2).toContain('[~2h]');
   });
 
   it('classifies useful diagnostic lines', () => {
@@ -866,6 +1212,30 @@ describe('logstrip parser', () => {
     expect(estimateTokens(3)).toBe(4);
   });
 
+  it('estimates CJK tokens more accurately from text', () => {
+    // Pure ASCII: 4 chars ≈ 1 token
+    const ascii = 'Hello World';
+    expect(estimateTokens(ascii)).toBe(3); // 11 chars / 4 = 2.75 → 3
+
+    // Mixed CJK + ASCII
+    const mixed = 'エラー: connection failed';
+    // CJK: 3 katakana chars × 1.0 = 3 (':' is ASCII)
+    // Rest: 19 chars / 4 ≈ 4.75
+    // Total: 3 + 4.75 = 7.75 → 8
+    expect(estimateTokens(mixed)).toBe(8);
+
+    // Pure CJK
+    const cjk = 'エラーが発生しました';
+    // 10 CJK chars × 1.0 = 10
+    expect(estimateTokens(cjk)).toBe(10);
+
+    // Empty string
+    expect(estimateTokens('')).toBe(0);
+
+    // Backward compat: number path still works
+    expect(estimateTokens(10)).toBe(13); // 10 words × 1.3
+  });
+
   it('streams logs, sanitizes UUIDs, deduplicates and hides internal stacks', async () => {
     const logs = [
       '',
@@ -894,7 +1264,7 @@ describe('logstrip parser', () => {
         '[x2] [ERROR] request [ID] failed',
         '[ERROR] src/api/client.ts(18,22): error TS2322: Type string is not assignable to number',
         '[WARN] deploy [TIME] sha [HASH] ok',
-        '    at app (/repo/src/app.ts:10:5)',
+        '    at app (/repo/src/app.ts:[NN]:[NN])',
         INTERNAL_STACK_MARKER,
         'TypeError: exploded',
         'plain text', // after-context: CONTEXT_WINDOW_AFTER lines after the error

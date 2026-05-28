@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SOURCE_DIAGNOSTIC_BOOST = exports.SOURCE_ACTIVE_CONFIDENCE = void 0;
+exports.getEffectiveActiveConfidence = getEffectiveActiveConfidence;
 exports.createSourceDetectionState = createSourceDetectionState;
 exports.collectDetectedSourceHits = collectDetectedSourceHits;
 exports.rankDetectedSources = rankDetectedSources;
@@ -10,6 +11,17 @@ const source_profile_js_1 = require("../sources/source-profile.js");
 const catalog_js_1 = require("../sources/catalog.js");
 exports.SOURCE_ACTIVE_CONFIDENCE = 12;
 exports.SOURCE_DIAGNOSTIC_BOOST = 40;
+/**
+ * Adaptive threshold: small logs need fewer marker hits to activate a source.
+ * Reduces the required confidence proportionally when total input lines are low.
+ */
+function getEffectiveActiveConfidence(inputLines) {
+    if (inputLines < 50)
+        return 4;
+    if (inputLines < 200)
+        return 6;
+    return exports.SOURCE_ACTIVE_CONFIDENCE;
+}
 function createSourceDetectionState(sources = catalog_js_1.LOG_SOURCE_SIGNATURES) {
     return {
         hits: new Map(),
@@ -58,10 +70,13 @@ function detectLogSources(input, limit = 12) {
     }
     return rankDetectedSources(state, limit);
 }
-function scoreSourceDiagnosticBoost(line, state) {
+function scoreSourceDiagnosticBoost(line, state, inputLines) {
+    const threshold = inputLines !== undefined
+        ? getEffectiveActiveConfidence(inputLines)
+        : exports.SOURCE_ACTIVE_CONFIDENCE;
     for (const profile of state.profiles) {
         const hit = state.hits.get(profile.name);
-        if (hit === undefined || hit.confidence < exports.SOURCE_ACTIVE_CONFIDENCE) {
+        if (hit === undefined || hit.confidence < threshold) {
             continue;
         }
         if (profile.diagnosticBoostPatterns.some((pattern) => pattern.test(line))) {

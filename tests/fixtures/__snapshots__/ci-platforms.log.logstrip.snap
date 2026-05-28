@@ -10,11 +10,11 @@ Running with gitlab-runner 16.7.0 (a1b2c3d4) on gitlab-runner-prod-01
 [TIME] [ERROR] Runner system failure: cannot connect to Docker daemon
 [TIME] [WARN] Retrying job in 5 seconds...
 [TIME] [ERROR] ERROR: Job failed: docker pull failed
-[x2] [Pipeline] [ERROR] Stage "Deploy" failed - timeout after 300s
+[x2] [Pipeline] [ERROR] Stage "Deploy" failed - timeout after [AGO]
 [Pipeline] [FATAL] Pipeline aborted: deploy stage exceeded timeout
 [Pipeline] [ERROR] org.jenkinsci.plugins.workflow.steps.FlowInterruptedException: Pipeline execution cancelled
-  at org.jenkinsci.plugins.workflow.cps.CpsFlowExecution.interrupt(CpsFlowExecution.java:123)
-  at jenkins.model.Jenkins$7.run(Jenkins.java:1123)
+  at org.jenkinsci.plugins.workflow.cps.CpsFlowExecution.interrupt(CpsFlowExecution.java:[NN]))
+  at jenkins.model.Jenkins$7.run(Jenkins.java:[NN]))
 [Pipeline] [WARN] Archiving artifacts from failed build
 Spin Up: starting container checkout-api-test
 Spin Cancelled

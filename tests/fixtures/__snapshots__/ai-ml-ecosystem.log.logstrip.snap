@@ -1,4 +1,4 @@
-[x3] [ERROR] openai api Error: Rate limit exceeded - retry after 20s
+[x3] [ERROR] openai api Error: Rate limit exceeded - retry after [AGO]
 [ERROR] huggingface download Error: ConnectionError: Cannot reach huggingface.co/api/models/meta-llama/Llama-3-8B
     at huggingface_hub/file_download.py:42 in _request_with_retries
     at urllib3/connectionpool.py:88 in urlopen

@@ -19,7 +19,7 @@
 [ERROR] mixpanel track Error: MixpanelServerError: [HTTP 5xx] Service Unavailable
     at mixpanel/lib/mixpanel.py:42 in track
     at mixpanel/lib/consumer.py:88 in send
-[ERROR] heap analytics Error: heap.io connection timeout after 30s to [IP]
+[ERROR] heap analytics Error: heap.io connection timeout after [AGO] to [IP]
     at heap.io/tracker.js:42 in flush
     at heap.io/batch.js:88 in send
 [ERROR] surrealdb start Error: StorageError: Cannot create file /data/surreal.db - permission denied
@@ -43,7 +43,7 @@
 [ERROR] sphinx-build Error: ExtensionError: sphinx.ext.autodoc failed to import module 'app.core'
     at sphinx/ext/autodoc/__init__.py:42 in process
     at sphinx/ext/autodoc/importer.py:88 in import_object
-[ERROR] bullmq queue Error: StalledJobError: job abc123def456ghi789 stalled for 300s - moving to failed
+[ERROR] bullmq queue Error: StalledJobError: job abc123def456ghi789 stalled for [AGO] - moving to failed
     at bullmq/src/job.ts:42 in moveStalledJobsToFailed
     at bull mq/src/queue.ts:88 in runStalledChecker
 [ERROR] amazon ses Error: ThrottlingException: Daily message quota exceeded for account [IP]

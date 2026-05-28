@@ -10,7 +10,7 @@
 [x2] [TIME] [ERROR] Failed to start checkout-api.service: Unit checkout-api.service is not loaded properly: Exec format error
 [TIME] [ERROR] Failed to connect to bus: No such file or directory
 [TIME] [ERROR] checkout-api[1842]: FATAL: password authentication failed for user "checkout_admin"
-[TIME] [ERROR] checkout-api[1842]: Connection refused to [IP]:[PORT] - retrying in 2s
+[TIME] [ERROR] checkout-api[1842]: Connection refused to [IP]:[PORT] - retrying in [AGO]
 [TIME] [FATAL] checkout-api[1842]: status=1 FAILURE - exiting
 [TIME] [ERROR] Error: resource aws_rds_cluster.checkout-db not found (may have been manually deleted)
 [TIME] [FATAL] terraform destroy failed: state lock inconsistency

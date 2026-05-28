@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LogStripError = exports.saveTelemetry = exports.recordTelemetry = exports.loadTelemetry = exports.formatTelemetrySummary = exports.resolveConfigPath = exports.parseLogStripConfig = exports.LOG_SOURCE_SIGNATURES = exports.KNOWN_LOG_SOURCES = exports.shouldKeepLine = exports.scoreLineRelevance = exports.looksLikeDiagnosticLine = exports.isProgressBarLine = exports.isCiNoiseLine = exports.isInternalStackTraceLine = exports.isAccessLogNoiseLine = exports.estimateTokens = exports.sanitizeLine = exports.isContinuationLine = exports.detectLogSources = exports.createRepeatSignature = exports.TFIDF_REPEAT_THRESHOLD = exports.TFIDF_PENALTY = exports.TFIDF_MAP_LIMIT = exports.SCORE_KEEP_THRESHOLD = exports.MAX_REPEAT_DELTA_VALUES = exports.INTERNAL_STACK_MARKER = exports.CONTEXT_WINDOW_BEFORE = exports.CONTEXT_WINDOW_AFTER = exports.parseAggressiveness = exports.detectFormat = exports.passesSeverityFilter = exports.parseSeverityLevel = exports.inferSeverity = void 0;
+exports.LogStripError = exports.saveTelemetry = exports.recordTelemetry = exports.loadTelemetry = exports.formatTelemetrySummary = exports.resolveConfigPath = exports.parseLogStripConfig = exports.LOG_SOURCE_SIGNATURES = exports.KNOWN_LOG_SOURCES = exports.shouldKeepLine = exports.scoreLineRelevance = exports.looksLikeDiagnosticLine = exports.isProgressBarLine = exports.isCiNoiseLine = exports.isInternalStackTraceLine = exports.isAccessLogNoiseLine = exports.estimateTokens = exports.maskPemBlock = exports.createPemBlockState = exports.sanitizeLine = exports.resolveAutoMultiline = exports.effectiveMultilineMode = exports.isContinuationLine = exports.detectLogSources = exports.normalizeStackFrameLineCol = exports.createRepeatSignature = exports.TFIDF_REPEAT_THRESHOLD = exports.TFIDF_PENALTY = exports.TFIDF_MAP_LIMIT = exports.SCORE_KEEP_THRESHOLD = exports.MAX_REPEAT_DELTA_VALUES = exports.INTERNAL_STACK_MARKER = exports.CONTEXT_WINDOW_BEFORE = exports.CONTEXT_WINDOW_AFTER = exports.parseAggressiveness = exports.detectFormat = exports.passesSeverityFilter = exports.parseSeverityLevel = exports.inferSeverity = void 0;
 exports.buildMergedConfig = buildMergedConfig;
 exports.processLogStream = processLogStream;
 exports.processLogFile = processLogFile;
@@ -26,8 +26,14 @@ const constants_js_1 = require("./constants.js");
 const repeat_grouper_js_1 = require("./dedupe/repeat-grouper.js");
 const source_detector_js_1 = require("./detection/source-detector.js");
 const multiline_buffer_js_1 = require("./multiline/multiline-buffer.js");
+const auto_multiline_resolver_js_1 = require("./multiline/auto-multiline-resolver.js");
+const access_log_bucket_js_1 = require("./formats/access-log-bucket.js");
+const count_min_sketch_js_1 = require("./dedupe/count-min-sketch.js");
 const format_detector_js_1 = require("./formats/format-detector.js");
+const json_line_extractor_js_1 = require("./formats/json-line-extractor.js");
+const stack_fingerprint_js_1 = require("./dedupe/stack-fingerprint.js");
 const sanitize_line_js_1 = require("./sanitize/sanitize-line.js");
+const pem_block_js_1 = require("./sanitize/pem-block.js");
 const severity_filter_js_1 = require("./severity/severity-filter.js");
 const relevance_score_js_1 = require("./scoring/relevance-score.js");
 const catalog_js_1 = require("./sources/catalog.js");
@@ -50,12 +56,20 @@ Object.defineProperty(exports, "TFIDF_PENALTY", { enumerable: true, get: functio
 Object.defineProperty(exports, "TFIDF_REPEAT_THRESHOLD", { enumerable: true, get: function () { return constants_js_2.TFIDF_REPEAT_THRESHOLD; } });
 var repeat_grouper_js_2 = require("./dedupe/repeat-grouper.js");
 Object.defineProperty(exports, "createRepeatSignature", { enumerable: true, get: function () { return repeat_grouper_js_2.createRepeatSignature; } });
+var stack_fingerprint_js_2 = require("./dedupe/stack-fingerprint.js");
+Object.defineProperty(exports, "normalizeStackFrameLineCol", { enumerable: true, get: function () { return stack_fingerprint_js_2.normalizeStackFrameLineCol; } });
 var source_detector_js_2 = require("./detection/source-detector.js");
 Object.defineProperty(exports, "detectLogSources", { enumerable: true, get: function () { return source_detector_js_2.detectLogSources; } });
 var multiline_buffer_js_2 = require("./multiline/multiline-buffer.js");
 Object.defineProperty(exports, "isContinuationLine", { enumerable: true, get: function () { return multiline_buffer_js_2.isContinuationLine; } });
+var auto_multiline_resolver_js_2 = require("./multiline/auto-multiline-resolver.js");
+Object.defineProperty(exports, "effectiveMultilineMode", { enumerable: true, get: function () { return auto_multiline_resolver_js_2.effectiveMultilineMode; } });
+Object.defineProperty(exports, "resolveAutoMultiline", { enumerable: true, get: function () { return auto_multiline_resolver_js_2.resolveAutoMultiline; } });
 var sanitize_line_js_2 = require("./sanitize/sanitize-line.js");
 Object.defineProperty(exports, "sanitizeLine", { enumerable: true, get: function () { return sanitize_line_js_2.sanitizeLine; } });
+var pem_block_js_2 = require("./sanitize/pem-block.js");
+Object.defineProperty(exports, "createPemBlockState", { enumerable: true, get: function () { return pem_block_js_2.createPemBlockState; } });
+Object.defineProperty(exports, "maskPemBlock", { enumerable: true, get: function () { return pem_block_js_2.maskPemBlock; } });
 var relevance_score_js_2 = require("./scoring/relevance-score.js");
 Object.defineProperty(exports, "estimateTokens", { enumerable: true, get: function () { return relevance_score_js_2.estimateTokens; } });
 Object.defineProperty(exports, "isAccessLogNoiseLine", { enumerable: true, get: function () { return relevance_score_js_2.isAccessLogNoiseLine; } });
@@ -86,26 +100,26 @@ class LogStripError extends Error {
 }
 exports.LogStripError = LogStripError;
 // ---- Multiline-aware line reader ----
-async function* readLogicalLines(lines, multilineMode) {
+async function* readLogicalLines(lines, multilineMode, ctx) {
     if (multilineMode === 'off') {
         yield* lines;
         return;
     }
-    const ctx = (0, multiline_buffer_js_1.createContinuationContext)(multilineMode);
+    const continuationContext = ctx ?? (0, multiline_buffer_js_1.createContinuationContext)(multilineMode);
     let buffer = [];
     for await (const line of lines) {
-        if (buffer.length > 0 && (0, multiline_buffer_js_1.isContinuationLine)(line, ctx)) {
+        if (buffer.length > 0 && (0, multiline_buffer_js_1.isContinuationLine)(line, continuationContext)) {
             buffer.push(line);
-            ctx.groupLineCount += 1;
-            ctx.groupByteCount += Buffer.byteLength(line, 'utf8');
+            continuationContext.groupLineCount += 1;
+            continuationContext.groupByteCount += Buffer.byteLength(line, 'utf8');
             continue;
         }
         if (buffer.length > 0) {
             yield buffer.join('\n');
         }
-        ctx.previousLine = line;
-        ctx.groupLineCount = 1;
-        ctx.groupByteCount = Buffer.byteLength(line, 'utf8');
+        continuationContext.previousLine = line;
+        continuationContext.groupLineCount = 1;
+        continuationContext.groupByteCount = Buffer.byteLength(line, 'utf8');
         buffer = [line];
     }
     if (buffer.length > 0) {
@@ -176,14 +190,24 @@ async function processLogStream(input, output, options = {}) {
     const customInternalStackRegexes = merged.internalStackPatterns.map((p) => compileConfigRegex(p, 'u'));
     const customSanitizeRules = merged.sanitizePatterns.map((r) => ({ regex: compileConfigRegex(r.pattern, r.flags ?? 'gu'), replacement: r.replacement }));
     const stats = createEmptyStats();
+    const pemState = (0, pem_block_js_1.createPemBlockState)();
     const detectedSourceState = (0, source_detector_js_1.createSourceDetectionState)(merged.mergedSources);
-    // TF-IDF: frequency map for sanitized lines (bounded for memory safety)
-    const seenLines = new Map();
+    // TF-IDF: frequency counter for sanitized lines.
+    // Count-Min Sketch provides constant-memory approximate counting
+    // (~128 KB regardless of stream size).
+    const seenLines = new count_min_sketch_js_1.CountMinSketch(8192, 4);
     // Context window: ring-buffer of soft-scored lines pending near-error promotion
     const contextBefore = [];
+    // Access-log burst bucket: collapse repeated 2xx/3xx access-log lines in
+    // the context-before buffer so error context is not drowned by health checks.
+    let accessBucket = null;
     let afterContextRemaining = 0;
+    // Auto-source multiline: share the context so detected sources can steer grouping.
+    const multilineCtx = multilineMode === 'auto-source'
+        ? (0, multiline_buffer_js_1.createContinuationContext)(multilineMode)
+        : undefined;
     const rawLines = (0, node_readline_1.createInterface)({ input, crlfDelay: Infinity });
-    const lines = readLogicalLines(rawLines, multilineMode);
+    const lines = readLogicalLines(rawLines, multilineMode, multilineCtx);
     let previousGroup;
     let hidingInternalStack = false;
     let detectedFormat;
@@ -241,6 +265,10 @@ async function processLogStream(input, output, options = {}) {
     };
     // Flush buffered context lines (retroactive promotion near an error)
     const flushContextBefore = async () => {
+        const ejected = (0, access_log_bucket_js_1.flushAccessBucket)(accessBucket);
+        if (ejected !== null)
+            contextBefore.push(ejected);
+        accessBucket = null;
         for (const buffered of contextBefore) {
             await emitCandidate(buffered);
         }
@@ -263,6 +291,14 @@ async function processLogStream(input, output, options = {}) {
         let line = String(rawLine);
         const physicalLineCount = line.split('\n').length;
         (0, source_detector_js_1.collectDetectedSourceHits)(line, detectedSourceState);
+        // Update auto-source multiline context when the top detected source changes.
+        if (multilineCtx !== undefined) {
+            const [top] = (0, source_detector_js_1.rankDetectedSources)(detectedSourceState, 1);
+            const resolved = (0, auto_multiline_resolver_js_1.effectiveMultilineMode)('auto-source', top !== undefined ? [top] : []);
+            if (resolved !== multilineCtx.effectiveMode) {
+                multilineCtx.effectiveMode = resolved;
+            }
+        }
         stats.inputLines += physicalLineCount;
         stats.inputWords += countWords(line);
         stats.inputBytes += Buffer.byteLength(`${line}\n`, 'utf8');
@@ -331,7 +367,14 @@ async function processLogStream(input, output, options = {}) {
             dropLine(line, physicalLineCount, 'ignored-tag');
             continue;
         }
-        let sanitized = (0, sanitize_line_js_1.sanitizeLine)(line);
+        // PEM block masking (before sanitizeLine so IPs inside PEM are not double-annotated)
+        const masked = (0, pem_block_js_1.maskPemBlock)(line, pemState);
+        if (masked === null) {
+            dropLine(line, physicalLineCount, 'custom-ignore');
+            continue;
+        }
+        line = masked;
+        let sanitized = (0, sanitize_line_js_1.sanitizeLine)(line, options.preserveIdSuffix ?? 0);
         // Apply custom sanitize rules
         for (const rule of customSanitizeRules) {
             sanitized = sanitized.replace(rule.regex, rule.replacement);
@@ -339,7 +382,9 @@ async function processLogStream(input, output, options = {}) {
         // Internal stack-frame collapsing (priority over scoring)
         const isCustomInternalStack = customInternalStackRegexes.length > 0 &&
             customInternalStackRegexes.some((r) => testRegex(r, sanitized));
-        if ((0, relevance_score_js_1.isInternalStackTraceLine)(sanitized) || isCustomInternalStack) {
+        const skipInternalStack = detectedFormat === 'json' && sanitized.startsWith('{');
+        if (!skipInternalStack &&
+            ((0, relevance_score_js_1.isInternalStackTraceLine)(sanitized) || isCustomInternalStack)) {
             stats.hiddenInternalStackLines += physicalLineCount;
             if (!hidingInternalStack) {
                 await flushContextBefore();
@@ -359,16 +404,50 @@ async function processLogStream(input, output, options = {}) {
             continue;
         }
         hidingInternalStack = false;
+        // Normalize stack-frame line:column references so repeated
+        // stack traces with identical structure collapse via deduplication.
+        // Runs after internal-stack hiding so line/col in internal frames
+        // are already collapsed.
+        sanitized = (0, stack_fingerprint_js_1.normalizeStackFrameLineCol)(sanitized);
         // TF-IDF: track how many times this sanitized form has appeared.
-        let seenCount = (seenLines.get(sanitized) ?? 0) + 1;
-        if (seenCount === 1 && seenLines.size >= constants_js_1.TFIDF_MAP_LIMIT) {
-            seenLines.clear();
-            seenCount = 1;
+        // Count-Min Sketch provides approximate counts in constant memory.
+        const seenCount = seenLines.increment(sanitized);
+        // Structured JSON-line scoring (pino/winston/bunyan): when the detected
+        // format is JSON, use the parsed level field for deterministic keep/drop
+        // decisions instead of regex-matching the raw text.
+        let jsonParsedScore;
+        if (detectedFormat === 'json') {
+            const parsed = (0, json_line_extractor_js_1.scoreJsonLine)(sanitized);
+            if (parsed === null) {
+                dropLine(line, physicalLineCount, 'ignored-tag');
+                continue;
+            }
+            if (parsed !== undefined) {
+                // Hard-keep error/fatal/critical JSON lines; warn lines (50) fall
+                // through to standard context-window buffering.
+                if (parsed >= 80) {
+                    await flushContextBefore();
+                    await emitCandidate(sanitized);
+                    afterContextRemaining = contextWindowAfter;
+                    recordDecision({
+                        line,
+                        sanitizedLine: sanitized,
+                        kept: true,
+                        dropped: false,
+                        hardKeep: false,
+                        repeated: false,
+                        reason: 'hard-keep',
+                    });
+                    continue;
+                }
+                jsonParsedScore = parsed;
+            }
         }
-        seenLines.set(sanitized, seenCount);
-        // Score the sanitized line (built-in + custom diagnostic patterns)
+        // Score the sanitized line (built-in + custom diagnostic patterns).
+        // Skip regex-based scoring for JSON lines that were successfully parsed
+        // (their level-based score is used instead).
         const effectiveAggressiveness = dynamicAggressiveness.effective;
-        let score = (0, relevance_score_js_1.scoreLineRelevance)(sanitized, effectiveAggressiveness, seenCount);
+        let score = jsonParsedScore ?? (0, relevance_score_js_1.scoreLineRelevance)(sanitized, effectiveAggressiveness, seenCount);
         // Custom diagnostic patterns contribute +50 per match (same as built-in DIAGNOSTIC_PATTERN)
         for (const regex of customDiagnosticRegexes) {
             if (testRegex(regex, sanitized)) {
@@ -376,7 +455,7 @@ async function processLogStream(input, output, options = {}) {
                 break;
             }
         }
-        score += (0, source_detector_js_1.scoreSourceDiagnosticBoost)(sanitized, detectedSourceState);
+        score += (0, source_detector_js_1.scoreSourceDiagnosticBoost)(sanitized, detectedSourceState, stats.inputLines);
         if (score >= constants_js_1.SCORE_KEEP_THRESHOLD) {
             // Hard keep: flush buffered context, emit, open after-context window
             await flushContextBefore();
@@ -430,7 +509,22 @@ async function processLogStream(input, output, options = {}) {
                 stats.droppedLines += 1;
                 droppedBufferedLine = true;
             }
-            contextBefore.push(sanitized);
+            // Collapse access-log 2xx/3xx bursts: successive health-check lines
+            // for the same endpoint are folded into a single `[xN access-log 2xx]`
+            // entry so error context is not drowned by request noise.
+            if (detectedFormat !== 'json') {
+                const { bucket, ejected, passThrough } = (0, access_log_bucket_js_1.accessBucketPush)(accessBucket, sanitized);
+                accessBucket = bucket;
+                if (ejected !== null) {
+                    contextBefore.push(ejected);
+                }
+                if (passThrough !== null) {
+                    contextBefore.push(passThrough);
+                }
+            }
+            else {
+                contextBefore.push(sanitized);
+            }
             recordDecision({
                 line,
                 sanitizedLine: sanitized,
@@ -461,6 +555,14 @@ async function processLogStream(input, output, options = {}) {
     // Context lines left without a triggering error are discarded
     stats.droppedLines += contextBefore.length;
     contextBefore.length = 0;
+    // Unterminated PEM block guard
+    if (pemState.inside) {
+        const warningLine = '[PEM block unterminated - input redacted]';
+        stats.outputWords += countWords(warningLine);
+        stats.outputBytes += Buffer.byteLength(`${warningLine}\n`, 'utf8');
+        stats.truncatedLines = stats.truncatedLines + 1;
+        await emitOutputLine(warningLine);
+    }
     await flushPreviousLine();
     const inputTokens = tokenEstimator === undefined
         ? (0, relevance_score_js_1.estimateTokens)(stats.inputWords)
@@ -592,7 +694,7 @@ function explainLogLine(line, options = {}) {
     if ((0, relevance_score_js_1.isIgnoredLogLine)(line)) {
         return createDecision(line, undefined, false, 'ignored-tag');
     }
-    let sanitized = (0, sanitize_line_js_1.sanitizeLine)(line);
+    let sanitized = (0, sanitize_line_js_1.sanitizeLine)(line, options.preserveIdSuffix ?? 0);
     for (const rule of merged.sanitizePatterns) {
         sanitized = sanitized.replace(compileConfigRegex(rule.pattern, rule.flags ?? 'gu'), rule.replacement);
     }

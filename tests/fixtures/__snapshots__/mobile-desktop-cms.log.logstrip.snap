@@ -1,7 +1,7 @@
 [ERROR] react-native Error: bundling failed: Error: Unable to resolve module `@company/auth` from `/app/src/App.tsx`
 [... hidden internal library frames ...]
 [ERROR] flutter Error: FormatException: Invalid UTF-8 in response body
-    at _parseBody (/app/.pub-cache/hosted/pub.dev/http-1.2.0/lib/src/response.dart:42:15)
+    at _parseBody (/app/.pub-cache/hosted/pub.dev/http-1.2.0/lib/src/response.dart:[NN]:[NN])
     at dart:async/zone.dart:88 in _rootRun
 [ERROR] expo start Error: TypeError: Cannot read properties of undefined (reading 'apiKey')
 [... hidden internal library frames ...]

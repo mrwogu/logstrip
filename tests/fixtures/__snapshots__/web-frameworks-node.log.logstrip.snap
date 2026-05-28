@@ -2,7 +2,7 @@
 [... hidden internal library frames ...]
 [ERROR] fastify FST_ERR_CTR_INITIALIZER: plugin initialization failed
 [... hidden internal library frames ...]
-    at process._tickCallback (node:internal/process/next_tick:28)
+    at process._tickCallback (node:internal/process/next_tick:[NN]))
 [ERROR] @nestjs/core NestError: Circular dependency detected between AuthService and UserService
 [... hidden internal library frames ...]
 [ERROR] next build Error: Cannot resolve dependency 'react-dom/client'
@@ -18,7 +18,7 @@
 [ERROR] hono server TypeError: Cannot read properties of undefined (reading 'headers')
 [... hidden internal library frames ...]
 [ERROR] deno task Error: PermissionDenied: network access to "https://api.example.com", run again with --allow-net
-    at opDenoFetch (deno:runtime/js/30_fetch.js:88:11)
+    at opDenoFetch (deno:runtime/js/30_fetch.js:[NN]:[NN])
 [... hidden internal library frames ...]
 [ERROR] elysia server Error: ElysiaValidationError: Invalid body - expected { name: string, email: string }
 [... hidden internal library frames ...]
