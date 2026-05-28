@@ -12,19 +12,43 @@ The parser replaces common high-cardinality identifiers:
 
 - UUIDs become `[ID]`;
 - ISO and UTC timestamps become `[TIME]`;
-- long hexadecimal or alphanumeric hashes become `[HASH]`.
+- long hexadecimal or alphanumeric hashes become `[HASH]`;
+- IPv4 addresses become `[IP]`;
+- IPv6 addresses become `[IPV6]`;
+- email addresses become `[EMAIL]`.
 
 This lowers token cost and removes identifiers that rarely help root-cause analysis.
+
+## Secret and credential coverage
+
+LogStrip detects and redacts known credential patterns:
+
+| Pattern | Replacement | Example |
+|---|---|---|
+| GitHub tokens (`ghp_`, `gho_`, etc.) | `[REDACTED]` | `ghp_abc123...` |
+| JWT tokens | `[JWT]` | `eyJ...` |
+| Slack tokens (`xoxb-`, `xoxp-`, etc.) | `[REDACTED]` | `xoxb-1234567890-...` |
+| Stripe API keys (`sk_live_`, `pk_test_`, etc.) | `[REDACTED]` | `sk_live_51ABC...` |
+| npm access tokens (`npm_`) | `[REDACTED]` | `npm_ABCDEF...` |
+| Google API keys (`AIza`) | `[REDACTED]` | `AIzaSyB9abc...` |
+| Twilio keys (`SK`, `AC`) | `[REDACTED]` | `SKabcdef12...` |
+| SendGrid keys (`SG.`) | `[REDACTED]` | `SG.Abcd...XyZ` |
+| Connection strings with credentials | `[REDACTED]` (password) | `postgres://user:pwd@host` |
+| Authorization headers | `Authorization: [REDACTED]` | `Authorization: Bearer xyz` |
+| Secret field values | key=`[REDACTED]` | `password=hunter2` |
+| AWS access keys (`AKIA`, `ABIA`, `ASIA`) | `[REDACTED]` | `AKIAIOSFODNN7...` |
+| AWS ARN account IDs | `[ACCOUNT]` | `arn:aws:s3:::123456789012:...` |
+| PEM private key blocks | `[PEM PRIVATE KEY REDACTED]` | `-----BEGIN RSA PRIVATE KEY-----` |
+
+Multi-line PEM private key blocks are collapsed to a single `[PEM PRIVATE KEY REDACTED]` marker, with the key body fully removed.
 
 ## What is not guaranteed
 
 LogStrip is not a secret scanner. It does not guarantee removal of:
 
-- API keys;
-- passwords;
-- private keys;
+- passwords in non-standard formats;
 - customer data;
-- arbitrary access tokens.
+- arbitrary access tokens not matching known patterns.
 
 Run a dedicated secret scanner before sending logs to third-party systems if your logs may contain sensitive content.
 
