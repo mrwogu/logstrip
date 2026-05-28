@@ -1,16 +1,16 @@
 [ERROR] TypeError: Cannot read properties of undefined (reading 'amount') at request [ID]
-    at Payments.charge (/repo/src/payments.ts:42:18)
-    at Object.<anonymous> (/repo/src/payments.test.ts:31:25)
+    at Payments.charge (/repo/src/payments.ts:[NN]:[NN])
+    at Object.<anonymous> (/repo/src/payments.test.ts:[NN]:[NN])
 [... hidden internal library frames ...]
     at new Promise (<anonymous>)
 [... hidden internal library frames ...]
 [ERROR] TypeError: Cannot read properties of undefined (reading 'amount') at request [ID]
-    at Payments.charge (/repo/src/payments.ts:42:18)
-    at Object.<anonymous> (/repo/src/payments.test.ts:48:25)
+    at Payments.charge (/repo/src/payments.ts:[NN]:[NN])
+    at Object.<anonymous> (/repo/src/payments.test.ts:[NN]:[NN])
 [... hidden internal library frames ...]
     at new Promise (<anonymous>)
 [... hidden internal library frames ...]
 [ERROR] TypeError: Cannot read properties of undefined (reading 'amount') at request [ID]
-    at Payments.charge (/repo/src/payments.ts:42:18)
-    at Object.<anonymous> (/repo/src/payments.test.ts:65:25)
+    at Payments.charge (/repo/src/payments.ts:[NN]:[NN])
+    at Object.<anonymous> (/repo/src/payments.test.ts:[NN]:[NN])
 [x2] [... hidden internal library frames ...]
