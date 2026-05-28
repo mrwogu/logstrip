@@ -625,6 +625,28 @@ describe('runCli', () => {
     expect((error as CliError).message).toContain('Unsupported multiline mode');
   });
 
+  it('parses --preserve-id-suffix flag', () => {
+    const opts = parseCliOptions(['raw.log', '--preserve-id-suffix', '8']);
+    expect(opts.preserveIdSuffix).toBe(8);
+
+    const opts2 = parseCliOptions(['raw.log', '--preserve-id-suffix', '0']);
+    expect(opts2.preserveIdSuffix).toBe(0);
+
+    const opts3 = parseCliOptions(['raw.log']);
+    expect(opts3.preserveIdSuffix).toBeUndefined();
+  });
+
+  it('rejects invalid --preserve-id-suffix values', () => {
+    const check = (val: string) => {
+      try { parseCliOptions(['raw.log', '--preserve-id-suffix', val]); return undefined; }
+      catch (e) { return e; }
+    };
+
+    expect(check('-1')).toBeInstanceOf(CliError);
+    expect(check('17')).toBeInstanceOf(CliError);
+    expect(check('abc')).toBeInstanceOf(CliError);
+  });
+
   it('rejects invalid --severity level', () => {
     const error = (() => {
       try { parseCliOptions(['raw.log', '--severity', 'verbose']); return undefined; }
