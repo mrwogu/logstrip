@@ -5,6 +5,7 @@ import {
 } from '../constants.js';
 import type { Aggressiveness } from '../types.js';
 import { isAccessLogNoiseLine } from '../formats/access-log-classifier.js';
+import { DIAGNOSTIC_BOOSTERS } from './diagnostic-boosters.js';
 
 const IGNORED_LOG_TAG_PATTERN =
   /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
@@ -111,8 +112,18 @@ export function isInternalStackTraceLine(line: string): boolean {
   return looksLikeDiagnosticLine(line) && INTERNAL_STACK_PATTERN.test(line);
 }
 
-export function estimateTokens(wordCount: number): number {
-  return Math.ceil(wordCount * 1.3);
+export function estimateTokens(wordCountOrText: number | string): number {
+  if (typeof wordCountOrText === 'number') {
+    return Math.ceil(wordCountOrText * 1.3);
+  }
+
+  const text = wordCountOrText;
+
+  // CJK characters count roughly 1 token each; the rest average ~4 chars per token.
+  const cjk = (text.match(/[\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/gu)?.length ?? 0);
+  const rest = text.length - cjk;
+
+  return Math.ceil(cjk * 1.0 + rest / 4);
 }
 
 const HTTP_5XX_PATTERN = /\bHTTP\/\d\.\d"\s+5\d{2}\b/u;
@@ -129,37 +140,9 @@ export function scoreLineRelevance(
 
   let score = 0;
 
-  if (IMPORTANT_LOG_TAG_PATTERN.test(line)) score += 100;
-  if (JSON_SEVERITY_PATTERN.test(line)) score += 80;
-  if (SCANNER_FINDING_PATTERN.test(line)) score += 70;
-  if (CONTAINER_FAILURE_PATTERN.test(line)) score += 70;
-  if (GITHUB_ACTIONS_ANNOTATION_PATTERN.test(line)) score += 70;
-  if (GRADLE_FAILURE_PATTERN.test(line)) score += 60;
-  if (NPM_ERROR_PATTERN.test(line) || YARN_ERROR_PATTERN.test(line)) score += 60;
-  if (DIAGNOSTIC_PATTERN.test(line)) score += 50;
-  if (GO_TEST_FAIL_PATTERN.test(line)) score += 50;
-  if (MAKE_ERROR_PATTERN.test(line)) score += 50;
-  if (SYSTEMD_STATUS_PATTERN.test(line)) score += 50;
-  if (CIRCLECI_STEP_PATTERN.test(line)) score += 50;
-  if (JENKINS_MARKER_PATTERN.test(line)) score += 40;
-  if (AZURE_PIPELINE_PATTERN.test(line)) score += 40;
-  if (TEAMCITY_MARKER_PATTERN.test(line)) score += 40;
-
-  // HTTP status codes in access log lines
-  if (HTTP_5XX_PATTERN.test(line)) score += 50;
-  if (HTTP_4XX_PATTERN.test(line)) score += 20;
-
-  if (
-    STACK_FRAME_PATTERN.test(line) ||
-    JAVA_STACK_FRAME_PATTERN.test(line) ||
-    PYTHON_STACK_FRAME_PATTERN.test(line) ||
-    GO_STACK_FRAME_PATTERN.test(line) ||
-    GO_FILE_FRAME_PATTERN.test(line) ||
-    GO_GOROUTINE_PATTERN.test(line) ||
-    PYTHON_TRACEBACK_PATTERN.test(line) ||
-    STACK_MORE_PATTERN.test(line)
-  ) {
-    score += 40;
+  // Iterate consolidated diagnostic booster table.
+  for (const b of DIAGNOSTIC_BOOSTERS) {
+    if (b.pattern.test(line)) score += b.score;
   }
 
   if (
