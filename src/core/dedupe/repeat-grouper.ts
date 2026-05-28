@@ -6,6 +6,8 @@ export interface RepeatGroup {
   signature: string;
   deltas: Map<number, RepeatDelta>;
   count: number;
+  firstSeen: number | null;
+  lastSeen: number | null;
 }
 
 interface RepeatTokenValue {
@@ -41,12 +43,15 @@ export function createRepeatSignature(line: string): string {
 }
 
 export function createRepeatGroup(line: string): RepeatGroup {
+  const ts = extractTimestampMs(line);
   return {
     firstLine: line,
     firstTokens: tokenizeRepeatLine(line),
     signature: createRepeatSignature(line),
     deltas: new Map<number, RepeatDelta>(),
     count: 1,
+    firstSeen: ts,
+    lastSeen: ts,
   };
 }
 
@@ -90,24 +95,58 @@ export function addRepeatGroupLine(group: RepeatGroup, line: string): void {
     }
   }
 
+  const ts = extractTimestampMs(line);
+  if (ts !== null && (group.lastSeen === null || ts > group.lastSeen)) {
+    group.lastSeen = ts;
+  }
+
   group.count += 1;
 }
 
+const TIMESTAMP_CANDIDATE = /\b(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z?)\b/u;
+
+function extractTimestampMs(line: string): number | null {
+  const match = TIMESTAMP_CANDIDATE.exec(line);
+  if (!match) return null;
+  const ms = Date.parse(match[1]);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+export function getRepeatGroupSpreadMs(group: RepeatGroup): number | null {
+  if (group.firstSeen === null || group.lastSeen === null) return null;
+  return group.lastSeen - group.firstSeen;
+}
+
 export function renderRepeatGroup(group: RepeatGroup): string {
-  if (group.deltas.size === 0) {
-    return group.firstLine;
+  const baseTokens =
+    group.deltas.size === 0 ? group.firstTokens : mergeDeltaTokens(group);
+
+  let line = baseTokens.join(' ');
+
+  const spread = getRepeatGroupSpreadMs(group);
+  if (spread !== null && spread > 5000) {
+    const spreadStr = formatDurationMs(spread);
+    line += ` [~${spreadStr}]`;
   }
 
-  const tokens = [...group.firstTokens];
+  return line;
+}
 
+function mergeDeltaTokens(group: RepeatGroup): string[] {
+  const tokens = [...group.firstTokens];
   for (const [index, delta] of group.deltas) {
     const values = delta.hasMoreValues
       ? [...delta.values, '…']
       : delta.values;
     tokens[index] = `${delta.prefix}[${values.join(' | ')}]`;
   }
+  return tokens;
+}
 
-  return tokens.join(' ');
+function formatDurationMs(ms: number): string {
+  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
+  return `${Math.round(ms / 3_600_000)}h`;
 }
 
 function tokenizeRepeatLine(line: string): string[] {
