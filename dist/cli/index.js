@@ -15,7 +15,7 @@ const node_util_1 = require("node:util");
 const logstrip_parser_1 = require("../core/logstrip-parser");
 const telemetry_store_1 = require("../core/telemetry/telemetry-store");
 const hook_runner_1 = require("./hook-runner");
-exports.CLI_VERSION = '1.7.0'; // x-release-please-version
+exports.CLI_VERSION = '1.8.0'; // x-release-please-version
 exports.HOOK_SUBCOMMAND = 'hook';
 exports.HELP_TEXT = `Usage: logstrip [INPUT] [options]
        logstrip hook
