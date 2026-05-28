@@ -20,7 +20,7 @@ import {
 } from '../core/telemetry/telemetry-store';
 import { runHookCommand } from './hook-runner';
 
-export const CLI_VERSION = '1.6.1'; // x-release-please-version
+export const CLI_VERSION = '1.7.0'; // x-release-please-version
 
 export const HOOK_SUBCOMMAND = 'hook';
 

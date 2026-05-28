@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/mrwogu/logstrip/compare/v1.6.1...v1.7.0) (2026-05-28)
+
+
+### Features
+
+* add format-aware access log compression and extend diagnostic boost patterns ([866f27f](https://github.com/mrwogu/logstrip/commit/866f27fa877f3014436bb923e12c3a43eaa7e494))
+* format-aware access log compression + expanded diagnostic boost patterns ([d4bb6a8](https://github.com/mrwogu/logstrip/commit/d4bb6a88232bd84901e30eed1aeaee7674525b71))
+
 ## [1.6.1](https://github.com/mrwogu/logstrip/compare/v1.6.0...v1.6.1) (2026-05-27)
 
 
