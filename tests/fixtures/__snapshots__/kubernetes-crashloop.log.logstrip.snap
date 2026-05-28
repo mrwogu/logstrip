@@ -1,15 +1,14 @@
-Normal Pulled  2m36s kubelet Successfully pulled image "registry.example.com/checkout:1.9.4"
-Normal Created  2m36s kubelet Created container checkout-api
-Normal Started  2m35s kubelet Started container checkout-api
-Warning BackOff  2m34s kubelet Back-off restarting failed container checkout-api in pod checkout-api-84b7c46f8b-r9x2n_default([ID])
-Warning BackOff  2m33s kubelet Back-off restarting failed container checkout-api in pod checkout-api-84b7c46f8b-r9x2n_default([ID])
-Warning Failed  2m31s kubelet Error: ErrImagePull
-Warning Failed  2m30s kubelet Failed to pull image "registry.example.com/checkout@sha256:[HASH]"
-Warning Failed  2m29s kubelet rpc error: code = Unknown desc = failed to resolve reference "registry.example.com/checkout@sha256:[HASH]"
+Normal Pulled  [AGO] kubelet Successfully pulled image "registry.example.com/checkout:1.9.4"
+Normal Created  [AGO] kubelet Created container checkout-api
+Normal Started  [AGO] kubelet Started container checkout-api
+[x2] Warning BackOff [AGO] kubelet Back-off restarting failed container checkout-api in pod checkout-api-84b7c46f8b-r9x2n_default([ID])
+Warning Failed  [AGO] kubelet Error: ErrImagePull
+Warning Failed  [AGO] kubelet Failed to pull image "registry.example.com/checkout@sha256:[HASH]"
+Warning Failed  [AGO] kubelet rpc error: code = Unknown desc = failed to resolve reference "registry.example.com/checkout@sha256:[HASH]"
 panic: runtime error: invalid memory address or nil pointer dereference
 goroutine 125 [running]:
 main.(*Server).Start(0xc0001212c0)
-	/workspace/cmd/server/main.go:88 +0x1f3
+	/workspace/cmd/server/main.go:[NN] +0x1f3
 k8s.io/client-go/tools/cache.(*processorListener).run.func1()
 [... hidden internal library frames ...]
 runtime.goexit()
