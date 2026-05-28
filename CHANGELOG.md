@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.8.0](https://github.com/mrwogu/logstrip/compare/v1.7.0...v1.8.0) (2026-05-28)
+
+
+### Features
+
+* **cli:** --preserve-id-suffix=N keeps last N chars of UUIDs and hashes for trace correlation ([f3a05cb](https://github.com/mrwogu/logstrip/commit/f3a05cbe454a511e7013206576a07dd7ffe40772))
+* **dedupe:** collapse repeated stack-trace windows by error fingerprint ([896b957](https://github.com/mrwogu/logstrip/commit/896b95774a76bc87ff72cefc3b5954417086aa01))
+* **detection:** lower source-active confidence threshold for short logs (&lt;200 lines) ([9302b90](https://github.com/mrwogu/logstrip/commit/9302b90101a8b1eb09e4260d2f76056d83cfb68b))
+* **parser:** auto-multiline mode infers from detected sources ([91d2340](https://github.com/mrwogu/logstrip/commit/91d23405ca1c67aaf46e5332f179c0a007f065d9))
+* **parser:** collapse 2xx access-log bursts in context window ([5a74d17](https://github.com/mrwogu/logstrip/commit/5a74d1774d8f664d9cd940e63e46d75481b8fe50))
+* **parser:** structured JSON-line scoring uses level field for pino/winston/bunyan logs ([9f12825](https://github.com/mrwogu/logstrip/commit/9f12825c5c47f02e705fa2fff6f4a66e63880aa3))
+* **parser:** track timestamp spread within repeat groups ([0940633](https://github.com/mrwogu/logstrip/commit/09406337e25c70a4acb9680072f708e5e78a6704))
+* **sanitize:** normalize Kubernetes-style relative durations (2m34s) to [AGO] ([572f52c](https://github.com/mrwogu/logstrip/commit/572f52c0d0de1e91c107c1436e694a3961304c3c))
+* **sanitize:** redact IPv6, emails, Stripe/npm/Google/Twilio/SendGrid tokens and PEM private key blocks ([6d03fea](https://github.com/mrwogu/logstrip/commit/6d03fea65db7c6dea8df3ca7e38a3427a1d62549))
+
+
+### Performance Improvements
+
+* **tfidf:** switch frequency map to Count-Min Sketch for memory-stable counting ([676de5b](https://github.com/mrwogu/logstrip/commit/676de5b0cc532b7d8d4f1438e3e35e772be275f1))
+
 ## [1.7.0](https://github.com/mrwogu/logstrip/compare/v1.6.1...v1.7.0) (2026-05-28)
 
 
