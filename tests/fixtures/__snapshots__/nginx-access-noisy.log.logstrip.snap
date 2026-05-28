@@ -1,14 +1,10 @@
-[IP] - - [[TIME]] "GET /assets/app.css HTTP/1.1" 200 18421 "https://checkout.example.com/cart" "Mozilla/5.0" request_id=[ID] upstream=[IP]:[PORT]
 [IP] - - [[TIME]] "GET /api/cart HTTP/1.1" 200 912 "https://checkout.example.com/cart" "Mozilla/5.0" request_id=[ID] upstream=[IP]:[PORT]
 [IP] - - [[TIME]] "POST /api/checkout HTTP/1.1" 502 157 "https://checkout.example.com/cart" "Mozilla/5.0" request_id=[ID] upstream=[IP]:[PORT]
 [TIME] [error] 142#142: *918 connect() failed (111: Connection refused) while connecting to upstream, client: [IP], server: checkout.example.com, request: "POST /api/checkout HTTP/1.1", upstream: "http://[IP]:[PORT]/api/checkout", host: "checkout.example.com", request_id: "[ID]"
 [IP] - - [[TIME]] "GET /api/recommendations HTTP/1.1" 200 2048 "https://checkout.example.com/cart" "Mozilla/5.0" request_id=[ID] upstream=[IP]:[PORT]
-[IP] - - [[TIME]] "GET /static/logo.svg HTTP/1.1" 304 0 "https://checkout.example.com/cart" "Mozilla/5.0" request_id=[ID] upstream=-
 [IP] - - [[TIME]] "POST /api/checkout HTTP/1.1" 504 172 "https://checkout.example.com/cart" "Mozilla/5.0" request_id=[ID] upstream=[IP]:[PORT]
 [TIME] [error] 142#142: *927 upstream timed out (110: Connection timed out) while reading response header from upstream, client: [IP], server: checkout.example.com, request: "POST /api/checkout HTTP/1.1", upstream: "http://[IP]:[PORT]/api/checkout", host: "checkout.example.com", request_id: "[ID]"
 [IP] - - [[TIME]] "GET /api/cart HTTP/1.1" 200 913 "https://checkout.example.com/cart" "Mozilla/5.0" request_id=[ID] upstream=[IP]:[PORT]
-[IP] - - [[TIME]] "GET /metrics HTTP/1.1" 200 3841 "-" "Prometheus/2.52.0" request_id=[ID] upstream=-
 [IP] - - [[TIME]] "POST /api/payment/authorize HTTP/1.1" 502 188 "https://checkout.example.com/payment" "Mozilla/5.0" request_id=[ID] upstream=[IP]:[PORT]
 [x2] [TIME] [error] 142#142: *935 recv() failed (104: Connection reset by peer) while reading response header from upstream, client: [IP], server: checkout.example.com, request: "POST /api/payment/authorize HTTP/1.1", upstream: "http://[IP]:[PORT]/api/payment/authorize", host: "checkout.example.com", request_id: "[ID]"
 [IP] - - [[TIME]] "GET /favicon.ico HTTP/1.1" 404 162 "https://checkout.example.com/cart" "Mozilla/5.0" request_id=[ID] upstream=-
-[IP] - - [[TIME]] "GET /healthz HTTP/1.1" 200 2 "-" "kube-probe/1.30" request_id=[ID] upstream=-

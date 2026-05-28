@@ -151,7 +151,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'nginx-access-noisy.log',
-    minSavingsPercent: 15,
+    minSavingsPercent: 30,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LogStripError = exports.saveTelemetry = exports.recordTelemetry = exports.loadTelemetry = exports.formatTelemetrySummary = exports.resolveConfigPath = exports.parseLogStripConfig = exports.LOG_SOURCE_SIGNATURES = exports.KNOWN_LOG_SOURCES = exports.shouldKeepLine = exports.scoreLineRelevance = exports.looksLikeDiagnosticLine = exports.isProgressBarLine = exports.isCiNoiseLine = exports.isInternalStackTraceLine = exports.estimateTokens = exports.sanitizeLine = exports.isContinuationLine = exports.detectLogSources = exports.createRepeatSignature = exports.TFIDF_REPEAT_THRESHOLD = exports.TFIDF_PENALTY = exports.TFIDF_MAP_LIMIT = exports.SCORE_KEEP_THRESHOLD = exports.MAX_REPEAT_DELTA_VALUES = exports.INTERNAL_STACK_MARKER = exports.CONTEXT_WINDOW_BEFORE = exports.CONTEXT_WINDOW_AFTER = exports.parseAggressiveness = exports.detectFormat = exports.passesSeverityFilter = exports.parseSeverityLevel = exports.inferSeverity = void 0;
+exports.LogStripError = exports.saveTelemetry = exports.recordTelemetry = exports.loadTelemetry = exports.formatTelemetrySummary = exports.resolveConfigPath = exports.parseLogStripConfig = exports.LOG_SOURCE_SIGNATURES = exports.KNOWN_LOG_SOURCES = exports.shouldKeepLine = exports.scoreLineRelevance = exports.looksLikeDiagnosticLine = exports.isProgressBarLine = exports.isCiNoiseLine = exports.isInternalStackTraceLine = exports.isAccessLogNoiseLine = exports.estimateTokens = exports.sanitizeLine = exports.isContinuationLine = exports.detectLogSources = exports.createRepeatSignature = exports.TFIDF_REPEAT_THRESHOLD = exports.TFIDF_PENALTY = exports.TFIDF_MAP_LIMIT = exports.SCORE_KEEP_THRESHOLD = exports.MAX_REPEAT_DELTA_VALUES = exports.INTERNAL_STACK_MARKER = exports.CONTEXT_WINDOW_BEFORE = exports.CONTEXT_WINDOW_AFTER = exports.parseAggressiveness = exports.detectFormat = exports.passesSeverityFilter = exports.parseSeverityLevel = exports.inferSeverity = void 0;
 exports.buildMergedConfig = buildMergedConfig;
 exports.processLogStream = processLogStream;
 exports.processLogFile = processLogFile;
@@ -58,6 +58,7 @@ var sanitize_line_js_2 = require("./sanitize/sanitize-line.js");
 Object.defineProperty(exports, "sanitizeLine", { enumerable: true, get: function () { return sanitize_line_js_2.sanitizeLine; } });
 var relevance_score_js_2 = require("./scoring/relevance-score.js");
 Object.defineProperty(exports, "estimateTokens", { enumerable: true, get: function () { return relevance_score_js_2.estimateTokens; } });
+Object.defineProperty(exports, "isAccessLogNoiseLine", { enumerable: true, get: function () { return relevance_score_js_2.isAccessLogNoiseLine; } });
 Object.defineProperty(exports, "isInternalStackTraceLine", { enumerable: true, get: function () { return relevance_score_js_2.isInternalStackTraceLine; } });
 Object.defineProperty(exports, "isCiNoiseLine", { enumerable: true, get: function () { return relevance_score_js_2.isCiNoiseLine; } });
 Object.defineProperty(exports, "isProgressBarLine", { enumerable: true, get: function () { return relevance_score_js_2.isProgressBarLine; } });
@@ -316,6 +317,11 @@ async function processLogStream(input, output, options = {}) {
         // CI noise: progress bars
         if ((0, relevance_score_js_1.isProgressBarLine)(line)) {
             dropLine(line, physicalLineCount, 'progress');
+            continue;
+        }
+        // Access log noise: health checks, static assets, metrics with non-error status
+        if ((0, relevance_score_js_1.isAccessLogNoiseLine)(line)) {
+            dropLine(line, physicalLineCount, 'ci-noise');
             continue;
         }
         // Noise tags (INFO/DEBUG/TRACE/VERBOSE) are silently dropped without
@@ -579,6 +585,9 @@ function explainLogLine(line, options = {}) {
     }
     if ((0, relevance_score_js_1.isProgressBarLine)(line)) {
         return createDecision(line, undefined, false, 'progress');
+    }
+    if ((0, relevance_score_js_1.isAccessLogNoiseLine)(line)) {
+        return createDecision(line, undefined, false, 'ci-noise');
     }
     if ((0, relevance_score_js_1.isIgnoredLogLine)(line)) {
         return createDecision(line, undefined, false, 'ignored-tag');
