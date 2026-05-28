@@ -3,7 +3,7 @@ import type { LogStripCustomConfig } from './logstrip-config.js';
 
 export type StaticAggressiveness = 'low' | 'medium' | 'high' | 'aggressive';
 export type Aggressiveness = StaticAggressiveness | 'auto';
-export type MultilineMode = 'auto' | 'python' | 'node' | 'java' | 'go' | 'rust' | 'off';
+export type MultilineMode = 'auto' | 'auto-source' | 'python' | 'node' | 'java' | 'go' | 'rust' | 'off';
 export type LogStripOutputFormat = 'text' | 'jsonl-preserve';
 export type LogStripErrorCode =
   | 'ABORTED'
@@ -66,6 +66,7 @@ export interface LogStripOptions {
   contextAfter?: number;
   dedupe?: boolean;
   tokenEstimator?: (line: string) => number;
+  preserveIdSuffix?: number;
 }
 
 export interface LogStripStats {
