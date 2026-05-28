@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.isAccessLogNoiseLine = void 0;
 exports.isIgnoredLogLine = isIgnoredLogLine;
 exports.shouldKeepLine = shouldKeepLine;
 exports.looksLikeDiagnosticLine = looksLikeDiagnosticLine;
@@ -92,6 +93,8 @@ function isInternalStackTraceLine(line) {
 function estimateTokens(wordCount) {
     return Math.ceil(wordCount * 1.3);
 }
+const HTTP_5XX_PATTERN = /\bHTTP\/\d\.\d"\s+5\d{2}\b/u;
+const HTTP_4XX_PATTERN = /\bHTTP\/\d\.\d"\s+4\d{2}\b/u;
 function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
     if (line.trim().length === 0)
         return -Infinity;
@@ -128,6 +131,11 @@ function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
         score += 40;
     if (TEAMCITY_MARKER_PATTERN.test(line))
         score += 40;
+    // HTTP status codes in access log lines
+    if (HTTP_5XX_PATTERN.test(line))
+        score += 50;
+    if (HTTP_4XX_PATTERN.test(line))
+        score += 20;
     if (STACK_FRAME_PATTERN.test(line) ||
         JAVA_STACK_FRAME_PATTERN.test(line) ||
         PYTHON_STACK_FRAME_PATTERN.test(line) ||
@@ -181,3 +189,6 @@ function isProgressBarLine(line) {
         return true;
     return false;
 }
+// Re-export access-log noise classifier for use in the main pipeline
+var access_log_classifier_js_1 = require("../formats/access-log-classifier.js");
+Object.defineProperty(exports, "isAccessLogNoiseLine", { enumerable: true, get: function () { return access_log_classifier_js_1.isAccessLogNoiseLine; } });

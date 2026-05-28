@@ -4,6 +4,7 @@ import {
   TFIDF_REPEAT_THRESHOLD,
 } from '../constants.js';
 import type { Aggressiveness } from '../types.js';
+import { isAccessLogNoiseLine } from '../formats/access-log-classifier.js';
 
 const IGNORED_LOG_TAG_PATTERN =
   /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
@@ -114,6 +115,9 @@ export function estimateTokens(wordCount: number): number {
   return Math.ceil(wordCount * 1.3);
 }
 
+const HTTP_5XX_PATTERN = /\bHTTP\/\d\.\d"\s+5\d{2}\b/u;
+const HTTP_4XX_PATTERN = /\bHTTP\/\d\.\d"\s+4\d{2}\b/u;
+
 export function scoreLineRelevance(
   line: string,
   aggressiveness: Aggressiveness,
@@ -140,6 +144,10 @@ export function scoreLineRelevance(
   if (JENKINS_MARKER_PATTERN.test(line)) score += 40;
   if (AZURE_PIPELINE_PATTERN.test(line)) score += 40;
   if (TEAMCITY_MARKER_PATTERN.test(line)) score += 40;
+
+  // HTTP status codes in access log lines
+  if (HTTP_5XX_PATTERN.test(line)) score += 50;
+  if (HTTP_4XX_PATTERN.test(line)) score += 20;
 
   if (
     STACK_FRAME_PATTERN.test(line) ||
@@ -207,4 +215,7 @@ export function isProgressBarLine(line: string): boolean {
   if (PROGRESS_BAR_VISUAL_PATTERN.test(line)) return true;
   return false;
 }
+
+// Re-export access-log noise classifier for use in the main pipeline
+export { isAccessLogNoiseLine } from '../formats/access-log-classifier.js';
 

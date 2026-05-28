@@ -1552,6 +1552,11 @@ describe('logstrip parser', () => {
     expect(explainLogLine('Downloading package 50%').reason).toBe('progress');
     expect(explainLogLine('[INFO] boot').reason).toBe('ignored-tag');
     expect(
+      explainLogLine(
+        '10.40.1.10 - - [16/May/2026:10:12:01 +0000] "GET /healthz HTTP/1.1" 200 2 "-" "kube-probe/1.30"',
+      ).reason,
+    ).toBe('ci-noise');
+    expect(
       explainLogLine('  at acme.run (/opt/acme/lib/core.js:10:5)', {
         config: {
           sources: [],

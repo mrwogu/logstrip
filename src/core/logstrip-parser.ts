@@ -47,6 +47,7 @@ import { passesSeverityFilter } from './severity/severity-filter.js';
 import type { SeverityLevel } from './severity/severity-filter.js';
 import {
   estimateTokens,
+  isAccessLogNoiseLine,
   isCiNoiseLine,
   isIgnoredLogLine,
   isInternalStackTraceLine,
@@ -90,6 +91,7 @@ export {
 export { sanitizeLine } from './sanitize/sanitize-line.js';
 export {
   estimateTokens,
+  isAccessLogNoiseLine,
   isInternalStackTraceLine,
   isCiNoiseLine,
   isProgressBarLine,
@@ -446,6 +448,12 @@ export async function processLogStream(
       continue;
     }
 
+    // Access log noise: health checks, static assets, metrics with non-error status
+    if (isAccessLogNoiseLine(line)) {
+      dropLine(line, physicalLineCount, 'ci-noise');
+      continue;
+    }
+
     // Noise tags (INFO/DEBUG/TRACE/VERBOSE) are silently dropped without
     // disturbing afterContextRemaining so that sparse INFO lines between
     // errors do not close the context window prematurely.
@@ -774,6 +782,9 @@ export function explainLogLine(
   }
   if (isProgressBarLine(line)) {
     return createDecision(line, undefined, false, 'progress');
+  }
+  if (isAccessLogNoiseLine(line)) {
+    return createDecision(line, undefined, false, 'ci-noise');
   }
   if (isIgnoredLogLine(line)) {
     return createDecision(line, undefined, false, 'ignored-tag');
