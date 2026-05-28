@@ -1,0 +1,4 @@
+{"level":40,"time":"[TIME]","msg":"slow query detected","service":"api","durationMs":3200,"query":"SELECT * FROM orders WHERE status=pending"}
+[x2] {"level":50,"time":"[TIME]","msg":"database query failed","service":"api","err":{"stack":"Error: read ECONNRESET\\n at Socket.<anonymous> (/app/node_modules/pg/lib/connection.js:[NN]:[NN])\\n at Socket.emit (node:events:[NN]:[NN])","code":"ECONNRESET"},"requestId":"[ID]"}
+{"level":40,"time":"[TIME]","msg":"deprecated API called","service":"api","endpoint":"/v1/users"}
+{"level":60,"time":"[TIME]","msg":"unhandled rejection","service":"api","err":{"stack":"TypeError: Cannot read properties of null\\n    at processOrder (/app/src/orders.ts:[NN]:[NN])\\n    at async handler (/app/src/routes.ts:[NN]:[NN])","code":"ERR_UNHANDLED"}}
