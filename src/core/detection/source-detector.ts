@@ -7,6 +7,16 @@ import { LOG_SOURCE_SIGNATURES } from '../sources/catalog.js';
 export const SOURCE_ACTIVE_CONFIDENCE = 12;
 export const SOURCE_DIAGNOSTIC_BOOST = 40;
 
+/**
+ * Adaptive threshold: small logs need fewer marker hits to activate a source.
+ * Reduces the required confidence proportionally when total input lines are low.
+ */
+export function getEffectiveActiveConfidence(inputLines: number): number {
+  if (inputLines < 50) return 4;
+  if (inputLines < 200) return 6;
+  return SOURCE_ACTIVE_CONFIDENCE;
+}
+
 export interface SourceDetectionHit {
   hits: number;
   confidence: number;
@@ -91,10 +101,16 @@ export function detectLogSources(
 export function scoreSourceDiagnosticBoost(
   line: string,
   state: SourceDetectionState,
+  inputLines?: number,
 ): number {
+  const threshold =
+    inputLines !== undefined
+      ? getEffectiveActiveConfidence(inputLines)
+      : SOURCE_ACTIVE_CONFIDENCE;
+
   for (const profile of state.profiles) {
     const hit = state.hits.get(profile.name);
-    if (hit === undefined || hit.confidence < SOURCE_ACTIVE_CONFIDENCE) {
+    if (hit === undefined || hit.confidence < threshold) {
       continue;
     }
 
