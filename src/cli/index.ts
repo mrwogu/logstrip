@@ -90,6 +90,7 @@ export interface CliOptions {
   timeout?: number;
   progress: boolean;
   config?: string;
+  preserveIdSuffix?: number;
   telemetry: boolean;
   help: boolean;
   version: boolean;
@@ -140,6 +141,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         stats: { type: 'boolean', short: 's', default: false },
         json: { type: 'boolean', short: 'j', default: false },
         multiline: { type: 'string', short: 'm' },
+        'preserve-id-suffix': { type: 'string' },
         severity: { type: 'string' },
         include: { type: 'string' },
         exclude: { type: 'string' },
@@ -233,6 +235,15 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
 
   const progress = parsed.values.progress === true;
 
+  let preserveIdSuffix: number | undefined;
+  if (typeof parsed.values['preserve-id-suffix'] === 'string') {
+    const suffix = Number.parseInt(parsed.values['preserve-id-suffix'], 10);
+    if (!Number.isFinite(suffix) || suffix < 0 || suffix > 16) {
+      throw new CliError('--preserve-id-suffix must be a number between 0 and 16', 2);
+    }
+    preserveIdSuffix = suffix;
+  }
+
   return {
     input: parsed.positionals[0],
     output:
@@ -252,6 +263,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
       typeof parsed.values.config === 'string'
         ? parsed.values.config
         : undefined,
+    preserveIdSuffix,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
@@ -434,6 +446,7 @@ export async function runCli(
       exclude: options.exclude,
       sampleSize: options.sample,
       maxLineLength: options.maxLineLength,
+      preserveIdSuffix: options.preserveIdSuffix,
     };
     result = await processLogStreamWithTimeout(
       input,
