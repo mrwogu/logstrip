@@ -817,15 +817,15 @@ describe('logstrip parser', () => {
     expect(sanitizeLine('auth failed for user@example.com')).toBe('auth failed for [EMAIL]');
     expect(sanitizeLine('sent to admin@company.co.uk')).toBe('sent to [EMAIL]');
     // Stripe
-    expect(sanitizeLine('rejected rk_test_aaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('rejected [REDACTED]');
-    expect(sanitizeLine('key=pk_live_aaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('key=[REDACTED]');
+    expect(sanitizeLine('rejected sk_test_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('rejected [REDACTED]');
+    expect(sanitizeLine('key=pk_live_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('key=[REDACTED]');
     // npm
-    expect(sanitizeLine('token=npm_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('token=[REDACTED]');
+    expect(sanitizeLine('token=npm_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('token=[REDACTED]');
     // Google API
     expect(sanitizeLine('blocked AIzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('blocked [REDACTED]');
     // Twilio
-    expect(sanitizeLine('sid=TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')).toBe('sid=[REDACTED]');
-    expect(sanitizeLine('key=TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')).toBe('key=[REDACTED]');
+    expect(sanitizeLine('sid=SKaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('sid=[REDACTED]');
+    expect(sanitizeLine('key=SKaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('key=[REDACTED]');
     // SendGrid
     expect(sanitizeLine('key=SG.aaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('key=[REDACTED]');
   });

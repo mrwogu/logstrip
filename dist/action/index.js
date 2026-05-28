@@ -27324,7 +27324,7 @@ var SECRET_FIELD_PATTERN = /\b(?:password|secret|token|api[_-]?key|api[_-]?secre
 var STRIPE_KEY_PATTERN = /\b(?:sk|pk|rk)_(?:live|test)_[0-9A-Za-z]{24,99}\b/gu;
 var NPM_TOKEN_PATTERN = /\bnpm_[A-Za-z0-9]{36,80}\b/gu;
 var GOOGLE_API_KEY_PATTERN = /\bAIza[0-9A-Za-z_-]{30,40}\b/gu;
-var TWILIO_KEY_PATTERN = /\b(?:SK|AC|TK)[a-f0-9x]{32}\b/giu;
+var TWILIO_KEY_PATTERN = /\b(?:SK|AC)[a-f0-9]{32}\b/gu;
 var SENDGRID_KEY_PATTERN = /\bSG\.[A-Za-z0-9_-]{16,32}\.[A-Za-z0-9_-]{32,64}\b/gu;
 var HEX_HASH_PATTERN = /\b(?=[a-f0-9]*\d)(?=[a-f0-9]*[a-f])[a-f0-9]{16,128}\b/giu;
 var ALPHANUMERIC_HASH_PATTERN = /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-Za-z0-9]{24,512}\b/gu;

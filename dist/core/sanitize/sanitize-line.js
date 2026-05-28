@@ -35,7 +35,7 @@ const NPM_TOKEN_PATTERN = /\bnpm_[A-Za-z0-9]{36,80}\b/gu;
 // Google API keys
 const GOOGLE_API_KEY_PATTERN = /\bAIza[0-9A-Za-z_-]{30,40}\b/gu;
 // Twilio API keys
-const TWILIO_KEY_PATTERN = /\b(?:SK|AC|TK)[a-f0-9x]{32}\b/giu;
+const TWILIO_KEY_PATTERN = /\b(?:SK|AC)[a-f0-9]{32}\b/gu;
 // SendGrid API keys
 const SENDGRID_KEY_PATTERN = /\bSG\.[A-Za-z0-9_-]{16,32}\.[A-Za-z0-9_-]{32,64}\b/gu;
 // ---- Hash/ID patterns ----
