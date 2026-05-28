@@ -1,0 +1,12 @@
+{"level":30,"time":"2026-05-15T10:00:00.000Z","msg":"server listening","service":"api","hostname":"app-1"}
+{"level":30,"time":"2026-05-15T10:00:01.000Z","msg":"health check ok","service":"api","hostname":"app-1"}
+{"level":40,"time":"2026-05-15T10:00:05.000Z","msg":"slow query detected","service":"api","durationMs":3200,"query":"SELECT * FROM orders WHERE status=pending"}
+{"level":50,"time":"2026-05-15T10:00:10.000Z","msg":"database query failed","service":"api","err":{"stack":"Error: read ECONNRESET\\n    at Socket.<anonymous> (/app/node_modules/pg/lib/connection.js:72:20)\\n    at Socket.emit (node:events:520:28)","code":"ECONNRESET"},"requestId":"123e4567-e89b-12d3-a456-426614174000"}
+{"level":50,"time":"2026-05-15T10:00:11.000Z","msg":"database query failed","service":"api","err":{"stack":"Error: read ECONNRESET\\n    at Socket.<anonymous> (/app/node_modules/pg/lib/connection.js:72:20)\\n    at Socket.emit (node:events:520:28)","code":"ECONNRESET"},"requestId":"123e4567-e89b-12d3-a456-426614174000"}
+{"level":30,"time":"2026-05-15T10:00:12.000Z","msg":"retrying health check","service":"api","hostname":"app-1"}
+{"level":30,"time":"2026-05-15T10:00:13.000Z","msg":"heartbeat","service":"api","hostname":"app-1"}
+{"level":40,"time":"2026-05-15T10:00:15.000Z","msg":"deprecated API called","service":"api","endpoint":"/v1/users"}
+{"level":20,"time":"2026-05-15T10:00:16.000Z","msg":"cache miss","service":"api","key":"user:42"}
+{"level":30,"time":"2026-05-15T10:00:17.000Z","msg":"cache hit","service":"api","key":"config:default"}
+{"level":60,"time":"2026-05-15T10:00:20.000Z","msg":"unhandled rejection","service":"api","err":{"stack":"TypeError: Cannot read properties of null\\n    at processOrder (/app/src/orders.ts:45:22)\\n    at async handler (/app/src/routes.ts:12:3)","code":"ERR_UNHANDLED"}}
+{"level":30,"time":"2026-05-15T10:00:21.000Z","msg":"graceful shutdown initiated","service":"api","hostname":"app-1"}
