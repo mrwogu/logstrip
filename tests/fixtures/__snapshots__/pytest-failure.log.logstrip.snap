@@ -1,15 +1,15 @@
 [ERROR] tests/test_orders.py::test_create_order TypeError: Object of type Decimal is not JSON serializable
 [... hidden internal library frames ...]
-    File "/repo/tests/test_orders.py", line 42, in test_create_order
+    File "/repo/tests/test_orders.py", line [NN], in test_create_order
         client.post("/orders", json=payload)
 [... hidden internal library frames ...]
 [ERROR] tests/test_orders.py::test_update_order TypeError: Object of type Decimal is not JSON serializable
 [... hidden internal library frames ...]
-    File "/repo/tests/test_orders.py", line 58, in test_update_order
+    File "/repo/tests/test_orders.py", line [NN], in test_update_order
         client.put(f"/orders/{order_id}", json=payload)
 [... hidden internal library frames ...]
 [ERROR] tests/test_orders.py::test_delete_order AssertionError: assert 500 == 204
-    File "/repo/tests/test_orders.py", line 73, in test_delete_order
+    File "/repo/tests/test_orders.py", line [NN], in test_delete_order
         assert response.status_code == 204
 [ERROR] FAILED tests/test_orders.py::test_create_order - TypeError: Object of type Decimal is not JSON serializable
 [ERROR] FAILED tests/test_orders.py::test_update_order - TypeError: Object of type Decimal is not JSON serializable
