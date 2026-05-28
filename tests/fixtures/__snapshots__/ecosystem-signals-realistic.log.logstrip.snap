@@ -4,8 +4,8 @@ npm ERR! While resolving: @company/checkout@2.4.0
 npm ERR! Found: react@18.3.1
 npm ERR! Could not resolve dependency: peer react@"^19.0.0" from @company/payment-widget@5.1.0
 #12 18.42 src/payments/build-payment-intent.ts(42,23): error TS2322: Type 'undefined' is not assignable to type 'Money'.
-#12 18.43     at compile (/workspace/node_modules/typescript/lib/tsc.js:120501:18)
-#12 18.44     at emitFilesAndReportErrors (/workspace/node_modules/typescript/lib/tsc.js:120458:21)
+#12 18.43     at compile (/workspace/node_modules/typescript/lib/tsc.js:[NN]:[NN])
+#12 18.44     at emitFilesAndReportErrors (/workspace/node_modules/typescript/lib/tsc.js:[NN]:[NN])
 #12 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 2
 registry.example.com/checkout:2.4.1 (alpine 3.19)
 Total: 2 (HIGH: 1, CRITICAL: 1)
@@ -15,12 +15,12 @@ Error: waiting for ECS Service (checkout-api) stable: timeout while waiting for 
   with module.checkout_service.aws_ecs_service.this,
   on modules/checkout/service.tf line 88, in resource "aws_ecs_service" "this":
   88: resource "aws_ecs_service" "this" {
-Warning Failed  42s kubelet Error: ErrImagePull
-Warning BackOff  38s kubelet Back-off restarting failed container checkout-api in pod checkout-api-7b8759d7b9-mk2dq_prod([ID])
+Warning Failed  [AGO] kubelet Error: ErrImagePull
+Warning BackOff  [AGO] kubelet Back-off restarting failed container checkout-api in pod checkout-api-7b8759d7b9-mk2dq_prod([ID])
 panic: runtime error: invalid memory address or nil pointer dereference
 goroutine 81 [running]:
 main.(*Server).Start(0xc000184240)
-	/workspace/cmd/server/main.go:88 +0x1f3
+	/workspace/cmd/server/main.go:[NN] +0x1f3
 k8s.io/client-go/tools/cache.(*processorListener).run.func1()
 [... hidden internal library frames ...]
 [x2] [TIME] datadog ERROR monitor Checkout API 5xx breached critical threshold service=checkout-api env=prod trace_id=[HASH]

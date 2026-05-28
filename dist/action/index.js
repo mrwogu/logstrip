@@ -25824,7 +25824,6 @@ var CONTEXT_WINDOW_AFTER = 2;
 var SCORE_KEEP_THRESHOLD = 40;
 var TFIDF_REPEAT_THRESHOLD = 3;
 var TFIDF_PENALTY = 8;
-var TFIDF_MAP_LIMIT = 5e4;
 var MAX_REPEAT_DELTA_VALUES = 3;
 
 // src/core/dedupe/repeat-grouper.ts
@@ -25843,12 +25842,15 @@ function createRepeatSignature(line) {
   }).join(" ");
 }
 function createRepeatGroup(line) {
+  const ts = extractTimestampMs(line);
   return {
     firstLine: line,
     firstTokens: tokenizeRepeatLine(line),
     signature: createRepeatSignature(line),
     deltas: /* @__PURE__ */ new Map(),
-    count: 1
+    count: 1,
+    firstSeen: ts,
+    lastSeen: ts
   };
 }
 function addRepeatGroupLine(group, line) {
@@ -25879,18 +25881,45 @@ function addRepeatGroupLine(group, line) {
       delta.hasMoreValues = true;
     }
   }
+  const ts = extractTimestampMs(line);
+  if (ts !== null && (group.lastSeen === null || ts > group.lastSeen)) {
+    group.lastSeen = ts;
+  }
   group.count += 1;
 }
+var TIMESTAMP_CANDIDATE = /\b(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z?)\b/u;
+function extractTimestampMs(line) {
+  const match = TIMESTAMP_CANDIDATE.exec(line);
+  if (!match) return null;
+  const ms = Date.parse(match[1]);
+  return Number.isFinite(ms) ? ms : null;
+}
+function getRepeatGroupSpreadMs(group) {
+  if (group.firstSeen === null || group.lastSeen === null) return null;
+  return group.lastSeen - group.firstSeen;
+}
 function renderRepeatGroup(group) {
-  if (group.deltas.size === 0) {
-    return group.firstLine;
+  const baseTokens = group.deltas.size === 0 ? group.firstTokens : mergeDeltaTokens(group);
+  let line = baseTokens.join(" ");
+  const spread = getRepeatGroupSpreadMs(group);
+  if (spread !== null && spread > 5e3) {
+    const spreadStr = formatDurationMs(spread);
+    line += ` [~${spreadStr}]`;
   }
+  return line;
+}
+function mergeDeltaTokens(group) {
   const tokens = [...group.firstTokens];
   for (const [index, delta] of group.deltas) {
     const values = delta.hasMoreValues ? [...delta.values, "\u2026"] : delta.values;
     tokens[index] = `${delta.prefix}[${values.join(" | ")}]`;
   }
-  return tokens.join(" ");
+  return tokens;
+}
+function formatDurationMs(ms) {
+  if (ms < 6e4) return `${Math.round(ms / 1e3)}s`;
+  if (ms < 36e5) return `${Math.round(ms / 6e4)}m`;
+  return `${Math.round(ms / 36e5)}h`;
 }
 function tokenizeRepeatLine(line) {
   return line.trim().split(/\s+/u);
@@ -25912,162 +25941,218 @@ function splitRepeatToken(token, previousToken) {
   return void 0;
 }
 
+// src/core/scoring/diagnostic-boosters.ts
+var DIAGNOSTIC_BOOSTERS = [
+  // ── Severity tags ────────────────────────────────────────────────
+  { pattern: /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/iu, score: 100, label: "severity-tag" },
+  // ── JSON severity ────────────────────────────────────────────────
+  { pattern: /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/iu, score: 80, label: "json-severity" },
+  // ── Security / scanners ──────────────────────────────────────────
+  { pattern: /\b(?:CVE-\d{4}-\d{4,7}|GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}|vulnerabilit(?:y|ies)|severity:\s*(?:critical|high|medium)|(?:critical|high)\s+severity)\b/iu, score: 70, label: "scanner-finding" },
+  // ── Container failures ───────────────────────────────────────────
+  { pattern: /\b(?:CrashLoopBackOff|ImagePullBackOff|ErrImagePull|OOMKilled|Back[- ]off restarting failed container|failed to pull image|(?:containerd|runc).*?(?:failed|error|panic|timeout|refused)|(?:failed|error|panic|timeout|refused).*?(?:containerd|runc)|rpc error: code = Unknown desc = failed to resolve reference)\b/iu, score: 70, label: "container-failure" },
+  // ── GitHub Actions annotations ───────────────────────────────────
+  { pattern: /^::(?:error|warning|notice)\b/u, score: 70, label: "github-actions" },
+  // ── Gradle failures ──────────────────────────────────────────────
+  { pattern: /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/iu, score: 60, label: "gradle-failure" },
+  // ── npm / pnpm errors ────────────────────────────────────────────
+  { pattern: /\b(?:npm|pnpm)\s+ERR!/iu, score: 60, label: "npm-error" },
+  // ── yarn errors ──────────────────────────────────────────────────
+  { pattern: /\byarn\s+error\b/iu, score: 60, label: "yarn-error" },
+  // ── Generic diagnostic keywords ──────────────────────────────────
+  { pattern: /\b(?:Error|Exception|AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|NullPointerException|Unhandled|failed|failure|fatal|panic|refused|timeout|timed\s+out|unreachable|unavailable|disconnected|killed|aborted|crashed|terminated|unauthorized)\b/iu, score: 50, label: "diagnostic" },
+  // ── Go test failures ─────────────────────────────────────────────
+  { pattern: /---\s*FAIL:/u, score: 50, label: "go-test-fail" },
+  // ── Make errors ──────────────────────────────────────────────────
+  { pattern: /^make[:\s*]+/u, score: 50, label: "make-error" },
+  // ── Systemd status failures ──────────────────────────────────────
+  { pattern: /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/iu, score: 50, label: "systemd-status" },
+  // ── CircleCI step failures ───────────────────────────────────────
+  { pattern: /\b(?:Spin Cancelled|Step failed|job was not approved)\b/u, score: 50, label: "circleci-step" },
+  // ── Jenkins markers ──────────────────────────────────────────────
+  { pattern: /\[(?:Pipeline|Checks|FCMaker)\]/u, score: 40, label: "jenkins-marker" },
+  // ── Azure Pipelines markers ──────────────────────────────────────
+  { pattern: /^##vso\[task\.(?:LogIssue|Complete)\b/u, score: 40, label: "azure-pipeline" },
+  // ── TeamCity markers ─────────────────────────────────────────────
+  { pattern: /^##teamcity\[(?:buildProblem|compilationFinished|message)\b/u, score: 40, label: "teamcity-marker" },
+  // ── HTTP 5xx / 4xx in access-logs ────────────────────────────────
+  { pattern: /\bHTTP\/\d\.\d"\s+5\d{2}\b/u, score: 50, label: "http-5xx" },
+  { pattern: /\bHTTP\/\d\.\d"\s+4\d{2}\b/u, score: 20, label: "http-4xx" },
+  // ── Stack frame patterns ─────────────────────────────────────────
+  { pattern: /^\s*at\s+.*(?:\(|\s).+:\d+:\d+\)?$/, score: 40, label: "js-stack-frame" },
+  { pattern: /^\s*at\s+[\w$_.<>/]+\([^)]+:\d+\)$/, score: 40, label: "java-stack-frame" },
+  { pattern: /^\s*File\s+"[^"]+",\s+line\s+\d+,\s+in\s+.+$/, score: 40, label: "python-stack-frame" },
+  { pattern: /^\s*(?:(?:[\w.-]+\/)+[\w./-]+|[\w.-]+\.\(\*?[\w.]+\)\.[\w.]+|[\w.-]+\.[A-Z]\w*)\(.*\)$/, score: 40, label: "go-stack-frame" },
+  { pattern: /^\s*(?:\/[^\s]+|[A-Za-z]:[\\/][^\s]+):\d+(?:\s+\+\S+)?$/, score: 40, label: "go-file-frame" },
+  { pattern: /^\s*goroutine\s+\d+\s+\[.+\]:$/iu, score: 40, label: "go-goroutine" },
+  { pattern: /^Traceback \(most recent call last\):$/, score: 40, label: "python-traceback" },
+  { pattern: /^\s*\.\.\. \d+ more$/, score: 40, label: "stack-more" }
+];
+function buildSourceBoosterPatterns() {
+  const map = /* @__PURE__ */ new Map();
+  const sourceBoosters = {
+    // ── Original 6 ──────────────────────────────────────────────────
+    typescript: [/\bTS\d{4}\b/u],
+    pytest: [/^E\s+/u, /\bFAILED\b/u],
+    nginx: [/\[(?:error|crit|alert|emerg)\]/iu],
+    "apache-httpd": [
+      /\[(?:error|crit|alert|emerg)\]/iu,
+      /\bAH\d{5}\b/u,
+      /\b(?:Directory index forbidden|client denied|mod_jk)\b/iu
+    ],
+    kubernetes: [/\b(?:BackOff|Failed|ErrImagePull|CrashLoopBackOff)\b/u],
+    "github-actions": [/^::(?:error|warning)\b/u],
+    // ── Build Tools ──────────────────────────────────────────────────
+    gradle: [/\b(?:Execution failed|What went wrong|BUILD FAILED)\b/iu],
+    maven: [/\b(?:BUILD FAILURE|Failed to execute goal|Compilation failure)\b/iu],
+    bazel: [/\b(?:BUILD FAILED|build did not complete successfully)\b/iu],
+    webpack: [/\b(?:Module not found|Can't resolve|Module build failed|BUILD FAILED)\b/iu],
+    vite: [/\b(?:Build failed|Transform failed|Internal server error)\b/iu],
+    esbuild: [/\b(?:Build failed|error:\s|ERROR:)\b/u],
+    rollup: [/\b(?:!\s|Circular dependency|Could not resolve)\b/u],
+    cargo: [/\b(?:error\[E\d{4}\]|error: could not compile|could not compile `)/u],
+    rustc: [/\berror\[E\d{4}\]\b/u],
+    cmake: [/\b(?:CMake Error|CMakeFiles|cmake failed)\b/iu],
+    msbuild: [/\b(?:error MSB\d{4}|Build FAILED)\b/iu],
+    make: [/\b(?:make: \*\*\*|make\[|Error \d+\])\b/u],
+    "go-build": [/\b(?:go: |build failed|cannot find package)\b/iu],
+    // ── Package Managers ─────────────────────────────────────────────
+    npm: [/\bnpm\s+ERR!/iu],
+    pnpm: [/\bpnpm\s+ERR!/iu],
+    yarn: [/\byarn\s+error\b/iu],
+    pip: [/\b(?:ERROR: Could not find a version|ERROR: No matching distribution)\b/u],
+    bundler: [/\b(?:Could not find gem|Bundler::|Gem::ConflictError)\b/u],
+    composer: [/\b(?:Composer\\|Installation failed|Root package)\b/u],
+    // ── Test Runners ──────────────────────────────────────────────────
+    jest: [/\b(?:●\s|Tests:\s+\d+\s+failed|AssertionError:)\b/u],
+    vitest: [/\b(?:FAIL\s+|AssertionError:|Test Files\s+\d+\s+failed)\b/u],
+    mocha: [/\b(?:AssertionError|Error:) \d+ (?:failing|passing)\b/u],
+    "go-test": [/\b---\s*FAIL:/u],
+    junit: [/\b(?:Tests run: \d+.*Failures: [1-9]|FAILED)\b/u],
+    rspec: [/\b(?:Failures:|expected:|got:)\b/u],
+    phpunit: [/\b(?:FAILURES!|Tests: \d+|Assertions: \d+)\b/u],
+    // ── Container / Orchestration ────────────────────────────────────
+    docker: [/\b(?:Error response from daemon|failed to build|failed to push|manifest.*not found)\b/iu],
+    buildkit: [/\b(?:error:|failed to solve|canceled)\b/u],
+    containerd: [/\b(?:failed to start container|OCI runtime|runc)\b/iu],
+    helm: [/\b(?:Error: UPGRADE FAILED|Error: INSTALLATION FAILED|Error: uninstall|Error: release.*failed)\b/iu],
+    // ── IaC ──────────────────────────────────────────────────────────
+    terraform: [/\b(?:Error: |Error applying|Terraform.*failed)\b/iu],
+    terragrunt: [/\b(?:Error: |Module.*error)\b/iu],
+    ansible: [/\b(?:fatal: \[|FAILED!|UNREACHABLE!)\b/u],
+    pulumi: [/\b(?:Pulumi\.error|error: update failed|Diagnostics:)\b/iu],
+    "aws-cdk": [/\b(?:CdkSynthError|cdk deploy failed|ValidationError|No stack named)\b/iu],
+    // ── Databases ────────────────────────────────────────────────────
+    postgresql: [/\b(?:FATAL:|ERROR:|PG::|relation.*does not exist)\b/iu],
+    mysql: [/\b(?:ERROR \d{4}|Can't connect|Access denied for user)\b/iu],
+    redis: [/\b(?:DENIED|Connection refused|ERR |WRONGTYPE|READONLY)\b/u],
+    mongodb: [/\b(?:MongoServerSelectionError|MongoNetworkError|not master|NotWritablePrimary)\b/iu],
+    kafka: [/\b(?:Broker may not be available|Connection to node.*could not be established|UNKNOWN_TOPIC_OR_PARTITION)\b/iu],
+    rabbitmq: [/\b(?:connection refused|broker unreachable|channel error|PRECONDITION_FAILED)\b/iu],
+    cockroachdb: [/\b(?:SQLSTATE|restart transaction|RETRY_WRITE_TOO_OLD)\b/iu],
+    // ── Web Frameworks (JS/TS) ──────────────────────────────────────
+    express: [/\b(?:Error: Cannot find module|TypeError:.*Router|Error: EADDRINUSE|Error: listen EACCES)\b/u],
+    fastify: [/\b(?:FST_ERR|fastify error|plugin initialization failed)\b/iu],
+    nestjs: [/\b(?:NestError|Nest can't resolve dependencies|Circular dependency detected)\b/iu],
+    nextjs: [/\b(?:Error: Cannot resolve dependency|Error: Build failed|Module not found|Error: > Build failed)\b/u],
+    nuxt: [/\b(?:Nuxt Build Error|Cannot start nuxt|Fatal error)\b/iu],
+    hono: [/\b(?:TypeError: Cannot read properties|HonoError)\b/u],
+    // ── ORMs ──────────────────────────────────────────────────────────
+    prisma: [/\b(?:P\d{4,5}|PrismaClientKnownRequestError|PrismaClientValidationError|PrismaClientInitializationError)\b/u],
+    "drizzle-orm": [/\b(?:DrizzleKitError|drizzle.*error|MigrationError)\b/iu],
+    typeorm: [/\b(?:QueryFailedError|EntityMetadataNotFound|ConnectionNotFoundError|DriverPackageNotInstalledError)\b/iu],
+    sequelize: [/\b(?:SequelizeConnectionError|SequelizeDatabaseError|SequelizeValidationError)\b/iu],
+    knex: [/\b(?:MigrationLockError|KnexTimeoutError|Knex:error)\b/iu],
+    // ── Python Frameworks ───────────────────────────────────────────
+    django: [/\b(?:django\.core\.exceptions|django\.db\.utils|OperationalError|ImproperlyConfigured)\b/iu],
+    fastapi: [/\b(?:fastapi\.exceptions|HTTPException|ValidationError|RequestValidationError)\b/iu],
+    flask: [/\b(?:werkzeug\.exceptions|flask\.abort|Internal Server Error)\b/iu],
+    celery: [/\b(?:celery\.exceptions|Task.*raised unexpected|WorkerLostError)\b/iu],
+    sqlalchemy: [/\b(?:sqlalchemy\.exc\.|OperationalError|IntegrityError|ProgrammingError)\b/iu],
+    // ── Linters / Security Scanners ──────────────────────────────────
+    eslint: [/\b\d+:\d+\s+error\s|\beslint.*error\b/ui],
+    semgrep: [/\b(?:semgrep finding|severity:(?:ERROR|WARNING))\b/iu],
+    gitleaks: [/\bsecret detected\b/iu],
+    trivy: [/\b(?:CRITICAL|HIGH):\s|CVE-\d{4}-\d{4,7}\b/u],
+    snyk: [/\b(?:High severity|Critical severity|introduced by)\b/iu],
+    grype: [/\b(?:CRITICAL\s+CVE-|HIGH\s+CVE-|NAME\s+INSTALLED\s+FIXED-IN)\b/u],
+    checkov: [/\b(?:CKV_|Checkov.*failed)\b/u],
+    bandit: [/\b(?:Issue: \[B\d{3}|Test results:.*issues)\b/u],
+    mypy: [/\b(?:mypy: error:|mypy: warning:|Incompatible types|has incompatible type)\b/u],
+    ruff: [/\b(?:ruff\s+(?:check|format)|F\d{3,4}|E\d{3,4}|RUF\d{3})\b/u],
+    pylint: [/\b(?:pylint\s+|E\d{4}:|W\d{4}:|C\d{4}:|R\d{4}:)\b/u],
+    // ── CI/CD Platforms ─────────────────────────────────────────────
+    circleci: [/\b(?:Spin Cancelled|Step failed|job was not approved)\b/u],
+    jenkins: [/\b(?:\[Pipeline\]\s*\[ERROR\]|Stage .* failed|script returned exit code [1-9])\b/u],
+    "gitlab-ci": [/\b(?:ERROR: Job failed|job failed|script returned exit code [1-9])\b/u],
+    teamcity: [/\b##teamcity\[(?:buildProblem|compilationFinished)\b/u],
+    "azure-pipelines": [/\b##vso\[task\.(?:LogIssue|Complete)\b/u],
+    buildkite: [/\b(?:buildkite.*failed|command failed)\b/iu],
+    // ── Cloud Providers ─────────────────────────────────────────────
+    "aws-lambda": [/\b(?:Task timed out|ERROR Invoke Error|Runtime\.ExitError|Process exited before completing)\b/iu],
+    "gcp-cloud-run": [/\b(?:Cloud Run.*failed|Revision.*failed|Container failed to start|Ready condition status)\b/iu],
+    "azure-functions": [/\b(?:System\.TimeoutException|FunctionInvocationException|Host threshold exceeded)\b/iu],
+    cloudformation: [/\b(?:ROLLBACK_COMPLETE|CREATE_FAILED|UPDATE_FAILED|DELETE_FAILED)\b/u],
+    cloudwatch: [/\b(?:Alarm|INSUFFICIENT_DATA|State change)\b/u],
+    "aws-ecs": [/\b(?:service.*failed|Task failed|unable to place a task)\b/iu],
+    // ── Observability ────────────────────────────────────────────────
+    datadog: [/\b(?:datadog ERROR|datadog CRITICAL|datadog WARN)\b/iu],
+    sentry: [/\b(?:failed to send event|sentry\.captureException|Error exporting spans)\b/iu],
+    prometheus: [/\b(?:target.*down|scrape.*failed|rule evaluation error|Alertmanager)\b/iu],
+    grafana: [/\b(?:grafana.*alert|alerting evaluation error|Dashboard.*error|provisioning error)\b/iu],
+    loki: [/\b(?:loki.*error|logql.*error|ingester.*failed)\b/iu],
+    "newrelic": [/\b(?:NR-\d+|new relic.*error|NewRelic.*error)\b/iu],
+    // ── Message Queues ───────────────────────────────────────────────
+    "aws-sqs": [/\b(?:SQS.*error|QueueDoesNotExist|ReceiptHandleIsInvalid)\b/iu],
+    "gcp-pubsub": [/\b(?:pubsub.*error|DeadlineExceeded|UNAVAILABLE)\b/iu],
+    bullmq: [/\b(?:StalledJobError|job.*failed|BullMQ.*error|WaitingChildrenError)\b/iu],
+    // ── AI / ML ──────────────────────────────────────────────────────
+    "openai-api": [/\b(?:Rate limit exceeded|RateLimitError|context_length_exceeded|invalid_request_error|insufficient_quota)\b/iu],
+    ollama: [/\b(?:model not found|Error: |CUDA error|Error: llama)\b/u],
+    vllm: [/\b(?:CUDA out of memory|OOM|Error: Failed to load model|tensor parallel)\b/iu],
+    langchain: [/\b(?:OutputParserError|LangChain.*error|Chain.*failed|Agent.*error)\b/iu],
+    huggingface: [/\b(?:HubConnectionError|ModelNotFoundError|RepositoryNotFoundError|HFValidationError)\b/iu],
+    // ── Auth / Identity ─────────────────────────────────────────────
+    keycloak: [/\b(?:Failed to authenticate|invalid_grant|unauthorized_client|token_introspection_failed)\b/iu],
+    vault: [/\b(?:permission denied|failed to seal|Error making API request|secret is missing)\b/iu],
+    clerk: [/\b(?:ClerkAuthenticationError|ClerkAPIError|InvalidSessionError)\b/iu],
+    auth0: [/\b(?:Auth0Error|Invalid token|access_denied|unauthorized)\b/iu],
+    // ── Logging Libraries ───────────────────────────────────────────
+    pino: [/\b(?:pino\.|"level":(?:50|60))\b/u],
+    log4j: [/\b(?:org\.apache\.log4j|log4j:ERROR|log4j:WARN)\b/u],
+    slf4j: [/\b(?:org\.slf4j|LoggerFactory|Failed to load class)\b/u],
+    winston: [/\b(?:winston.*error|winston\.error)\b/iu],
+    // ── Cloudflare / Edge ───────────────────────────────────────────
+    cloudflare: [/\b(?:cloudflare.*error|cf-ray|Error \d{3,4})\b/iu],
+    "cloudflare-workers": [/\b(?:Workers.*error|wrangler.*error|Service bindings error)\b/iu],
+    vercel: [/\b(?:vercel.*error|Vercel.*failed|Deployment error)\b/iu],
+    // ── Rust frameworks ─────────────────────────────────────────────
+    rocket: [/\b(?:Rocket\.error|Rocket has crashed|launch fairing failed)\b/u],
+    axum: [/\b(?:axum::|axum error|hyper::Error)\b/u],
+    // ── Go frameworks ───────────────────────────────────────────────
+    "echo-framework": [/\b(?:echo v4 handler panic|labstack\/echo|echo\.HTTPError)\b/u],
+    fiber: [/\b(?:fiber\.Error|fiber\.RequestTimeoutError|fiber v2.*error)\b/u],
+    // ── Mobile / Desktop ────────────────────────────────────────────
+    "react-native": [/\b(?:Unable to resolve module|bundling failed|Metro error|ReactNativeFirebaseError)\b/u],
+    flutter: [/\b(?:flutter.*error|Dart error|Unhandled Exception|FlutterError)\b/iu],
+    electron: [/\b(?:electron-builder.*error|Cannot find module 'electron'|Error: electron)\b/u],
+    // ── E-commerce / CMS ─────────────────────────────────────────────
+    shopify: [/\b(?:ShopifyError|ShopifyAPIError|GraphQL.*error|ShopifyCLI.*error)\b/iu],
+    wordpress: [/\b(?:PHP Fatal error:|PHP Parse error:|wp-db\.php|WPDB error)\b/iu],
+    drupal: [/\b(?:Drupal\\|PluginNotFoundException|Uncaught PHP Exception)\b/u],
+    strapi: [/\b(?:Strapi.*error|Error: Connection refused to database)\b/iu],
+    // ── Backup / DR ─────────────────────────────────────────────────
+    velero: [/\b(?:VeleroBackupError|BackupStorageLocation|backup failed)\b/iu],
+    restic: [/\b(?:ResticRepositoryError|Fatal: unable to open repo|Fatal: |repo already locked)\b/u]
+  };
+  for (const [name, patterns] of Object.entries(sourceBoosters)) {
+    map.set(name, [...patterns]);
+  }
+  return map;
+}
+
 // src/core/sources/source-profile.ts
-var SOURCE_DIAGNOSTIC_BOOST_PATTERNS = {
-  // ── Original 6 ──────────────────────────────────────────────────
-  typescript: [/\bTS\d{4}\b/u],
-  pytest: [/^E\s+/u, /\bFAILED\b/u],
-  nginx: [/\[(?:error|crit|alert|emerg)\]/iu],
-  "apache-httpd": [
-    /\[(?:error|crit|alert|emerg)\]/iu,
-    /\bAH\d{5}\b/u,
-    /\b(?:Directory index forbidden|client denied|mod_jk)\b/iu
-  ],
-  kubernetes: [/\b(?:BackOff|Failed|ErrImagePull|CrashLoopBackOff)\b/u],
-  "github-actions": [/^::(?:error|warning)\b/u],
-  // ── Build Tools ──────────────────────────────────────────────────
-  gradle: [/\b(?:Execution failed|What went wrong|BUILD FAILED)\b/iu],
-  maven: [/\b(?:BUILD FAILURE|Failed to execute goal|Compilation failure)\b/iu],
-  bazel: [/\b(?:BUILD FAILED|build did not complete successfully)\b/iu],
-  webpack: [/\b(?:Module not found|Can't resolve|Module build failed|BUILD FAILED)\b/iu],
-  vite: [/\b(?:Build failed|Transform failed|Internal server error)\b/iu],
-  esbuild: [/\b(?:Build failed|error:\s|ERROR:)\b/u],
-  rollup: [/\b(?:!\s|Circular dependency|Could not resolve)\b/u],
-  cargo: [/\b(?:error\[E\d{4}\]|error: could not compile|could not compile `)/u],
-  rustc: [/\berror\[E\d{4}\]\b/u],
-  cmake: [/\b(?:CMake Error|CMakeFiles|cmake failed)\b/iu],
-  msbuild: [/\b(?:error MSB\d{4}|Build FAILED)\b/iu],
-  make: [/\b(?:make: \*\*\*|make\[|Error \d+\])\b/u],
-  "go-build": [/\b(?:go: |build failed|cannot find package)\b/iu],
-  // ── Package Managers ─────────────────────────────────────────────
-  npm: [/\bnpm\s+ERR!/iu],
-  pnpm: [/\bpnpm\s+ERR!/iu],
-  yarn: [/\byarn\s+error\b/iu],
-  pip: [/\b(?:ERROR: Could not find a version|ERROR: No matching distribution)\b/u],
-  bundler: [/\b(?:Could not find gem|Bundler::|Gem::ConflictError)\b/u],
-  composer: [/\b(?:Composer\\|Installation failed|Root package)\b/u],
-  // ── Test Runners ──────────────────────────────────────────────────
-  jest: [/\b(?:●\s|Tests:\s+\d+\s+failed|AssertionError:)\b/u],
-  vitest: [/\b(?:FAIL\s+|AssertionError:|Test Files\s+\d+\s+failed)\b/u],
-  mocha: [/\b(?:AssertionError|Error:) \d+ (?:failing|passing)\b/u],
-  "go-test": [/\b---\s*FAIL:/u],
-  junit: [/\b(?:Tests run: \d+.*Failures: [1-9]|FAILED)\b/u],
-  rspec: [/\b(?:Failures:|expected:|got:)\b/u],
-  phpunit: [/\b(?:FAILURES!|Tests: \d+|Assertions: \d+)\b/u],
-  // ── Container / Orchestration ────────────────────────────────────
-  docker: [/\b(?:Error response from daemon|failed to build|failed to push|manifest.*not found)\b/iu],
-  buildkit: [/\b(?:error:|failed to solve|canceled)\b/u],
-  containerd: [/\b(?:failed to start container|OCI runtime|runc)\b/iu],
-  helm: [/\b(?:Error: UPGRADE FAILED|Error: INSTALLATION FAILED|Error: uninstall|Error: release.*failed)\b/iu],
-  // ── IaC ──────────────────────────────────────────────────────────
-  terraform: [/\b(?:Error: |Error applying|Terraform.*failed)\b/iu],
-  terragrunt: [/\b(?:Error: |Module.*error)\b/iu],
-  ansible: [/\b(?:fatal: \[|FAILED!|UNREACHABLE!)\b/u],
-  pulumi: [/\b(?:Pulumi\.error|error: update failed|Diagnostics:)\b/iu],
-  "aws-cdk": [/\b(?:CdkSynthError|cdk deploy failed|ValidationError|No stack named)\b/iu],
-  // ── Databases ────────────────────────────────────────────────────
-  postgresql: [/\b(?:FATAL:|ERROR:|PG::|relation.*does not exist)\b/iu],
-  mysql: [/\b(?:ERROR \d{4}|Can't connect|Access denied for user)\b/iu],
-  redis: [/\b(?:DENIED|Connection refused|ERR |WRONGTYPE|READONLY)\b/u],
-  mongodb: [/\b(?:MongoServerSelectionError|MongoNetworkError|not master|NotWritablePrimary)\b/iu],
-  kafka: [/\b(?:Broker may not be available|Connection to node.*could not be established|UNKNOWN_TOPIC_OR_PARTITION)\b/iu],
-  rabbitmq: [/\b(?:connection refused|broker unreachable|channel error|PRECONDITION_FAILED)\b/iu],
-  cockroachdb: [/\b(?:SQLSTATE|restart transaction|RETRY_WRITE_TOO_OLD)\b/iu],
-  // ── Web Frameworks (JS/TS) ──────────────────────────────────────
-  express: [/\b(?:Error: Cannot find module|TypeError:.*Router|Error: EADDRINUSE|Error: listen EACCES)\b/u],
-  fastify: [/\b(?:FST_ERR|fastify error|plugin initialization failed)\b/iu],
-  nestjs: [/\b(?:NestError|Nest can't resolve dependencies|Circular dependency detected)\b/iu],
-  nextjs: [/\b(?:Error: Cannot resolve dependency|Error: Build failed|Module not found|Error: > Build failed)\b/u],
-  nuxt: [/\b(?:Nuxt Build Error|Cannot start nuxt|Fatal error)\b/iu],
-  hono: [/\b(?:TypeError: Cannot read properties|HonoError)\b/u],
-  // ── ORMs ──────────────────────────────────────────────────────────
-  prisma: [/\b(?:P\d{4,5}|PrismaClientKnownRequestError|PrismaClientValidationError|PrismaClientInitializationError)\b/u],
-  "drizzle-orm": [/\b(?:DrizzleKitError|drizzle.*error|MigrationError)\b/iu],
-  typeorm: [/\b(?:QueryFailedError|EntityMetadataNotFound|ConnectionNotFoundError|DriverPackageNotInstalledError)\b/iu],
-  sequelize: [/\b(?:SequelizeConnectionError|SequelizeDatabaseError|SequelizeValidationError)\b/iu],
-  knex: [/\b(?:MigrationLockError|KnexTimeoutError|Knex:error)\b/iu],
-  // ── Python Frameworks ───────────────────────────────────────────
-  django: [/\b(?:django\.core\.exceptions|django\.db\.utils|OperationalError|ImproperlyConfigured)\b/iu],
-  fastapi: [/\b(?:fastapi\.exceptions|HTTPException|ValidationError|RequestValidationError)\b/iu],
-  flask: [/\b(?:werkzeug\.exceptions|flask\.abort|Internal Server Error)\b/iu],
-  celery: [/\b(?:celery\.exceptions|Task.*raised unexpected|WorkerLostError)\b/iu],
-  sqlalchemy: [/\b(?:sqlalchemy\.exc\.|OperationalError|IntegrityError|ProgrammingError)\b/iu],
-  // ── Linters / Security Scanners ──────────────────────────────────
-  eslint: [/\b\d+:\d+\s+error\s|\beslint.*error\b/ui],
-  semgrep: [/\b(?:semgrep finding|severity:(?:ERROR|WARNING))\b/iu],
-  gitleaks: [/\bsecret detected\b/iu],
-  trivy: [/\b(?:CRITICAL|HIGH):\s|CVE-\d{4}-\d{4,7}\b/u],
-  snyk: [/\b(?:High severity|Critical severity|introduced by)\b/iu],
-  grype: [/\b(?:CRITICAL\s+CVE-|HIGH\s+CVE-|NAME\s+INSTALLED\s+FIXED-IN)\b/u],
-  checkov: [/\b(?:CKV_|Checkov.*failed)\b/u],
-  bandit: [/\b(?:Issue: \[B\d{3}|Test results:.*issues)\b/u],
-  mypy: [/\b(?:mypy: error:|mypy: warning:|Incompatible types|has incompatible type)\b/u],
-  ruff: [/\b(?:ruff\s+(?:check|format)|F\d{3,4}|E\d{3,4}|RUF\d{3})\b/u],
-  pylint: [/\b(?:pylint\s+|E\d{4}:|W\d{4}:|C\d{4}:|R\d{4}:)\b/u],
-  // ── CI/CD Platforms ─────────────────────────────────────────────
-  circleci: [/\b(?:Spin Cancelled|Step failed|job was not approved)\b/u],
-  jenkins: [/\b(?:\[Pipeline\]\s*\[ERROR\]|Stage .* failed|script returned exit code [1-9])\b/u],
-  "gitlab-ci": [/\b(?:ERROR: Job failed|job failed|script returned exit code [1-9])\b/u],
-  teamcity: [/\b##teamcity\[(?:buildProblem|compilationFinished)\b/u],
-  "azure-pipelines": [/\b##vso\[task\.(?:LogIssue|Complete)\b/u],
-  buildkite: [/\b(?:buildkite.*failed|command failed)\b/iu],
-  // ── Cloud Providers ─────────────────────────────────────────────
-  "aws-lambda": [/\b(?:Task timed out|ERROR Invoke Error|Runtime\.ExitError|Process exited before completing)\b/iu],
-  "gcp-cloud-run": [/\b(?:Cloud Run.*failed|Revision.*failed|Container failed to start|Ready condition status)\b/iu],
-  "azure-functions": [/\b(?:System\.TimeoutException|FunctionInvocationException|Host threshold exceeded)\b/iu],
-  cloudformation: [/\b(?:ROLLBACK_COMPLETE|CREATE_FAILED|UPDATE_FAILED|DELETE_FAILED)\b/u],
-  cloudwatch: [/\b(?:Alarm|INSUFFICIENT_DATA|State change)\b/u],
-  "aws-ecs": [/\b(?:service.*failed|Task failed|unable to place a task)\b/iu],
-  // ── Observability ────────────────────────────────────────────────
-  datadog: [/\b(?:datadog ERROR|datadog CRITICAL|datadog WARN)\b/iu],
-  sentry: [/\b(?:failed to send event|sentry\.captureException|Error exporting spans)\b/iu],
-  prometheus: [/\b(?:target.*down|scrape.*failed|rule evaluation error|Alertmanager)\b/iu],
-  grafana: [/\b(?:grafana.*alert|alerting evaluation error|Dashboard.*error|provisioning error)\b/iu],
-  loki: [/\b(?:loki.*error|logql.*error|ingester.*failed)\b/iu],
-  "newrelic": [/\b(?:NR-\d+|new relic.*error|NewRelic.*error)\b/iu],
-  // ── Message Queues ───────────────────────────────────────────────
-  "aws-sqs": [/\b(?:SQS.*error|QueueDoesNotExist|ReceiptHandleIsInvalid)\b/iu],
-  "gcp-pubsub": [/\b(?:pubsub.*error|DeadlineExceeded|UNAVAILABLE)\b/iu],
-  bullmq: [/\b(?:StalledJobError|job.*failed|BullMQ.*error|WaitingChildrenError)\b/iu],
-  // ── AI / ML ──────────────────────────────────────────────────────
-  "openai-api": [/\b(?:Rate limit exceeded|RateLimitError|context_length_exceeded|invalid_request_error|insufficient_quota)\b/iu],
-  ollama: [/\b(?:model not found|Error: |CUDA error|Error: llama)\b/u],
-  vllm: [/\b(?:CUDA out of memory|OOM|Error: Failed to load model|tensor parallel)\b/iu],
-  langchain: [/\b(?:OutputParserError|LangChain.*error|Chain.*failed|Agent.*error)\b/iu],
-  huggingface: [/\b(?:HubConnectionError|ModelNotFoundError|RepositoryNotFoundError|HFValidationError)\b/iu],
-  // ── Auth / Identity ─────────────────────────────────────────────
-  keycloak: [/\b(?:Failed to authenticate|invalid_grant|unauthorized_client|token_introspection_failed)\b/iu],
-  vault: [/\b(?:permission denied|failed to seal|Error making API request|secret is missing)\b/iu],
-  clerk: [/\b(?:ClerkAuthenticationError|ClerkAPIError|InvalidSessionError)\b/iu],
-  auth0: [/\b(?:Auth0Error|Invalid token|access_denied|unauthorized)\b/iu],
-  // ── Logging Libraries ───────────────────────────────────────────
-  pino: [/\b(?:pino\.|"level":(?:50|60))\b/u],
-  log4j: [/\b(?:org\.apache\.log4j|log4j:ERROR|log4j:WARN)\b/u],
-  slf4j: [/\b(?:org\.slf4j|LoggerFactory|Failed to load class)\b/u],
-  winston: [/\b(?:winston.*error|winston\.error)\b/iu],
-  // ── Cloudflare / Edge ───────────────────────────────────────────
-  cloudflare: [/\b(?:cloudflare.*error|cf-ray|Error \d{3,4})\b/iu],
-  "cloudflare-workers": [/\b(?:Workers.*error|wrangler.*error|Service bindings error)\b/iu],
-  vercel: [/\b(?:vercel.*error|Vercel.*failed|Deployment error)\b/iu],
-  // ── Rust frameworks ─────────────────────────────────────────────
-  rocket: [/\b(?:Rocket\.error|Rocket has crashed|launch fairing failed)\b/u],
-  axum: [/\b(?:axum::|axum error|hyper::Error)\b/u],
-  // ── Go frameworks ───────────────────────────────────────────────
-  "echo-framework": [/\b(?:echo v4 handler panic|labstack\/echo|echo\.HTTPError)\b/u],
-  fiber: [/\b(?:fiber\.Error|fiber\.RequestTimeoutError|fiber v2.*error)\b/u],
-  // ── Mobile / Desktop ────────────────────────────────────────────
-  "react-native": [/\b(?:Unable to resolve module|bundling failed|Metro error|ReactNativeFirebaseError)\b/u],
-  flutter: [/\b(?:flutter.*error|Dart error|Unhandled Exception|FlutterError)\b/iu],
-  electron: [/\b(?:electron-builder.*error|Cannot find module 'electron'|Error: electron)\b/u],
-  // ── E-commerce / CMS ─────────────────────────────────────────────
-  shopify: [/\b(?:ShopifyError|ShopifyAPIError|GraphQL.*error|ShopifyCLI.*error)\b/iu],
-  wordpress: [/\b(?:PHP Fatal error:|PHP Parse error:|wp-db\.php|WPDB error)\b/iu],
-  drupal: [/\b(?:Drupal\\|PluginNotFoundException|Uncaught PHP Exception)\b/u],
-  strapi: [/\b(?:Strapi.*error|Error: Connection refused to database)\b/iu],
-  // ── Backup / DR ─────────────────────────────────────────────────
-  velero: [/\b(?:VeleroBackupError|BackupStorageLocation|backup failed)\b/iu],
-  restic: [/\b(?:ResticRepositoryError|Fatal: unable to open repo|Fatal: |repo already locked)\b/u]
-};
+var SOURCE_DIAGNOSTIC_BOOST_PATTERNS = buildSourceBoosterPatterns();
 function createSourceProfiles(signatures) {
   return signatures.map(([name, markers]) => ({
     name,
@@ -26075,7 +26160,7 @@ function createSourceProfiles(signatures) {
       value: marker.toLowerCase(),
       weight: sourceMarkerWeight(marker)
     })),
-    diagnosticBoostPatterns: SOURCE_DIAGNOSTIC_BOOST_PATTERNS[name] ?? []
+    diagnosticBoostPatterns: SOURCE_DIAGNOSTIC_BOOST_PATTERNS.get(name) ?? []
   }));
 }
 function sourceMarkerWeight(marker) {
@@ -26852,6 +26937,11 @@ var KNOWN_LOG_SOURCES = LOG_SOURCE_SIGNATURES.map(
 // src/core/detection/source-detector.ts
 var SOURCE_ACTIVE_CONFIDENCE = 12;
 var SOURCE_DIAGNOSTIC_BOOST = 40;
+function getEffectiveActiveConfidence(inputLines) {
+  if (inputLines < 50) return 4;
+  if (inputLines < 200) return 6;
+  return SOURCE_ACTIVE_CONFIDENCE;
+}
 function createSourceDetectionState(sources = LOG_SOURCE_SIGNATURES) {
   return {
     hits: /* @__PURE__ */ new Map(),
@@ -26888,10 +26978,11 @@ function rankDetectedSources(state, limit = 12) {
     return left[0].localeCompare(right[0]);
   }).slice(0, limit).map(([source]) => source);
 }
-function scoreSourceDiagnosticBoost(line, state) {
+function scoreSourceDiagnosticBoost(line, state, inputLines) {
+  const threshold = inputLines !== void 0 ? getEffectiveActiveConfidence(inputLines) : SOURCE_ACTIVE_CONFIDENCE;
   for (const profile of state.profiles) {
     const hit = state.hits.get(profile.name);
-    if (hit === void 0 || hit.confidence < SOURCE_ACTIVE_CONFIDENCE) {
+    if (hit === void 0 || hit.confidence < threshold) {
       continue;
     }
     if (profile.diagnosticBoostPatterns.some((pattern) => pattern.test(line))) {
@@ -26908,26 +26999,38 @@ var INDENTED_PATTERN = /^\s+/u;
 function createContinuationContext(mode) {
   return { mode, groupLineCount: 0, groupByteCount: 0, previousLine: "" };
 }
+var EXPLICIT_MODES = /* @__PURE__ */ new Set([
+  "auto",
+  "auto-source",
+  "python",
+  "node",
+  "java",
+  "go",
+  "rust",
+  "off"
+]);
 function isContinuationLine(line, ctx) {
   if (ctx.mode === "off") return false;
   if (ctx.groupLineCount >= MAX_MULTILINE_GROUP_LINES) return false;
   if (ctx.groupByteCount >= MAX_MULTILINE_GROUP_BYTES) return false;
-  switch (ctx.mode) {
-    case "python":
-      return isCont(line);
-    case "node":
-      return isCont(line);
-    case "java":
-      return isJavaCont(line);
-    case "go":
-      return isGoCont(line);
-    case "rust":
-      return isCont(line);
-    case "auto":
-      return isAutoCont(line, ctx.previousLine);
-    default:
-      return false;
+  if (ctx.mode === "auto-source") {
+    return isAutoSourceCont(line, ctx);
   }
+  if (ctx.mode === "java") return isJavaCont(line);
+  if (ctx.mode === "go") return isGoCont(line);
+  if (ctx.mode === "auto") return isAutoCont(line, ctx.previousLine);
+  if (!EXPLICIT_MODES.has(ctx.mode)) return false;
+  return isCont(line);
+}
+function isAutoSourceCont(line, ctx) {
+  if (line.trim().length === 0) return false;
+  if (ctx.effectiveMode === void 0) {
+    return isAutoCont(line, ctx.previousLine);
+  }
+  if (ctx.effectiveMode === "java") return isJavaCont(line);
+  if (ctx.effectiveMode === "go") return isGoCont(line);
+  if (ctx.effectiveMode === "off") return false;
+  return isCont(line);
 }
 function isCont(line) {
   return line.trim().length > 0 && INDENTED_PATTERN.test(line) && !line.startsWith("    [");
@@ -26949,6 +27052,152 @@ function isAutoCont(line, previousLine) {
   if (/^goroutine\s+\d+\s+\[.+\]:/u.test(line)) return true;
   return false;
 }
+
+// src/core/multiline/auto-multiline-resolver.ts
+var SOURCE_TO_MULTILINE = {
+  pytest: "python",
+  django: "python",
+  flask: "python",
+  celery: "python",
+  aiohttp: "python",
+  sanic: "python",
+  tornado: "python",
+  structlog: "python",
+  loguru: "python",
+  ruff: "python",
+  mypy: "python",
+  pyright: "python",
+  pylint: "python",
+  sphinx: "python",
+  jest: "node",
+  vitest: "node",
+  mocha: "node",
+  cypress: "node",
+  express: "node",
+  fastify: "node",
+  nestjs: "node",
+  nextjs: "node",
+  pino: "node",
+  winston: "node",
+  bunyan: "node",
+  maven: "java",
+  gradle: "java",
+  "spring-boot": "java",
+  junit: "java",
+  logback: "java",
+  log4j: "java",
+  tomcat: "java",
+  jetty: "java",
+  "go-test": "go",
+  "go-build": "go",
+  "go-fmt": "go",
+  cargo: "rust",
+  rustc: "rust"
+};
+function resolveAutoMultiline(detectedSources) {
+  for (const src of detectedSources) {
+    const mode = SOURCE_TO_MULTILINE[src];
+    if (mode !== void 0) {
+      return mode;
+    }
+  }
+  return "off";
+}
+function effectiveMultilineMode(requested, detectedSources) {
+  if (requested !== "auto-source") {
+    return requested;
+  }
+  return resolveAutoMultiline(detectedSources);
+}
+
+// src/core/formats/access-log-classifier.ts
+var ACCESS_LOG_FULL_PATTERN = /^\S+\s+\S+\s+\S+\s+\[.+\]\s+"(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH|CONNECT|TRACE)\s+(\S+)\s+HTTP\/\d\.\d"\s+(\d{3})\s+\d+\s+"[^"]*"\s+"([^"]*)"/iu;
+var HEALTH_PATH_PATTERN = /\/(?:healthz|readyz|livez|health|ping|status|up)$/iu;
+var METRICS_PATH_PATTERN = /\/(?:metrics|metricz)$/iu;
+var STATIC_ASSET_PATH_PATTERN = /\.(?:css|js|mjs|cjs|svg|ico|png|jpe?g|gif|webp|woff2?|ttf|eot|otf|map|txt|xml|json|webmanifest|wasm)(?:\?.*)?$/iu;
+var ROBOTS_FAVICON_PATH_PATTERN = /\/(?:favicon\.ico|robots\.txt)$/iu;
+var KUBE_PROBE_UA_PATTERN = /\bkube-probe\b/iu;
+var PROMETHEUS_UA_PATTERN = /\bPrometheus\b/iu;
+var INTERNAL_HEALTH_UA_PATTERN = /\b(?:ELB-HealthChecker|GoogleHC|kube-probe|node-fetch|Go-http-client|curl|wget)\b/iu;
+function matchAccessLogLine(line) {
+  const match = line.match(ACCESS_LOG_FULL_PATTERN);
+  if (match === null) return null;
+  return {
+    path: match[1],
+    status: parseInt(match[2], 10),
+    userAgent: match[3]
+  };
+}
+function isAccessLogNoiseLine(line) {
+  const matched = matchAccessLogLine(line);
+  if (matched === null) return false;
+  if (matched.status >= 500) return false;
+  if (matched.status >= 400) return false;
+  if (HEALTH_PATH_PATTERN.test(matched.path)) return true;
+  if (METRICS_PATH_PATTERN.test(matched.path)) return true;
+  if (ROBOTS_FAVICON_PATH_PATTERN.test(matched.path)) return true;
+  if (STATIC_ASSET_PATH_PATTERN.test(matched.path)) return true;
+  if (KUBE_PROBE_UA_PATTERN.test(matched.userAgent)) return true;
+  if (INTERNAL_HEALTH_UA_PATTERN.test(matched.userAgent)) return true;
+  if (PROMETHEUS_UA_PATTERN.test(matched.userAgent)) return true;
+  return false;
+}
+
+// src/core/formats/access-log-bucket.ts
+function accessBucketPush(bucket, line) {
+  const matched = matchAccessLogLine(line);
+  if (matched === null || matched.status >= 400) {
+    const flushed2 = flushAccessBucket(bucket);
+    return { bucket: null, ejected: flushed2, passThrough: line };
+  }
+  if (bucket !== null && bucket.exemplarPath === matched.path) {
+    bucket.count += 1;
+    return { bucket, ejected: null, passThrough: null };
+  }
+  const flushed = flushAccessBucket(bucket);
+  const newBucket = {
+    exemplarLine: line,
+    exemplarPath: matched.path,
+    count: 1
+  };
+  return { bucket: newBucket, ejected: flushed, passThrough: null };
+}
+function flushAccessBucket(bucket) {
+  if (bucket === null) return null;
+  const rendered = bucket.count > 1 ? `[x${bucket.count} access-log 2xx] ${bucket.exemplarLine}` : bucket.exemplarLine;
+  return rendered;
+}
+
+// src/core/dedupe/count-min-sketch.ts
+var import_node_crypto = require("node:crypto");
+var CountMinSketch = class {
+  constructor(width = 8192, depth = 4) {
+    this.width = width;
+    this.depth = depth;
+    this.tables = Array.from({ length: depth }, () => new Uint32Array(width));
+  }
+  width;
+  depth;
+  tables;
+  hash(key, seed) {
+    const h = (0, import_node_crypto.createHash)("sha1").update(`${seed}:${key}`).digest();
+    return h.readUInt32BE(0) % this.width;
+  }
+  /**
+   * Increment the count for a key and return the new estimated count
+   * (the minimum among all hash tables — the count-min estimate).
+   */
+  increment(key) {
+    let min = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < this.depth; i++) {
+      const idx = this.hash(key, i);
+      const next = this.tables[i][idx] + 1;
+      this.tables[i][idx] = next;
+      if (next < min) min = next;
+    }
+    return min;
+  }
+};
 
 // src/core/formats/format-detector.ts
 var LOGFMT_PATTERN = /^\s*\w+=[^\s=]+(?:\s+\w+=[^\s=]+)*\s*$/u;
@@ -26984,6 +27233,75 @@ function groupHttpStatusCodes(line) {
   return line;
 }
 
+// src/core/formats/json-line-extractor.ts
+var LEVEL_KEYS = ["level", "severity", "lvl", "log_level"];
+var MSG_KEYS = ["msg", "message", "log", "text"];
+var ERROR_KEYS = ["err", "error", "exception"];
+function extractJsonLog(line) {
+  try {
+    const obj = JSON.parse(line);
+    if (typeof obj !== "object" || obj === null) return null;
+    const level = LEVEL_KEYS.map((k) => obj[k]).find(
+      (v) => v !== void 0
+    );
+    const msg = MSG_KEYS.map((k) => obj[k]).find(
+      (v) => typeof v === "string"
+    );
+    let errStack;
+    for (const k of ERROR_KEYS) {
+      const v = obj[k];
+      if (v && typeof v === "object" && "stack" in v) {
+        errStack = String(v.stack);
+        break;
+      }
+    }
+    return { level, msg, errStack, raw: obj };
+  } catch {
+    return null;
+  }
+}
+function normalizeJsonLevel(level) {
+  if (typeof level === "number") {
+    if (level >= 60) return "fatal";
+    if (level >= 50) return "error";
+    if (level >= 40) return "warn";
+    if (level >= 30) return "info";
+    if (level >= 20) return "debug";
+    return "trace";
+  }
+  if (typeof level === "string") return level.toLowerCase();
+  return "info";
+}
+function scoreJsonLine(line) {
+  const json = extractJsonLog(line);
+  if (!json) return void 0;
+  const lvl = normalizeJsonLevel(json.level);
+  if (lvl === "fatal" || lvl === "error" || lvl === "critical") {
+    return 100;
+  }
+  if (lvl === "warn" || lvl === "warning") {
+    return 50;
+  }
+  if (json.errStack) {
+    return 80;
+  }
+  return null;
+}
+
+// src/core/dedupe/stack-fingerprint.ts
+var JS_FRAME_LINE_COL = /(:\d+:\d+)\)/gu;
+var PY_FRAME_LINE = /(, line )\d+(, in )/gu;
+var JAVA_FRAME_LINE = /(:\d+)(?=\))/gu;
+var GO_FRAME_LINE_COL = /(:\d+)(\s+\+0x[0-9a-f]+)/gu;
+function normalizeStackFrameLineCol(line) {
+  let result = line;
+  result = result.replace(PY_FRAME_LINE, "$1[NN]$2");
+  result = result.replace(GO_FRAME_LINE_COL, ":[NN]$2");
+  result = result.replace(JS_FRAME_LINE_COL, ":[NN]:[NN])");
+  result = result.replace(JAVA_FRAME_LINE, ":[NN])");
+  return result;
+}
+
 // src/core/sanitize/sanitize-line.ts
 var UUID_PATTERN = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
 var ISO_TIME_PATTERN = /\b\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?)?\b/gu;
@@ -26991,33 +27309,64 @@ var UTC_TIME_PATTERN = /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+\d{1,2}\s+(?:Jan|F
 var APACHE_ERROR_TIME_PATTERN = /\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\s+\d{4}\]/giu;
 var COMMON_LOG_TIME_PATTERN = /\b\d{1,2}\/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}\b/giu;
 var NGINX_ERROR_TIME_PATTERN = /\b\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\b/gu;
+var K8S_RELATIVE_DURATION_PATTERN = /\b(?:\d+d)?(?:\d+h)?(?:\d+m)?\d+s\b/gu;
 var ANSI_ESCAPE_PATTERN = /\u001b\[[0-9;]*m/gu;
 var IPV4_WITH_PORT_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})\b/gu;
 var IPV4_PATTERN = /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}\b/gu;
+var IPV6_PATTERN = /(?:(?:[0-9a-fA-F]{1,4}:){2,}:[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4})*|(?:[0-9a-fA-F]{1,4}:){4,}[0-9a-fA-F]{1,4}|::[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4})+)/gu;
+var EMAIL_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,24}\b/gu;
 var GITHUB_TOKEN_PATTERN = /\bgh[opuars]_[A-Za-z0-9]{36,255}\b/gu;
 var JWT_TOKEN_PATTERN = /\beyJ[A-Za-z0-9_-]{16,2000}\.[A-Za-z0-9_-]{16,2000}\.[A-Za-z0-9_-]{16,2000}\b/gu;
 var CONNECTION_STRING_PATTERN = /\b(?:postgres|mysql|mongodb|redis|postgresql|sqlserver|jdbc):\/\/[^:@\s]+:([^@\s]+)@/giu;
 var SLACK_TOKEN_PATTERN = /\bxox[abprs]-\d{10,12}-\d{10,12}-[A-Za-z0-9]{24,}\b/gu;
 var AUTHORIZATION_HEADER_PATTERN = /\bAuthorization\s*:\s*\S+(?:\s+\S+)*/giu;
 var SECRET_FIELD_PATTERN = /\b(?:password|secret|token|api[_-]?key|api[_-]?secret|private[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token|auth[_-]?token|bearer)\s*[:=]\s*\S+/giu;
+var STRIPE_KEY_PATTERN = /\b(?:sk|pk|rk)_(?:live|test)_[0-9A-Za-z]{24,99}\b/gu;
+var NPM_TOKEN_PATTERN = /\bnpm_[A-Za-z0-9]{36,80}\b/gu;
+var GOOGLE_API_KEY_PATTERN = /\bAIza[0-9A-Za-z_-]{30,40}\b/gu;
+var TWILIO_KEY_PATTERN = /\b(?:SK|AC|TK)[a-f0-9x]{32}\b/giu;
+var SENDGRID_KEY_PATTERN = /\bSG\.[A-Za-z0-9_-]{16,32}\.[A-Za-z0-9_-]{32,64}\b/gu;
 var HEX_HASH_PATTERN = /\b(?=[a-f0-9]*\d)(?=[a-f0-9]*[a-f])[a-f0-9]{16,128}\b/giu;
 var ALPHANUMERIC_HASH_PATTERN = /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-Za-z0-9]{24,512}\b/gu;
 var AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/gu;
 var AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
-function sanitizeLine(line) {
-  let result = line.replace(ANSI_ESCAPE_PATTERN, "").replace(UUID_PATTERN, "[ID]").replace(UTC_TIME_PATTERN, "[TIME]").replace(APACHE_ERROR_TIME_PATTERN, "[TIME]").replace(COMMON_LOG_TIME_PATTERN, "[TIME]").replace(NGINX_ERROR_TIME_PATTERN, "[TIME]").replace(ISO_TIME_PATTERN, "[TIME]").replace(IPV4_WITH_PORT_PATTERN, "[IP]:[PORT]").replace(IPV4_PATTERN, "[IP]").replace(
+function sanitizeLine(line, preserveIdSuffix = 0) {
+  const uuidReplacement = preserveIdSuffix > 0 ? (m) => `[ID:${m.slice(-preserveIdSuffix)}]` : () => "[ID]";
+  const hexHashReplacement = preserveIdSuffix > 0 ? (m) => `[HASH:${m.slice(-preserveIdSuffix)}]` : () => "[HASH]";
+  const alnumHashReplacement = preserveIdSuffix > 0 ? (m) => `[HASH:${m.slice(-preserveIdSuffix)}]` : () => "[HASH]";
+  let result = line.replace(ANSI_ESCAPE_PATTERN, "").replace(UUID_PATTERN, uuidReplacement).replace(UTC_TIME_PATTERN, "[TIME]").replace(APACHE_ERROR_TIME_PATTERN, "[TIME]").replace(COMMON_LOG_TIME_PATTERN, "[TIME]").replace(NGINX_ERROR_TIME_PATTERN, "[TIME]").replace(ISO_TIME_PATTERN, "[TIME]").replace(IPV4_WITH_PORT_PATTERN, "[IP]:[PORT]").replace(IPV4_PATTERN, "[IP]").replace(IPV6_PATTERN, "[IPV6]").replace(
     CONNECTION_STRING_PATTERN,
     (match, pwd) => match.replace(pwd, "[REDACTED]")
-  ).replace(GITHUB_TOKEN_PATTERN, "[REDACTED]").replace(JWT_TOKEN_PATTERN, "[JWT]").replace(SLACK_TOKEN_PATTERN, "[REDACTED]").replace(AUTHORIZATION_HEADER_PATTERN, "Authorization: [REDACTED]").replace(SECRET_FIELD_PATTERN, (match) => {
+  ).replace(GITHUB_TOKEN_PATTERN, "[REDACTED]").replace(JWT_TOKEN_PATTERN, "[JWT]").replace(SLACK_TOKEN_PATTERN, "[REDACTED]").replace(STRIPE_KEY_PATTERN, "[REDACTED]").replace(NPM_TOKEN_PATTERN, "[REDACTED]").replace(GOOGLE_API_KEY_PATTERN, "[REDACTED]").replace(TWILIO_KEY_PATTERN, "[REDACTED]").replace(SENDGRID_KEY_PATTERN, "[REDACTED]").replace(AUTHORIZATION_HEADER_PATTERN, "Authorization: [REDACTED]").replace(SECRET_FIELD_PATTERN, (match) => {
     const sepIdx = match.search(/[:=]\s*/u);
     const sepEnd = match.slice(sepIdx).match(/^[:=]\s*/u)[0].length;
     return `${match.slice(0, sepIdx + sepEnd)}[REDACTED]`;
-  }).replace(HEX_HASH_PATTERN, "[HASH]").replace(ALPHANUMERIC_HASH_PATTERN, "[HASH]").replace(AWS_ACCESS_KEY_PATTERN, "[REDACTED]").replace(
+  }).replace(K8S_RELATIVE_DURATION_PATTERN, "[AGO]").replace(EMAIL_PATTERN, "[EMAIL]").replace(HEX_HASH_PATTERN, hexHashReplacement).replace(ALPHANUMERIC_HASH_PATTERN, alnumHashReplacement).replace(AWS_ACCESS_KEY_PATTERN, "[REDACTED]").replace(
     AWS_ARN_ACCOUNT_PATTERN,
     (match, accountId) => match.replace(accountId, "[ACCOUNT]")
   ).replace(/[ \t]+$/u, "");
   result = groupHttpStatusCodes(result);
   return result;
+}
+
+// src/core/sanitize/pem-block.ts
+var PEM_BLOCK_HEADER_PATTERN = /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED |)PRIVATE KEY-----/u;
+var PEM_BLOCK_FOOTER_PATTERN = /-----END (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED |)PRIVATE KEY-----/u;
+function createPemBlockState() {
+  return { inside: false };
+}
+function maskPemBlock(line, state) {
+  if (PEM_BLOCK_HEADER_PATTERN.test(line)) {
+    state.inside = true;
+    return "[PEM PRIVATE KEY REDACTED]";
+  }
+  if (state.inside) {
+    if (PEM_BLOCK_FOOTER_PATTERN.test(line)) {
+      state.inside = false;
+    }
+    return null;
+  }
+  return line;
 }
 
 // src/core/severity/severity-filter.ts
@@ -27066,39 +27415,6 @@ function passesSeverityFilter(line, minLevel) {
   return SEVERITY_ORDER[lineLevel] >= SEVERITY_ORDER[minLevel];
 }
 
-// src/core/formats/access-log-classifier.ts
-var ACCESS_LOG_FULL_PATTERN = /^\S+\s+\S+\s+\S+\s+\[.+\]\s+"(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH|CONNECT|TRACE)\s+(\S+)\s+HTTP\/\d\.\d"\s+(\d{3})\s+\d+\s+"[^"]*"\s+"([^"]*)"/iu;
-var HEALTH_PATH_PATTERN = /\/(?:healthz|readyz|livez|health|ping|status|up)$/iu;
-var METRICS_PATH_PATTERN = /\/(?:metrics|metricz)$/iu;
-var STATIC_ASSET_PATH_PATTERN = /\.(?:css|js|mjs|cjs|svg|ico|png|jpe?g|gif|webp|woff2?|ttf|eot|otf|map|txt|xml|json|webmanifest|wasm)(?:\?.*)?$/iu;
-var ROBOTS_FAVICON_PATH_PATTERN = /\/(?:favicon\.ico|robots\.txt)$/iu;
-var KUBE_PROBE_UA_PATTERN = /\bkube-probe\b/iu;
-var PROMETHEUS_UA_PATTERN = /\bPrometheus\b/iu;
-var INTERNAL_HEALTH_UA_PATTERN = /\b(?:ELB-HealthChecker|GoogleHC|kube-probe|node-fetch|Go-http-client|curl|wget)\b/iu;
-function matchAccessLogLine(line) {
-  const match = line.match(ACCESS_LOG_FULL_PATTERN);
-  if (match === null) return null;
-  return {
-    path: match[1],
-    status: parseInt(match[2], 10),
-    userAgent: match[3]
-  };
-}
-function isAccessLogNoiseLine(line) {
-  const matched = matchAccessLogLine(line);
-  if (matched === null) return false;
-  if (matched.status >= 500) return false;
-  if (matched.status >= 400) return false;
-  if (HEALTH_PATH_PATTERN.test(matched.path)) return true;
-  if (METRICS_PATH_PATTERN.test(matched.path)) return true;
-  if (ROBOTS_FAVICON_PATH_PATTERN.test(matched.path)) return true;
-  if (STATIC_ASSET_PATH_PATTERN.test(matched.path)) return true;
-  if (KUBE_PROBE_UA_PATTERN.test(matched.userAgent)) return true;
-  if (INTERNAL_HEALTH_UA_PATTERN.test(matched.userAgent)) return true;
-  if (PROMETHEUS_UA_PATTERN.test(matched.userAgent)) return true;
-  return false;
-}
-
 // src/core/scoring/relevance-score.ts
 var IGNORED_LOG_TAG_PATTERN = /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
 var APACHE_ROUTINE_NOTICE_PATTERN = /^(?:\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\s+\d{4}\]|\[TIME\])\s+\[notice\]\s+(?:workerEnv\.init\(\) ok\b|jk2_init\(\) Found child \d+ in scoreboard slot \d+\b)/iu;
@@ -27140,34 +27456,21 @@ function isInternalStackTraceLine(line) {
   if (IMPORTANT_LOG_TAG_PATTERN.test(line)) return false;
   return looksLikeDiagnosticLine(line) && INTERNAL_STACK_PATTERN.test(line);
 }
-function estimateTokens(wordCount) {
-  return Math.ceil(wordCount * 1.3);
+function estimateTokens(wordCountOrText) {
+  if (typeof wordCountOrText === "number") {
+    return Math.ceil(wordCountOrText * 1.3);
+  }
+  const text = wordCountOrText;
+  const cjk = text.match(/[\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/gu)?.length ?? 0;
+  const rest = text.length - cjk;
+  return Math.ceil(cjk * 1 + rest / 4);
 }
-var HTTP_5XX_PATTERN = /\bHTTP\/\d\.\d"\s+5\d{2}\b/u;
-var HTTP_4XX_PATTERN = /\bHTTP\/\d\.\d"\s+4\d{2}\b/u;
 function scoreLineRelevance(line, aggressiveness, seenCount = 0) {
   if (line.trim().length === 0) return -Infinity;
   if (isIgnoredLogLine(line)) return -Infinity;
   let score = 0;
-  if (IMPORTANT_LOG_TAG_PATTERN.test(line)) score += 100;
-  if (JSON_SEVERITY_PATTERN.test(line)) score += 80;
-  if (SCANNER_FINDING_PATTERN.test(line)) score += 70;
-  if (CONTAINER_FAILURE_PATTERN.test(line)) score += 70;
-  if (GITHUB_ACTIONS_ANNOTATION_PATTERN.test(line)) score += 70;
-  if (GRADLE_FAILURE_PATTERN.test(line)) score += 60;
-  if (NPM_ERROR_PATTERN.test(line) || YARN_ERROR_PATTERN.test(line)) score += 60;
-  if (DIAGNOSTIC_PATTERN.test(line)) score += 50;
-  if (GO_TEST_FAIL_PATTERN.test(line)) score += 50;
-  if (MAKE_ERROR_PATTERN.test(line)) score += 50;
-  if (SYSTEMD_STATUS_PATTERN.test(line)) score += 50;
-  if (CIRCLECI_STEP_PATTERN.test(line)) score += 50;
-  if (JENKINS_MARKER_PATTERN.test(line)) score += 40;
-  if (AZURE_PIPELINE_PATTERN.test(line)) score += 40;
-  if (TEAMCITY_MARKER_PATTERN.test(line)) score += 40;
-  if (HTTP_5XX_PATTERN.test(line)) score += 50;
-  if (HTTP_4XX_PATTERN.test(line)) score += 20;
-  if (STACK_FRAME_PATTERN.test(line) || JAVA_STACK_FRAME_PATTERN.test(line) || PYTHON_STACK_FRAME_PATTERN.test(line) || GO_STACK_FRAME_PATTERN.test(line) || GO_FILE_FRAME_PATTERN.test(line) || GO_GOROUTINE_PATTERN.test(line) || PYTHON_TRACEBACK_PATTERN.test(line) || STACK_MORE_PATTERN.test(line)) {
-    score += 40;
+  for (const b of DIAGNOSTIC_BOOSTERS) {
+    if (b.pattern.test(line)) score += b.score;
   }
   if (aggressiveness === "aggressive" && AGGRESSIVE_WARN_PATTERN.test(line) && !AGGRESSIVE_WARNING_SIGNAL_PATTERN.test(line)) {
     score = -1;
@@ -27219,26 +27522,26 @@ var LogStripError = class extends Error {
     this.code = code;
   }
 };
-async function* readLogicalLines(lines, multilineMode) {
+async function* readLogicalLines(lines, multilineMode, ctx) {
   if (multilineMode === "off") {
     yield* lines;
     return;
   }
-  const ctx = createContinuationContext(multilineMode);
+  const continuationContext = ctx ?? createContinuationContext(multilineMode);
   let buffer = [];
   for await (const line of lines) {
-    if (buffer.length > 0 && isContinuationLine(line, ctx)) {
+    if (buffer.length > 0 && isContinuationLine(line, continuationContext)) {
       buffer.push(line);
-      ctx.groupLineCount += 1;
-      ctx.groupByteCount += Buffer.byteLength(line, "utf8");
+      continuationContext.groupLineCount += 1;
+      continuationContext.groupByteCount += Buffer.byteLength(line, "utf8");
       continue;
     }
     if (buffer.length > 0) {
       yield buffer.join("\n");
     }
-    ctx.previousLine = line;
-    ctx.groupLineCount = 1;
-    ctx.groupByteCount = Buffer.byteLength(line, "utf8");
+    continuationContext.previousLine = line;
+    continuationContext.groupLineCount = 1;
+    continuationContext.groupByteCount = Buffer.byteLength(line, "utf8");
     buffer = [line];
   }
   if (buffer.length > 0) {
@@ -27321,12 +27624,15 @@ async function processLogStream(input, output, options = {}) {
     (r) => ({ regex: compileConfigRegex(r.pattern, r.flags ?? "gu"), replacement: r.replacement })
   );
   const stats = createEmptyStats();
+  const pemState = createPemBlockState();
   const detectedSourceState = createSourceDetectionState(merged.mergedSources);
-  const seenLines = /* @__PURE__ */ new Map();
+  const seenLines = new CountMinSketch(8192, 4);
   const contextBefore = [];
+  let accessBucket = null;
   let afterContextRemaining = 0;
+  const multilineCtx = multilineMode === "auto-source" ? createContinuationContext(multilineMode) : void 0;
   const rawLines = (0, import_node_readline.createInterface)({ input, crlfDelay: Infinity });
-  const lines = readLogicalLines(rawLines, multilineMode);
+  const lines = readLogicalLines(rawLines, multilineMode, multilineCtx);
   let previousGroup;
   let hidingInternalStack = false;
   let detectedFormat;
@@ -27382,6 +27688,9 @@ async function processLogStream(input, output, options = {}) {
     previousGroup = createRepeatGroup(line);
   };
   const flushContextBefore = async () => {
+    const ejected = flushAccessBucket(accessBucket);
+    if (ejected !== null) contextBefore.push(ejected);
+    accessBucket = null;
     for (const buffered of contextBefore) {
       await emitCandidate(buffered);
     }
@@ -27404,6 +27713,13 @@ async function processLogStream(input, output, options = {}) {
     let line = String(rawLine);
     const physicalLineCount = line.split("\n").length;
     collectDetectedSourceHits(line, detectedSourceState);
+    if (multilineCtx !== void 0) {
+      const [top] = rankDetectedSources(detectedSourceState, 1);
+      const resolved = effectiveMultilineMode("auto-source", top !== void 0 ? [top] : []);
+      if (resolved !== multilineCtx.effectiveMode) {
+        multilineCtx.effectiveMode = resolved;
+      }
+    }
     stats.inputLines += physicalLineCount;
     stats.inputWords += countWords(line);
     stats.inputBytes += Buffer.byteLength(`${line}
@@ -27464,12 +27780,19 @@ async function processLogStream(input, output, options = {}) {
       dropLine(line, physicalLineCount, "ignored-tag");
       continue;
     }
-    let sanitized = sanitizeLine(line);
+    const masked = maskPemBlock(line, pemState);
+    if (masked === null) {
+      dropLine(line, physicalLineCount, "custom-ignore");
+      continue;
+    }
+    line = masked;
+    let sanitized = sanitizeLine(line, options.preserveIdSuffix ?? 0);
     for (const rule of customSanitizeRules) {
       sanitized = sanitized.replace(rule.regex, rule.replacement);
     }
     const isCustomInternalStack = customInternalStackRegexes.length > 0 && customInternalStackRegexes.some((r) => testRegex(r, sanitized));
-    if (isInternalStackTraceLine(sanitized) || isCustomInternalStack) {
+    const skipInternalStack = detectedFormat === "json" && sanitized.startsWith("{");
+    if (!skipInternalStack && (isInternalStackTraceLine(sanitized) || isCustomInternalStack)) {
       stats.hiddenInternalStackLines += physicalLineCount;
       if (!hidingInternalStack) {
         await flushContextBefore();
@@ -27489,14 +27812,36 @@ async function processLogStream(input, output, options = {}) {
       continue;
     }
     hidingInternalStack = false;
-    let seenCount = (seenLines.get(sanitized) ?? 0) + 1;
-    if (seenCount === 1 && seenLines.size >= TFIDF_MAP_LIMIT) {
-      seenLines.clear();
-      seenCount = 1;
+    sanitized = normalizeStackFrameLineCol(sanitized);
+    const seenCount = seenLines.increment(sanitized);
+    let jsonParsedScore;
+    if (detectedFormat === "json") {
+      const parsed = scoreJsonLine(sanitized);
+      if (parsed === null) {
+        dropLine(line, physicalLineCount, "ignored-tag");
+        continue;
+      }
+      if (parsed !== void 0) {
+        if (parsed >= 80) {
+          await flushContextBefore();
+          await emitCandidate(sanitized);
+          afterContextRemaining = contextWindowAfter;
+          recordDecision({
+            line,
+            sanitizedLine: sanitized,
+            kept: true,
+            dropped: false,
+            hardKeep: false,
+            repeated: false,
+            reason: "hard-keep"
+          });
+          continue;
+        }
+        jsonParsedScore = parsed;
+      }
     }
-    seenLines.set(sanitized, seenCount);
     const effectiveAggressiveness = dynamicAggressiveness.effective;
-    let score = scoreLineRelevance(
+    let score = jsonParsedScore ?? scoreLineRelevance(
       sanitized,
       effectiveAggressiveness,
       seenCount
@@ -27507,7 +27852,7 @@ async function processLogStream(input, output, options = {}) {
         break;
       }
     }
-    score += scoreSourceDiagnosticBoost(sanitized, detectedSourceState);
+    score += scoreSourceDiagnosticBoost(sanitized, detectedSourceState, stats.inputLines);
     if (score >= SCORE_KEEP_THRESHOLD) {
       await flushContextBefore();
       await emitCandidate(sanitized);
@@ -27556,7 +27901,18 @@ async function processLogStream(input, output, options = {}) {
         stats.droppedLines += 1;
         droppedBufferedLine = true;
       }
-      contextBefore.push(sanitized);
+      if (detectedFormat !== "json") {
+        const { bucket, ejected, passThrough } = accessBucketPush(accessBucket, sanitized);
+        accessBucket = bucket;
+        if (ejected !== null) {
+          contextBefore.push(ejected);
+        }
+        if (passThrough !== null) {
+          contextBefore.push(passThrough);
+        }
+      } else {
+        contextBefore.push(sanitized);
+      }
       recordDecision({
         line,
         sanitizedLine: sanitized,
@@ -27584,6 +27940,14 @@ async function processLogStream(input, output, options = {}) {
   }
   stats.droppedLines += contextBefore.length;
   contextBefore.length = 0;
+  if (pemState.inside) {
+    const warningLine = "[PEM block unterminated - input redacted]";
+    stats.outputWords += countWords(warningLine);
+    stats.outputBytes += Buffer.byteLength(`${warningLine}
+`, "utf8");
+    stats.truncatedLines = stats.truncatedLines + 1;
+    await emitOutputLine(warningLine);
+  }
   await flushPreviousLine();
   const inputTokens = tokenEstimator === void 0 ? estimateTokens(stats.inputWords) : inputTokensFromEstimator;
   const outputTokens = tokenEstimator === void 0 ? estimateTokens(stats.outputWords) : outputTokensFromEstimator;

@@ -7,7 +7,7 @@
 [ERROR] lightstep tracer Error: SpanDroppedError: satellite connection lost at [IP]:[PORT]
     at lightstep/tracer/transport.go:42 in send
     at lightstep/tracer/reporter.go:88 in flush
-[ERROR] thanos query Error: StoreTimeoutError: store node [IP] did not respond within 30s
+[ERROR] thanos query Error: StoreTimeoutError: store node [IP] did not respond within [AGO]
     at thanos.io/query/querier.go:42 in query
     at thanos.io/store/store.go:88 in series
 [ERROR] cortexmetrics Error: CortexRulerError: evaluation failed for rule "API5xxRate" - context deadline exceeded
@@ -28,7 +28,7 @@
 [ERROR] mixpanel track Error: MixpanelServerError: [HTTP 5xx] Service Unavailable
     at mixpanel/lib/mixpanel.py:42 in track
     at mixpanel/lib/consumer.py:88 in send
-[ERROR] heap analytics Error: heap.io connection timeout after 30s to [IP]
+[ERROR] heap analytics Error: heap.io connection timeout after [AGO] to [IP]
     at heap.io/tracker.js:42 in flush
     at heap.io/batch.js:88 in send
 [ERROR] plausible analytics Error: PlausibleDBError: ClickHouse connection refused at [IP]:[PORT]

@@ -19,7 +19,7 @@
 [ERROR] mdbook build Error: MdbookError: chapter 4 references non-existent file SUMMARY.md
     at rust-lang/mdbook/src/book/book.rs:42 in load
     at rust-lang/mdbook/src/cmd/build.rs:88 in execute
-[ERROR] bullmq queue Error: StalledJobError: job abc123def456ghi789 stalled for 300s - moving to failed
+[ERROR] bullmq queue Error: StalledJobError: job abc123def456ghi789 stalled for [AGO] - moving to failed
     at bullmq/src/job.ts:42 in moveStalledJobsToFailed
     at bull mq/src/queue.ts:88 in runStalledChecker
 [ERROR] bull-redis Error: BullQueueError: redis connection refused at [IP]:[PORT]
@@ -28,7 +28,7 @@
 [ERROR] kestra flow Error: KestraExecutionError: flow "daily-etl" failed at task "load" - connection refused
     at kestra/runner/executor.java:42 in execute
     at kestra/queue/queue.java:88 in offer
-[ERROR] windmill Error: WindmillWorkerError: script "etl_import" timed out after 120s
+[ERROR] windmill Error: WindmillWorkerError: script "etl_import" timed out after [AGO]
     at windmill-dev/worker/worker.go:42 in execute
     at windmill-dev/worker/pool.go:88 in schedule
 [ERROR] inngest function Error: InngestFunctionError: step "validate-payment" failed - timeout

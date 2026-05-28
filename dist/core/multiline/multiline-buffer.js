@@ -8,6 +8,9 @@ const INDENTED_PATTERN = /^\s+/u;
 function createContinuationContext(mode) {
     return { mode, groupLineCount: 0, groupByteCount: 0, previousLine: '' };
 }
+const EXPLICIT_MODES = new Set([
+    'auto', 'auto-source', 'python', 'node', 'java', 'go', 'rust', 'off',
+]);
 function isContinuationLine(line, ctx) {
     if (ctx.mode === 'off')
         return false;
@@ -15,15 +18,32 @@ function isContinuationLine(line, ctx) {
         return false;
     if (ctx.groupByteCount >= MAX_MULTILINE_GROUP_BYTES)
         return false;
-    switch (ctx.mode) {
-        case 'python': return isCont(line);
-        case 'node': return isCont(line);
-        case 'java': return isJavaCont(line);
-        case 'go': return isGoCont(line);
-        case 'rust': return isCont(line);
-        case 'auto': return isAutoCont(line, ctx.previousLine);
-        default: return false;
+    if (ctx.mode === 'auto-source') {
+        return isAutoSourceCont(line, ctx);
     }
+    if (ctx.mode === 'java')
+        return isJavaCont(line);
+    if (ctx.mode === 'go')
+        return isGoCont(line);
+    if (ctx.mode === 'auto')
+        return isAutoCont(line, ctx.previousLine);
+    if (!EXPLICIT_MODES.has(ctx.mode))
+        return false;
+    return isCont(line);
+}
+function isAutoSourceCont(line, ctx) {
+    if (line.trim().length === 0)
+        return false;
+    if (ctx.effectiveMode === undefined) {
+        return isAutoCont(line, ctx.previousLine);
+    }
+    if (ctx.effectiveMode === 'java')
+        return isJavaCont(line);
+    if (ctx.effectiveMode === 'go')
+        return isGoCont(line);
+    if (ctx.effectiveMode === 'off')
+        return false;
+    return isCont(line);
 }
 function isCont(line) {
     return line.trim().length > 0 && INDENTED_PATTERN.test(line) && !line.startsWith('    [');

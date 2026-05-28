@@ -98,6 +98,7 @@ function parseCliOptions(argv) {
                 stats: { type: 'boolean', short: 's', default: false },
                 json: { type: 'boolean', short: 'j', default: false },
                 multiline: { type: 'string', short: 'm' },
+                'preserve-id-suffix': { type: 'string' },
                 severity: { type: 'string' },
                 include: { type: 'string' },
                 exclude: { type: 'string' },
@@ -191,6 +192,14 @@ function parseCliOptions(argv) {
         timeout = Math.round(timeout * 1000);
     }
     const progress = parsed.values.progress === true;
+    let preserveIdSuffix;
+    if (typeof parsed.values['preserve-id-suffix'] === 'string') {
+        const suffix = Number.parseInt(parsed.values['preserve-id-suffix'], 10);
+        if (!Number.isFinite(suffix) || suffix < 0 || suffix > 16) {
+            throw new CliError('--preserve-id-suffix must be a number between 0 and 16', 2);
+        }
+        preserveIdSuffix = suffix;
+    }
     return {
         input: parsed.positionals[0],
         output: typeof parsed.values.output === 'string' ? parsed.values.output : undefined,
@@ -208,6 +217,7 @@ function parseCliOptions(argv) {
         config: typeof parsed.values.config === 'string'
             ? parsed.values.config
             : undefined,
+        preserveIdSuffix,
         telemetry: parsed.values.telemetry === true,
         help: parsed.values.help === true,
         version: parsed.values.version === true,
@@ -348,6 +358,7 @@ async function runCli(argv, io) {
             exclude: options.exclude,
             sampleSize: options.sample,
             maxLineLength: options.maxLineLength,
+            preserveIdSuffix: options.preserveIdSuffix,
         };
         result = await (0, logstrip_parser_1.processLogStreamWithTimeout)(input, output, logStripOptions, options.timeout);
     }

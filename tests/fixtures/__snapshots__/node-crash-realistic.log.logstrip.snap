@@ -1,13 +1,13 @@
 [WARN] [TIME] queue checkout-events lag=1842 partition=3
 [x2] [ERROR] [TIME] unhandledRejection requestId=[ID] route=POST /api/checkout
 TypeError: Cannot read properties of undefined (reading 'total')
-    at buildPaymentIntent (/srv/app/src/payments/build-payment-intent.ts:42:23)
-    at CheckoutService.confirm (/srv/app/src/checkout/checkout-service.ts:118:17)
-    at async checkoutHandler (/srv/app/src/http/routes/checkout.ts:76:9)
+    at buildPaymentIntent (/srv/app/src/payments/build-payment-intent.ts:[NN]:[NN])
+    at CheckoutService.confirm (/srv/app/src/checkout/checkout-service.ts:[NN]:[NN])
+    at async checkoutHandler (/srv/app/src/http/routes/checkout.ts:[NN]:[NN])
 [... hidden internal library frames ...]
 [ERROR] [TIME] failed to publish checkout.failed event to [IP]:[PORT] requestId=[ID]
 [FATAL] [TIME] worker crashed with signal SIGABRT after uncaught exception
 Error: Cannot recover checkout worker after unhandled rejection
-    at shutdown (/srv/app/src/runtime/shutdown.ts:29:11)
-    at process.emit (node:events:520:35)
+    at shutdown (/srv/app/src/runtime/shutdown.ts:[NN]:[NN])
+    at process.emit (node:events:[NN]:[NN])
 [... hidden internal library frames ...]

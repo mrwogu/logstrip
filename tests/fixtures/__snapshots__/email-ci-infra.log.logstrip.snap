@@ -10,7 +10,7 @@
 [ERROR] brevo Error: SendinblueAPIError: [HTTP 4xx] Forbidden - sender address not verified
     at sendinblue/lib/api.js:42 in sendTransacEmail
     at sendinblue/lib/client.js:88 in request
-[ERROR] postmark Error: PostmarkError: InactiveRecipient - bounce detected for user@example.com
+[ERROR] postmark Error: PostmarkError: InactiveRecipient - bounce detected for [EMAIL]
     at postmarkapp/lib/client.js:42 in send
     at postmarkapp/lib/bounce.js:88 in handle
 [ERROR] resend Error: ResendAPIError: 422 Invalid email address format
