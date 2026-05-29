@@ -43,6 +43,7 @@ import {
 } from './multiline/multiline-buffer.js';
 import { effectiveMultilineMode } from './multiline/auto-multiline-resolver.js';
 import { applyTokenBudget, type BudgetLine } from './budget/token-budget.js';
+import { planBlockDedupe } from './dedupe/block-deduper.js';
 import {
   accessBucketPush,
   flushAccessBucket,
@@ -134,6 +135,11 @@ export {
 } from './budget/token-budget.js';
 export { isCascadeNoiseLine } from './scoring/cascade-filter.js';
 export { isMultilingualDiagnosticLine } from './scoring/multilingual-keywords.js';
+export {
+  type BlockDedupeOp,
+  type BlockDedupePlan,
+  planBlockDedupe,
+} from './dedupe/block-deduper.js';
 export { sanitizeLine } from './sanitize/sanitize-line.js';
 export {
   createPemBlockState,
@@ -324,7 +330,15 @@ export async function processLogStream(
   const tokenEstimator = options.tokenEstimator;
   const maxTokens =
     options.maxTokens !== undefined ? Math.max(0, Math.floor(options.maxTokens)) : undefined;
-  const budgetBuffer: BudgetLine[] | null = maxTokens !== undefined ? [] : null;
+  const collapseBlocks =
+    options.collapseBlocks !== undefined
+      ? Math.max(2, Math.floor(options.collapseBlocks))
+      : undefined;
+  // A single deferred-output buffer backs both the block-collapse and
+  // token-budget post-passes (only the small, already-compressed output is
+  // buffered; raw input still streams line-by-line).
+  const outputBuffer: BudgetLine[] | null =
+    maxTokens !== undefined || collapseBlocks !== undefined ? [] : null;
   let inputTokensFromEstimator = 0;
   let outputTokensFromEstimator = 0;
 
@@ -391,8 +405,8 @@ export async function processLogStream(
       return false;
     }
     outputLineCount += 1;
-    if (budgetBuffer !== null) {
-      budgetBuffer.push({ text: line, score, tokens: estimateOutputLineTokens(line) });
+    if (outputBuffer !== null) {
+      outputBuffer.push({ text: line, score, tokens: estimateOutputLineTokens(line) });
       return true;
     }
     if (tokenEstimator !== undefined) {
@@ -810,10 +824,36 @@ export async function processLogStream(
 
   await flushPendingGroups();
 
-  if (budgetBuffer !== null) {
-    const budgeted = applyTokenBudget(budgetBuffer, maxTokens!);
-    stats.droppedLines += budgeted.droppedPhysicalLines;
-    for (const item of budgeted.kept) {
+  if (outputBuffer !== null) {
+    let buffered: BudgetLine[] = outputBuffer;
+
+    if (collapseBlocks !== undefined) {
+      const plan = planBlockDedupe(
+        buffered.map((item) => item.text),
+        collapseBlocks,
+      );
+      if (plan.removedLines > 0) {
+        stats.duplicateLines += plan.removedLines;
+        const rebuilt: BudgetLine[] = [];
+        for (const op of plan.ops) {
+          if (op.kind === 'line') {
+            rebuilt.push(buffered[op.index]);
+          } else {
+            const text = `[block x${op.count}]`;
+            rebuilt.push({ text, score: 0, tokens: estimateOutputLineTokens(text) });
+          }
+        }
+        buffered = rebuilt;
+      }
+    }
+
+    if (maxTokens !== undefined) {
+      const budgeted = applyTokenBudget(buffered, maxTokens);
+      stats.droppedLines += budgeted.droppedPhysicalLines;
+      buffered = budgeted.kept;
+    }
+
+    for (const item of buffered) {
       if (tokenEstimator !== undefined) {
         outputTokensFromEstimator += item.tokens;
       }

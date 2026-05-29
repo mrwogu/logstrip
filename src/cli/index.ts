@@ -65,6 +65,8 @@ Options:
                            N non-blank lines (robust to mixed-format logs).
       --multilingual       Also treat non-English error/failure keywords (e.g.
                            "erreur", "Fehler", "错误") as diagnostic lines.
+      --collapse-blocks <N> Collapse consecutive repeats of a block of up to N
+                           lines into one copy plus a [block xM] marker.
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -109,6 +111,7 @@ export interface CliOptions {
   rootCause: boolean;
   formatSample?: number;
   multilingual: boolean;
+  collapseBlocks?: number;
   telemetry: boolean;
   help: boolean;
   version: boolean;
@@ -170,6 +173,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         'root-cause': { type: 'boolean', default: false },
         'format-sample': { type: 'string' },
         multilingual: { type: 'boolean', default: false },
+        'collapse-blocks': { type: 'string' },
         'max-line-length': { type: 'string' },
         timeout: { type: 'string' },
         progress: { type: 'boolean', default: false },
@@ -275,6 +279,17 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     }
   }
 
+  let collapseBlocks: number | undefined;
+  if (typeof parsed.values['collapse-blocks'] === 'string') {
+    if (!/^\d+$/u.test(parsed.values['collapse-blocks'])) {
+      throw new CliError(`Invalid --collapse-blocks: ${parsed.values['collapse-blocks']}. Must be an integer >= 2.`, 2);
+    }
+    collapseBlocks = Number(parsed.values['collapse-blocks']);
+    if (collapseBlocks < 2) {
+      throw new CliError(`Invalid --collapse-blocks: ${parsed.values['collapse-blocks']}. Must be an integer >= 2.`, 2);
+    }
+  }
+
   let maxLineLength: number | undefined;
   if (typeof parsed.values['max-line-length'] === 'string') {
     if (!/^\d+$/u.test(parsed.values['max-line-length'])) throw new CliError(`Invalid --max-line-length. Must be >= 100.`, 2);
@@ -327,6 +342,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     rootCause: parsed.values['root-cause'] === true,
     formatSample,
     multilingual: parsed.values.multilingual === true,
+    collapseBlocks,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
@@ -516,6 +532,7 @@ export async function runCli(
       rootCause: options.rootCause,
       formatDetectionSampleSize: options.formatSample,
       multilingual: options.multilingual,
+      collapseBlocks: options.collapseBlocks,
     };
     result = await processLogStreamWithTimeout(
       input,

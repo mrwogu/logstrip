@@ -2008,6 +2008,40 @@ describe('logstrip parser', () => {
     });
   });
 
+  describe('collapseBlocks', () => {
+    const repeated = [
+      '[ERROR] connect timeout to db-1',
+      '[ERROR] retry scheduled in 5s',
+      '[ERROR] connect timeout to db-1',
+      '[ERROR] retry scheduled in 5s',
+      '[ERROR] connect timeout to db-1',
+      '[ERROR] retry scheduled in 5s',
+    ].join('\n');
+
+    it('collapses consecutive repeated blocks when enabled', async () => {
+      const { output } = await processLogString(repeated, { collapseBlocks: 4 });
+      expect(output).toContain('[block x3]');
+      expect(output.match(/connect timeout to db-1/gu)?.length).toBe(1);
+    });
+
+    it('leaves repeated blocks expanded by default', async () => {
+      const { output } = await processLogString(repeated);
+      expect(output).not.toContain('[block x');
+    });
+
+    it('is a no-op when no block repeats consecutively', async () => {
+      const distinct = [
+        '[ERROR] alpha exploded',
+        '[ERROR] beta exploded',
+        '[ERROR] gamma exploded',
+      ].join('\n');
+      const { output } = await processLogString(distinct, { collapseBlocks: 4 });
+      expect(output).not.toContain('[block x');
+      expect(output).toContain('alpha exploded');
+      expect(output).toContain('gamma exploded');
+    });
+  });
+
   it('createLogStripTransform works with stream consumers', async () => {
     const transform = createLogStripTransform();
     const chunks: Buffer[] = [];
