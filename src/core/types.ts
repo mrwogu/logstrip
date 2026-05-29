@@ -72,6 +72,7 @@ export interface LogStripOptions {
   collapseRepeatedStacks?: boolean;
   dedupeWindow?: number;
   rootCause?: boolean;
+  formatDetectionSampleSize?: number;
 }
 
 export interface LogStripStats {

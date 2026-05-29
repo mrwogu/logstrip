@@ -666,6 +666,26 @@ describe('runCli', () => {
     expect(opts2.rootCause).toBe(false);
   });
 
+  it('parses --format-sample flag', () => {
+    const opts = parseCliOptions(['raw.log', '--format-sample', '20']);
+    expect(opts.formatSample).toBe(20);
+
+    const opts2 = parseCliOptions(['raw.log']);
+    expect(opts2.formatSample).toBeUndefined();
+  });
+
+  it('rejects invalid --format-sample values', () => {
+    const check = (val: string) => {
+      try { parseCliOptions(['raw.log', '--format-sample', val]); return undefined; }
+      catch (e) { return e; }
+    };
+
+    expect(check('0')).toBeInstanceOf(CliError);
+    expect(check('-1')).toBeInstanceOf(CliError);
+    expect(check('nan')).toBeInstanceOf(CliError);
+    expect((check('0') as CliError).exitCode).toBe(2);
+  });
+
   it('parses --progress flag', () => {
     const opts = parseCliOptions(['raw.log', '--progress', '-o', 'out.log']);
     expect(opts.progress).toBe(true);
