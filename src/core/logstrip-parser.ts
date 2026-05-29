@@ -17,6 +17,7 @@ import {
 import {
   CONTEXT_WINDOW_AFTER,
   CONTEXT_WINDOW_BEFORE,
+  DEFAULT_FORMAT_SAMPLE,
   INTERNAL_STACK_MARKER,
   SCORE_KEEP_THRESHOLD,
   TFIDF_PENALTY,
@@ -313,20 +314,26 @@ export async function processLogStream(
   );
   const dedupeEnabled =
     options.dedupe !== false && options.outputFormat !== 'jsonl-preserve';
-  const collapseRepeatedStacks = options.collapseRepeatedStacks === true;
+  // Behavioral detection/compression boosters are ON by default in auto mode;
+  // pass the matching option explicitly as false (CLI: --no-*) to disable.
+  const collapseRepeatedStacks = options.collapseRepeatedStacks !== false;
   const repeatSignature = collapseRepeatedStacks
     ? (line: string): string => stackWindowSignature(line) ?? createRepeatSignature(line)
     : createRepeatSignature;
   // Sliding dedup window: 1 = adjacent-only (default), >1 collapses
   // non-adjacent duplicates seen within the last N distinct lines.
   const dedupeWindowSize = Math.max(1, Math.floor(options.dedupeWindow ?? 1));
-  const rootCause = options.rootCause === true;
-  const multilingual = options.multilingual === true;
-  const formatVoter =
-    options.formatDetectionSampleSize !== undefined &&
-    options.formatDetectionSampleSize > 1
-      ? createFormatVoter(options.formatDetectionSampleSize)
-      : undefined;
+  const rootCause = options.rootCause !== false;
+  const multilingual = options.multilingual !== false;
+  // Format detection is automatic: lock onto the first recognizable line for
+  // the fast path, then let a majority vote over the first N non-blank lines
+  // correct an unrepresentative first guess (mixed-format logs).
+  const formatSampleSize = Math.max(
+    2,
+    Math.floor(options.formatDetectionSampleSize ?? DEFAULT_FORMAT_SAMPLE),
+  );
+  const formatVoter = createFormatVoter(formatSampleSize);
+  let formatVoteApplied = false;
   const tokenEstimator = options.tokenEstimator;
   const maxTokens =
     options.maxTokens !== undefined ? Math.max(0, Math.floor(options.maxTokens)) : undefined;
@@ -512,12 +519,17 @@ export async function processLogStream(
       inputTokensFromEstimator += estimateLineTokens(tokenEstimator, `${line}\n`);
     }
 
-    if (detectedFormat === undefined && line.trim().length > 0) {
-      if (formatVoter !== undefined) {
-        detectedFormat = voteFormat(formatVoter, line);
-      } else {
+    if (line.trim().length > 0) {
+      if (detectedFormat === undefined) {
         const fmt = detectFormat(line);
         if (fmt !== 'unknown') detectedFormat = fmt;
+      }
+      if (!formatVoteApplied) {
+        const voted = voteFormat(formatVoter, line);
+        if (formatVoter.decided) {
+          formatVoteApplied = true;
+          if (voted !== undefined) detectedFormat = voted;
+        }
       }
     }
 
@@ -808,8 +820,8 @@ export async function processLogStream(
   stats.droppedLines += contextBefore.length;
   contextBefore.length = 0;
 
-  // Short stream: decide the voted format from whatever samples were seen.
-  if (formatVoter !== undefined && detectedFormat === undefined) {
+  // Short stream: if no line was ever recognizable, fall back to the vote.
+  if (!formatVoteApplied && detectedFormat === undefined) {
     detectedFormat = decideFormat(formatVoter);
   }
 
@@ -1039,7 +1051,7 @@ export function explainLogLine(
   if (isIgnoredLogLine(line)) {
     return createDecision(line, undefined, false, 'ignored-tag');
   }
-  if (options.rootCause === true && isCascadeNoiseLine(line)) {
+  if (options.rootCause !== false && isCascadeNoiseLine(line)) {
     return createDecision(line, undefined, false, 'cascade');
   }
 
@@ -1079,7 +1091,7 @@ export function explainLogLine(
       break;
     }
   }
-  if (options.multilingual === true && isMultilingualDiagnosticLine(sanitized)) {
+  if (options.multilingual !== false && isMultilingualDiagnosticLine(sanitized)) {
     score += 50;
   }
 

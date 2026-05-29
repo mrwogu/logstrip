@@ -1947,14 +1947,14 @@ describe('logstrip parser', () => {
       'error: aborting due to 2 previous errors',
     ].join('\n');
 
-    it('drops cascade restatements when enabled', async () => {
-      const { output } = await processLogString(input, { rootCause: true });
+    it('drops cascade restatements by default (auto)', async () => {
+      const { output } = await processLogString(input);
       expect(output).toContain('E0382');
       expect(output).not.toContain('aborting due to');
     });
 
-    it('keeps cascade restatements by default', async () => {
-      const { output } = await processLogString(input);
+    it('keeps cascade restatements when disabled', async () => {
+      const { output } = await processLogString(input, { rootCause: false });
       expect(output).toContain('aborting due to');
     });
   });
@@ -1994,15 +1994,15 @@ describe('logstrip parser', () => {
       '数据库连接失败',
     ].join('\n');
 
-    it('keeps non-English error lines when enabled', async () => {
-      const { output } = await processLogString(foreign, { multilingual: true });
+    it('keeps non-English error lines by default (auto)', async () => {
+      const { output } = await processLogString(foreign);
       expect(output).toContain('échoué');
       expect(output).toContain('fehlgeschlagen');
       expect(output).toContain('数据库连接失败');
     });
 
-    it('drops non-English error lines by default', async () => {
-      const { output } = await processLogString(foreign);
+    it('drops non-English error lines when disabled', async () => {
+      const { output } = await processLogString(foreign, { multilingual: false });
       expect(output).not.toContain('échoué');
       expect(output).not.toContain('fehlgeschlagen');
     });
@@ -2139,17 +2139,17 @@ describe('logstrip parser', () => {
       'severity',
     );
     expect(
-      explainLogLine('error: aborting due to 2 previous errors', {
-        rootCause: true,
-      }).reason,
+      explainLogLine('error: aborting due to 2 previous errors').reason,
     ).toBe('cascade');
     expect(
-      explainLogLine('error: aborting due to 2 previous errors').reason,
+      explainLogLine('error: aborting due to 2 previous errors', {
+        rootCause: false,
+      }).reason,
     ).not.toBe('cascade');
+    expect(explainLogLine('Verbindung fehlgeschlagen').reason).toBe('hard-keep');
     expect(
-      explainLogLine('Verbindung fehlgeschlagen', { multilingual: true }).reason,
-    ).toBe('hard-keep');
-    expect(explainLogLine('Verbindung fehlgeschlagen').reason).toBe('low-score');
+      explainLogLine('Verbindung fehlgeschlagen', { multilingual: false }).reason,
+    ).toBe('low-score');
     expect(explainLogLine('2024-01-01T00:00:00Z').reason).toBe('ci-noise');
     expect(explainLogLine('Downloading package 50%').reason).toBe('progress');
     expect(explainLogLine('[INFO] boot').reason).toBe('ignored-tag');
