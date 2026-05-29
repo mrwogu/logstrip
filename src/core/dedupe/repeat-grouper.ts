@@ -44,12 +44,16 @@ export function createRepeatSignature(line: string): string {
     .join(' ');
 }
 
-export function createRepeatGroup(line: string, score = 0): RepeatGroup {
+export function createRepeatGroup(
+  line: string,
+  score = 0,
+  signature?: string,
+): RepeatGroup {
   const ts = extractTimestampMs(line);
   return {
     firstLine: line,
     firstTokens: tokenizeRepeatLine(line),
-    signature: createRepeatSignature(line),
+    signature: signature ?? createRepeatSignature(line),
     deltas: new Map<number, RepeatDelta>(),
     count: 1,
     firstSeen: ts,

@@ -1867,6 +1867,43 @@ describe('logstrip parser', () => {
     });
   });
 
+  describe('collapseRepeatedStacks', () => {
+    const twoStacks = [
+      '[ERROR] boom in handler',
+      '    at Server.handle (/app/server.js:10:5)',
+      '    at Object.run (0xdeadbeef)',
+      '[ERROR] boom in handler',
+      '    at Server.handle (/app/server.js:10:5)',
+      '    at Object.run (0xcafef00d)',
+    ].join('\n');
+
+    it('collapses address-only-different stack windows into [x2]', async () => {
+      const { output } = await processLogString(twoStacks, {
+        multiline: 'node',
+        collapseRepeatedStacks: true,
+      });
+      expect(output).toContain('[x2]');
+      expect(output.match(/Server\.handle/gu)?.length).toBe(1);
+    });
+
+    it('keeps the windows separate when the option is off', async () => {
+      const { output } = await processLogString(twoStacks, {
+        multiline: 'node',
+        collapseRepeatedStacks: false,
+      });
+      expect(output).not.toContain('[x2]');
+      expect(output.match(/Server\.handle/gu)?.length).toBe(2);
+    });
+
+    it('still dedups plain non-stack lines via the standard signature', async () => {
+      const { output } = await processLogString(
+        '[ERROR] database down\n[ERROR] database down',
+        { collapseRepeatedStacks: true },
+      );
+      expect(output).toContain('[x2] [ERROR] database down');
+    });
+  });
+
   it('createLogStripTransform works with stream consumers', async () => {
     const transform = createLogStripTransform();
     const chunks: Buffer[] = [];

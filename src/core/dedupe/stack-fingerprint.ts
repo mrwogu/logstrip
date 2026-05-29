@@ -46,3 +46,32 @@ export function normalizeStackFrameLineCol(line: string): string {
 
   return result;
 }
+
+// ── Whole-window stack fingerprinting (opt-in --collapse-stacks) ──────────
+//
+// Produces a signature for an error/stack-trace window (single physical line
+// or a multiline-joined block) that is stable across volatile, run-specific
+// noise: memory addresses, Go frame offsets and goroutine ids. Repeated
+// windows that differ only in those values then collapse via deduplication.
+
+const STACK_WINDOW_INDICATOR =
+  /(?:^|\n)\s*(?:at\s+\S|File\s+"[^"]+",\s+line\s+\d+|goroutine\s+\d+\s+\[|Traceback \(most recent call last\):)/u;
+const GO_FRAME_OFFSET = /\+0x[0-9a-f]+/giu;
+const GOROUTINE_ID = /\bgoroutine\s+\d+\b/giu;
+const HEX_ADDRESS = /\b0x[0-9a-f]+\b/giu;
+
+/**
+ * Return a normalized fingerprint when `line` looks like a stack-trace window,
+ * or `null` otherwise. Used as the deduplication key so structurally identical
+ * traces collapse even when their addresses/offsets differ.
+ */
+export function stackWindowSignature(line: string): string | null {
+  if (!STACK_WINDOW_INDICATOR.test(line)) {
+    return null;
+  }
+
+  return normalizeStackFrameLineCol(line)
+    .replace(GO_FRAME_OFFSET, '+0x[NN]')
+    .replace(GOROUTINE_ID, 'goroutine [NN]')
+    .replace(HEX_ADDRESS, '0x[NN]');
+}
