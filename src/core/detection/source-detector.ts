@@ -3,6 +3,11 @@ import {
   type SourceProfile,
 } from '../sources/source-profile.js';
 import { LOG_SOURCE_SIGNATURES } from '../sources/catalog.js';
+import {
+  buildAhoCorasick,
+  matchAll,
+  type AhoCorasick,
+} from './aho-corasick.js';
 
 export const SOURCE_ACTIVE_CONFIDENCE = 12;
 export const SOURCE_DIAGNOSTIC_BOOST = 40;
@@ -26,14 +31,24 @@ export interface SourceDetectionHit {
 export interface SourceDetectionState {
   hits: Map<string, SourceDetectionHit>;
   profiles: readonly SourceProfile[];
+  automaton: AhoCorasick;
 }
 
 export function createSourceDetectionState(
   sources: readonly (readonly [string, readonly string[]])[] = LOG_SOURCE_SIGNATURES,
 ): SourceDetectionState {
+  const profiles = createSourceProfiles(sources);
+  const markerValues = new Set<string>();
+  for (const profile of profiles) {
+    for (const marker of profile.markers) {
+      markerValues.add(marker.value);
+    }
+  }
+
   return {
     hits: new Map<string, SourceDetectionHit>(),
-    profiles: createSourceProfiles(sources),
+    profiles,
+    automaton: buildAhoCorasick(markerValues),
   };
 }
 
@@ -42,10 +57,14 @@ export function collectDetectedSourceHits(
   state: SourceDetectionState,
 ): void {
   const normalized = line.toLowerCase();
+  const matched = matchAll(state.automaton, normalized);
+  if (matched.size === 0) {
+    return;
+  }
 
   for (const profile of state.profiles) {
     for (const marker of profile.markers) {
-      if (!normalized.includes(marker.value)) {
+      if (!matched.has(marker.value)) {
         continue;
       }
 
