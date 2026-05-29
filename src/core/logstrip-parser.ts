@@ -50,6 +50,11 @@ import {
 } from './formats/access-log-bucket.js';
 import { CountMinSketch } from './dedupe/count-min-sketch.js';
 import { detectFormat } from './formats/format-detector.js';
+import {
+  createFormatVoter,
+  decideFormat,
+  voteFormat,
+} from './formats/format-voter.js';
 import { scoreJsonLine } from './formats/json-line-extractor.js';
 import {
   normalizeStackFrameLineCol,
@@ -90,6 +95,12 @@ import type {
 export { inferSeverity, parseSeverityLevel, passesSeverityFilter } from './severity/severity-filter.js';
 export type { SeverityLevel } from './severity/severity-filter.js';
 export { detectFormat } from './formats/format-detector.js';
+export {
+  type FormatVoter,
+  createFormatVoter,
+  decideFormat,
+  voteFormat,
+} from './formats/format-voter.js';
 export { parseAggressiveness } from './aggressiveness/levels.js';
 export {
   CONTEXT_WINDOW_AFTER,
@@ -302,6 +313,11 @@ export async function processLogStream(
   // non-adjacent duplicates seen within the last N distinct lines.
   const dedupeWindowSize = Math.max(1, Math.floor(options.dedupeWindow ?? 1));
   const rootCause = options.rootCause === true;
+  const formatVoter =
+    options.formatDetectionSampleSize !== undefined &&
+    options.formatDetectionSampleSize > 1
+      ? createFormatVoter(options.formatDetectionSampleSize)
+      : undefined;
   const tokenEstimator = options.tokenEstimator;
   const maxTokens =
     options.maxTokens !== undefined ? Math.max(0, Math.floor(options.maxTokens)) : undefined;
@@ -480,8 +496,12 @@ export async function processLogStream(
     }
 
     if (detectedFormat === undefined && line.trim().length > 0) {
-      const fmt = detectFormat(line);
-      if (fmt !== 'unknown') detectedFormat = fmt;
+      if (formatVoter !== undefined) {
+        detectedFormat = voteFormat(formatVoter, line);
+      } else {
+        const fmt = detectFormat(line);
+        if (fmt !== 'unknown') detectedFormat = fmt;
+      }
     }
 
     // Empty lines always dropped; don't disturb context state
@@ -767,6 +787,11 @@ export async function processLogStream(
   // Context lines left without a triggering error are discarded
   stats.droppedLines += contextBefore.length;
   contextBefore.length = 0;
+
+  // Short stream: decide the voted format from whatever samples were seen.
+  if (formatVoter !== undefined && detectedFormat === undefined) {
+    detectedFormat = decideFormat(formatVoter);
+  }
 
   // Unterminated PEM block guard
   if (pemState.inside) {

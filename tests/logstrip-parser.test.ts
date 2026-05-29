@@ -1959,6 +1959,34 @@ describe('logstrip parser', () => {
     });
   });
 
+  describe('formatDetectionSampleSize voting', () => {
+    const mixed = [
+      'ts=1 level=info msg=start',
+      '{"level":"error","msg":"boom"}',
+      '{"level":"error","msg":"boom2"}',
+      '{"level":"error","msg":"boom3"}',
+    ].join('\n');
+
+    it('locks onto the first recognizable format by default', async () => {
+      const result = await processLogString(mixed);
+      expect(result.detectedFormat).toBe('logfmt');
+    });
+
+    it('uses the majority format when voting is enabled', async () => {
+      const result = await processLogString(mixed, {
+        formatDetectionSampleSize: 4,
+      });
+      expect(result.detectedFormat).toBe('json');
+    });
+
+    it('decides from partial samples on a short stream', async () => {
+      const result = await processLogString('{"level":"error","msg":"x"}', {
+        formatDetectionSampleSize: 10,
+      });
+      expect(result.detectedFormat).toBe('json');
+    });
+  });
+
   it('createLogStripTransform works with stream consumers', async () => {
     const transform = createLogStripTransform();
     const chunks: Buffer[] = [];

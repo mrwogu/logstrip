@@ -40,6 +40,7 @@ logstrip [INPUT] [options]
 | `--collapse-stacks` | Collapse repeated stack-trace windows that differ only in memory addresses, Go offsets or goroutine ids into a single `[xN]` group. Pairs well with `--multiline`. | off |
 | `--dedupe-window <N>` | Collapse non-adjacent duplicate lines seen within the last _N_ distinct lines into a single `[xN]` group. `1` keeps adjacent-only deduplication. | `1` |
 | `--root-cause` | Drop downstream cascade restatements (e.g. `aborting due to previous errors`, `skipped because the upstream job failed`) so the original root error stands out. | off |
+| `--format-sample <N>` | Detect the log format by majority vote over the first _N_ non-blank lines instead of locking onto the first recognizable line. Robust to mixed-format logs (e.g. JSON interleaved with plaintext). | _(off)_ |
 | `--max-line-length <n>` | Truncate lines longer than _n_ characters. Very long lines (e.g. minified bundles) are replaced with `[TRUNCATED]`. | `100000` |
 | `--timeout <s>` | Stop processing after _s_ seconds. The output is flushed and `timedOut: true` is set in the result. | _(off)_ |
 | `--progress` | Show a progress bar on stderr (file input only, requires `--output`). | off |

@@ -61,6 +61,8 @@ Options:
                            the last N distinct lines. Default: 1 (adjacent only).
       --root-cause         Drop downstream cascade restatements (e.g. "aborting
                            due to previous errors") so the root error stands out.
+      --format-sample <N>  Detect the log format by majority vote over the first
+                           N non-blank lines (robust to mixed-format logs).
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -103,6 +105,7 @@ export interface CliOptions {
   collapseRepeatedStacks: boolean;
   dedupeWindow?: number;
   rootCause: boolean;
+  formatSample?: number;
   telemetry: boolean;
   help: boolean;
   version: boolean;
@@ -162,6 +165,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         'collapse-stacks': { type: 'boolean', default: false },
         'dedupe-window': { type: 'string' },
         'root-cause': { type: 'boolean', default: false },
+        'format-sample': { type: 'string' },
         'max-line-length': { type: 'string' },
         timeout: { type: 'string' },
         progress: { type: 'boolean', default: false },
@@ -256,6 +260,17 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     }
   }
 
+  let formatSample: number | undefined;
+  if (typeof parsed.values['format-sample'] === 'string') {
+    if (!/^\d+$/u.test(parsed.values['format-sample'])) {
+      throw new CliError(`Invalid --format-sample: ${parsed.values['format-sample']}. Must be a positive integer.`, 2);
+    }
+    formatSample = Number(parsed.values['format-sample']);
+    if (formatSample < 1) {
+      throw new CliError(`Invalid --format-sample: ${parsed.values['format-sample']}. Must be a positive integer.`, 2);
+    }
+  }
+
   let maxLineLength: number | undefined;
   if (typeof parsed.values['max-line-length'] === 'string') {
     if (!/^\d+$/u.test(parsed.values['max-line-length'])) throw new CliError(`Invalid --max-line-length. Must be >= 100.`, 2);
@@ -306,6 +321,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     collapseRepeatedStacks: parsed.values['collapse-stacks'] === true,
     dedupeWindow,
     rootCause: parsed.values['root-cause'] === true,
+    formatSample,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
@@ -493,6 +509,7 @@ export async function runCli(
       collapseRepeatedStacks: options.collapseRepeatedStacks,
       dedupeWindow: options.dedupeWindow,
       rootCause: options.rootCause,
+      formatDetectionSampleSize: options.formatSample,
     };
     result = await processLogStreamWithTimeout(
       input,
