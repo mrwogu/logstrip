@@ -55,6 +55,8 @@ Options:
       --sample <N>         Limit output to first N kept lines.
       --max-tokens <N>     Trim output to at most N tokens, keeping the
                            highest-scoring lines (LLM context-budget mode).
+      --collapse-stacks    Collapse repeated stack-trace windows that differ
+                           only in addresses/offsets into a single [xN] group.
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -94,6 +96,7 @@ export interface CliOptions {
   config?: string;
   preserveIdSuffix?: number;
   maxTokens?: number;
+  collapseRepeatedStacks: boolean;
   telemetry: boolean;
   help: boolean;
   version: boolean;
@@ -150,6 +153,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         exclude: { type: 'string' },
         sample: { type: 'string' },
         'max-tokens': { type: 'string' },
+        'collapse-stacks': { type: 'boolean', default: false },
         'max-line-length': { type: 'string' },
         timeout: { type: 'string' },
         progress: { type: 'boolean', default: false },
@@ -280,6 +284,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         : undefined,
     preserveIdSuffix,
     maxTokens,
+    collapseRepeatedStacks: parsed.values['collapse-stacks'] === true,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
@@ -464,6 +469,7 @@ export async function runCli(
       maxLineLength: options.maxLineLength,
       preserveIdSuffix: options.preserveIdSuffix,
       maxTokens: options.maxTokens,
+      collapseRepeatedStacks: options.collapseRepeatedStacks,
     };
     result = await processLogStreamWithTimeout(
       input,

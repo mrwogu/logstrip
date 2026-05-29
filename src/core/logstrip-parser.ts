@@ -51,7 +51,10 @@ import {
 import { CountMinSketch } from './dedupe/count-min-sketch.js';
 import { detectFormat } from './formats/format-detector.js';
 import { scoreJsonLine } from './formats/json-line-extractor.js';
-import { normalizeStackFrameLineCol } from './dedupe/stack-fingerprint.js';
+import {
+  normalizeStackFrameLineCol,
+  stackWindowSignature,
+} from './dedupe/stack-fingerprint.js';
 import { sanitizeLine } from './sanitize/sanitize-line.js';
 import {
   createPemBlockState,
@@ -98,7 +101,10 @@ export {
   TFIDF_REPEAT_THRESHOLD,
 } from './constants.js';
 export { createRepeatSignature } from './dedupe/repeat-grouper.js';
-export { normalizeStackFrameLineCol } from './dedupe/stack-fingerprint.js';
+export {
+  normalizeStackFrameLineCol,
+  stackWindowSignature,
+} from './dedupe/stack-fingerprint.js';
 export { detectLogSources } from './detection/source-detector.js';
 export {
   type MultilineMode,
@@ -286,6 +292,10 @@ export async function processLogStream(
   );
   const dedupeEnabled =
     options.dedupe !== false && options.outputFormat !== 'jsonl-preserve';
+  const collapseRepeatedStacks = options.collapseRepeatedStacks === true;
+  const repeatSignature = collapseRepeatedStacks
+    ? (line: string): string => stackWindowSignature(line) ?? createRepeatSignature(line)
+    : createRepeatSignature;
   const tokenEstimator = options.tokenEstimator;
   const maxTokens =
     options.maxTokens !== undefined ? Math.max(0, Math.floor(options.maxTokens)) : undefined;
@@ -397,7 +407,7 @@ export async function processLogStream(
       return;
     }
 
-    const signature = createRepeatSignature(line);
+    const signature = repeatSignature(line);
 
     if (previousGroup?.signature === signature) {
       addRepeatGroupLine(previousGroup, line, score);
@@ -405,7 +415,7 @@ export async function processLogStream(
     }
 
     await flushPreviousLine();
-    previousGroup = createRepeatGroup(line, score);
+    previousGroup = createRepeatGroup(line, score, signature);
   };
 
   // Flush buffered context lines (retroactive promotion near an error)
