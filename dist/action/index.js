@@ -25825,14 +25825,30 @@ var SCORE_KEEP_THRESHOLD = 40;
 var TFIDF_REPEAT_THRESHOLD = 3;
 var TFIDF_PENALTY = 8;
 var MAX_REPEAT_DELTA_VALUES = 3;
+var DEFAULT_FORMAT_SAMPLE = 50;
 
 // src/core/dedupe/repeat-grouper.ts
 var STANDALONE_REPEAT_VALUE_PATTERN = /^\d+(?:[.:,-]\d+)*$/u;
 var STANDALONE_REPEAT_LABELS = /* @__PURE__ */ new Set([
+  "attempt",
+  "batch",
   "child",
+  "chunk",
+  "connection",
+  "epoch",
+  "iteration",
+  "job",
+  "partition",
   "pid",
+  "replica",
+  "retry",
+  "session",
+  "shard",
   "slot",
-  "state"
+  "state",
+  "task",
+  "thread",
+  "worker"
 ]);
 function createRepeatSignature(line) {
   const tokens = tokenizeRepeatLine(line);
@@ -25841,20 +25857,24 @@ function createRepeatSignature(line) {
     return tokenValue === void 0 ? token : `${tokenValue.prefix}[VALUE]`;
   }).join(" ");
 }
-function createRepeatGroup(line) {
+function createRepeatGroup(line, score = 0, signature) {
   const ts = extractTimestampMs(line);
   return {
     firstLine: line,
     firstTokens: tokenizeRepeatLine(line),
-    signature: createRepeatSignature(line),
+    signature: signature ?? createRepeatSignature(line),
     deltas: /* @__PURE__ */ new Map(),
     count: 1,
     firstSeen: ts,
-    lastSeen: ts
+    lastSeen: ts,
+    score
   };
 }
-function addRepeatGroupLine(group, line) {
+function addRepeatGroupLine(group, line, score = 0) {
   const tokens = tokenizeRepeatLine(line);
+  if (score > group.score) {
+    group.score = score;
+  }
   for (const [index, firstToken] of group.firstTokens.entries()) {
     const firstValue = splitRepeatToken(
       firstToken,
@@ -26934,6 +26954,72 @@ var KNOWN_LOG_SOURCES = LOG_SOURCE_SIGNATURES.map(
   ([source]) => source
 );
 
+// src/core/detection/aho-corasick.ts
+function createNode() {
+  return { next: /* @__PURE__ */ new Map(), fail: 0, outputs: [] };
+}
+function buildAhoCorasick(patterns) {
+  const nodes = [createNode()];
+  let hasPattern = false;
+  for (const pattern of patterns) {
+    if (pattern.length === 0) {
+      continue;
+    }
+    hasPattern = true;
+    let node = 0;
+    for (let i = 0; i < pattern.length; i += 1) {
+      const ch = pattern[i];
+      let nxt = nodes[node].next.get(ch);
+      if (nxt === void 0) {
+        nxt = nodes.length;
+        nodes.push(createNode());
+        nodes[node].next.set(ch, nxt);
+      }
+      node = nxt;
+    }
+    nodes[node].outputs.push(pattern);
+  }
+  const queue = [];
+  for (const child of nodes[0].next.values()) {
+    nodes[child].fail = 0;
+    queue.push(child);
+  }
+  let head = 0;
+  while (head < queue.length) {
+    const current = queue[head];
+    head += 1;
+    for (const [ch, child] of nodes[current].next) {
+      let f = nodes[current].fail;
+      while (f !== 0 && !nodes[f].next.has(ch)) {
+        f = nodes[f].fail;
+      }
+      const candidate = nodes[f].next.get(ch);
+      nodes[child].fail = candidate ?? 0;
+      nodes[child].outputs.push(...nodes[nodes[child].fail].outputs);
+      queue.push(child);
+    }
+  }
+  return { nodes, isEmpty: !hasPattern };
+}
+function matchAll(ac, text) {
+  const found = /* @__PURE__ */ new Set();
+  if (ac.isEmpty) {
+    return found;
+  }
+  let node = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    while (node !== 0 && !ac.nodes[node].next.has(ch)) {
+      node = ac.nodes[node].fail;
+    }
+    node = ac.nodes[node].next.get(ch) ?? 0;
+    for (const out of ac.nodes[node].outputs) {
+      found.add(out);
+    }
+  }
+  return found;
+}
+
 // src/core/detection/source-detector.ts
 var SOURCE_ACTIVE_CONFIDENCE = 12;
 var SOURCE_DIAGNOSTIC_BOOST = 40;
@@ -26943,16 +27029,28 @@ function getEffectiveActiveConfidence(inputLines) {
   return SOURCE_ACTIVE_CONFIDENCE;
 }
 function createSourceDetectionState(sources = LOG_SOURCE_SIGNATURES) {
+  const profiles = createSourceProfiles(sources);
+  const markerValues = /* @__PURE__ */ new Set();
+  for (const profile of profiles) {
+    for (const marker of profile.markers) {
+      markerValues.add(marker.value);
+    }
+  }
   return {
     hits: /* @__PURE__ */ new Map(),
-    profiles: createSourceProfiles(sources)
+    profiles,
+    automaton: buildAhoCorasick(markerValues)
   };
 }
 function collectDetectedSourceHits(line, state) {
   const normalized = line.toLowerCase();
+  const matched = matchAll(state.automaton, normalized);
+  if (matched.size === 0) {
+    return;
+  }
   for (const profile of state.profiles) {
     for (const marker of profile.markers) {
-      if (!normalized.includes(marker.value)) {
+      if (!matched.has(marker.value)) {
         continue;
       }
       const hit = state.hits.get(profile.name) ?? {
@@ -27110,6 +27208,86 @@ function effectiveMultilineMode(requested, detectedSources) {
   return resolveAutoMultiline(detectedSources);
 }
 
+// src/core/budget/token-budget.ts
+function physicalLineCount(text) {
+  return text.split("\n").length;
+}
+function applyTokenBudget(lines, maxTokens) {
+  const budget = Math.max(0, Math.floor(maxTokens));
+  const total = lines.reduce((sum, line) => sum + line.tokens, 0);
+  if (total <= budget) {
+    return { kept: [...lines], droppedCount: 0, droppedPhysicalLines: 0 };
+  }
+  const order = lines.map((line, index) => ({ line, index }));
+  order.sort((a, b) => {
+    if (b.line.score !== a.line.score) return b.line.score - a.line.score;
+    return a.index - b.index;
+  });
+  const keepIndices = /* @__PURE__ */ new Set();
+  let used = 0;
+  for (const { line, index } of order) {
+    if (used + line.tokens > budget) {
+      continue;
+    }
+    keepIndices.add(index);
+    used += line.tokens;
+  }
+  const kept = [];
+  let droppedCount = 0;
+  let droppedPhysicalLines = 0;
+  for (const [index, line] of lines.entries()) {
+    if (keepIndices.has(index)) {
+      kept.push(line);
+    } else {
+      droppedCount += 1;
+      droppedPhysicalLines += physicalLineCount(line.text);
+    }
+  }
+  return { kept, droppedCount, droppedPhysicalLines };
+}
+
+// src/core/dedupe/block-deduper.ts
+function blocksEqual(lines, a, b, len) {
+  for (let j = 0; j < len; j += 1) {
+    if (lines[a + j] !== lines[b + j]) {
+      return false;
+    }
+  }
+  return true;
+}
+function planBlockDedupe(lines, maxBlockLines) {
+  const limit = Math.max(2, Math.floor(maxBlockLines));
+  const ops = [];
+  const n = lines.length;
+  let removedLines = 0;
+  let i = 0;
+  while (i < n) {
+    const maxLen = Math.min(limit, Math.floor((n - i) / 2));
+    let matched = false;
+    for (let len = maxLen; len >= 2; len -= 1) {
+      let reps = 1;
+      while (i + reps * len + len <= n && blocksEqual(lines, i, i + reps * len, len)) {
+        reps += 1;
+      }
+      if (reps >= 2) {
+        for (let k = 0; k < len; k += 1) {
+          ops.push({ kind: "line", index: i + k });
+        }
+        ops.push({ kind: "marker", count: reps });
+        removedLines += len * (reps - 1);
+        i += len * reps;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      ops.push({ kind: "line", index: i });
+      i += 1;
+    }
+  }
+  return { ops, removedLines };
+}
+
 // src/core/formats/access-log-classifier.ts
 var ACCESS_LOG_FULL_PATTERN = /^\S+\s+\S+\s+\S+\s+\[.+\]\s+"(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH|CONNECT|TRACE)\s+(\S+)\s+HTTP\/\d\.\d"\s+(\d{3})\s+\d+\s+"[^"]*"\s+"([^"]*)"/iu;
 var HEALTH_PATH_PATTERN = /\/(?:healthz|readyz|livez|health|ping|status|up)$/iu;
@@ -27233,6 +27411,57 @@ function groupHttpStatusCodes(line) {
   return line;
 }
 
+// src/core/formats/format-voter.ts
+function createFormatVoter(sampleSize) {
+  return {
+    votes: /* @__PURE__ */ new Map(),
+    order: [],
+    samples: 0,
+    sampleSize: Math.max(2, Math.floor(sampleSize)),
+    decided: false,
+    result: void 0
+  };
+}
+function voteFormat(voter, line) {
+  if (voter.decided) {
+    return voter.result;
+  }
+  const fmt = detectFormat(line);
+  if (fmt !== "unknown") {
+    if (!voter.votes.has(fmt)) {
+      voter.order.push(fmt);
+      voter.votes.set(fmt, 1);
+    } else {
+      voter.votes.set(fmt, voter.votes.get(fmt) + 1);
+    }
+  }
+  voter.samples += 1;
+  if (voter.samples >= voter.sampleSize) {
+    return finalize(voter);
+  }
+  return void 0;
+}
+function decideFormat(voter) {
+  if (voter.decided) {
+    return voter.result;
+  }
+  return finalize(voter);
+}
+function finalize(voter) {
+  voter.decided = true;
+  let best;
+  let bestCount = 0;
+  for (const fmt of voter.order) {
+    const count = voter.votes.get(fmt);
+    if (count > bestCount) {
+      best = fmt;
+      bestCount = count;
+    }
+  }
+  voter.result = best;
+  return best;
+}
+
 // src/core/formats/json-line-extractor.ts
 var LEVEL_KEYS = ["level", "severity", "lvl", "log_level"];
 var MSG_KEYS = ["msg", "message", "log", "text"];
@@ -27300,6 +27529,16 @@ function normalizeStackFrameLineCol(line) {
   result = result.replace(JS_FRAME_LINE_COL, ":[NN]:[NN])");
   result = result.replace(JAVA_FRAME_LINE, ":[NN])");
   return result;
+}
+var STACK_WINDOW_INDICATOR = /(?:^|\n)\s*(?:at\s+\S|File\s+"[^"]+",\s+line\s+\d+|goroutine\s+\d+\s+\[|Traceback \(most recent call last\):)/u;
+var GO_FRAME_OFFSET = /\+0x[0-9a-f]+/giu;
+var GOROUTINE_ID = /\bgoroutine\s+\d+\b/giu;
+var HEX_ADDRESS = /\b0x[0-9a-f]+\b/giu;
+function stackWindowSignature(line) {
+  if (!STACK_WINDOW_INDICATOR.test(line)) {
+    return null;
+  }
+  return normalizeStackFrameLineCol(line).replace(GO_FRAME_OFFSET, "+0x[NN]").replace(GOROUTINE_ID, "goroutine [NN]").replace(HEX_ADDRESS, "0x[NN]");
 }
 
 // src/core/sanitize/sanitize-line.ts
@@ -27413,6 +27652,19 @@ function passesSeverityFilter(line, minLevel) {
   const lineLevel = inferSeverity(line);
   if (lineLevel === void 0) return true;
   return SEVERITY_ORDER[lineLevel] >= SEVERITY_ORDER[minLevel];
+}
+
+// src/core/scoring/cascade-filter.ts
+var CASCADE_NOISE_PATTERN = /(?:\baborting due to \d+ previous errors?\b|\bcould not compile\b[^\n]*\bdue to (?:\d+ )?previous errors?\b|\bdue to (?:\d+ )?previous errors?\b|\bcompilation terminated\b|(?:\bskipping|\bskipped)\b[^\n]*\bbecause\b[^\n]*\b(?:dependency|previous|upstream|prerequisite)\b[^\n]*\b(?:failed|error)|\bbecause (?:a |an |the )?(?:previous|prior|upstream|dependent|prerequisite) (?:step|task|job|stage|build|target|test|dependency) (?:failed|errored|was cancelled|did not complete)\b)/iu;
+function isCascadeNoiseLine(line) {
+  return CASCADE_NOISE_PATTERN.test(line);
+}
+
+// src/core/scoring/multilingual-keywords.ts
+var MULTILINGUAL_WORD_PATTERN = new RegExp("(?<!\\p{L})(?:erreur|erreurs|errore|errori|erro|erros|fehler|fehlgeschlagen|falla|fallo|fall[o\xF3]|fallido|fallida|fallito|fallita|falha|falhou|[\xE9e]chec|[\xE9e]chou[\xE9e]|excepci[o\xF3]n|exce[\xE7c][a\xE3]o|eccezione|ausnahme|cr[i\xED]tico|critique|kritisch|rechazado|recusado|refus[\xE9e]|rifiutato|abgelehnt|agotado|esgotado|expir[\xE9e]|scaduto|abgebrochen|impossible|imposible|\u043E\u0448\u0438\u0431\u043A\u0430|\u0441\u0431\u043E\u0439|\u0438\u0441\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435|\u043E\u0442\u043A\u0430\u0437\u0430\u043D\u043E|\u043A\u0440\u0438\u0442\u0438\u0447\u0435\u0441\u043A\\p{L}*|\u043F\u0440\u043E\u0432\u0430\u043B|\u0441\u0431\u043E\u0438)(?!\\p{L})", "iu");
+var MULTILINGUAL_CJK_PATTERN = /(?:错误|錯誤|失败|失敗|异常|異常|例外|严重|嚴重|致命|エラー|障害)/u;
+function isMultilingualDiagnosticLine(line) {
+  return MULTILINGUAL_WORD_PATTERN.test(line) || MULTILINGUAL_CJK_PATTERN.test(line);
 }
 
 // src/core/scoring/relevance-score.ts
@@ -27608,7 +27860,21 @@ async function processLogStream(input, output, options = {}) {
     Math.floor(options.contextAfter ?? CONTEXT_WINDOW_AFTER)
   );
   const dedupeEnabled = options.dedupe !== false && options.outputFormat !== "jsonl-preserve";
+  const collapseRepeatedStacks = options.collapseRepeatedStacks !== false;
+  const repeatSignature = collapseRepeatedStacks ? (line) => stackWindowSignature(line) ?? createRepeatSignature(line) : createRepeatSignature;
+  const dedupeWindowSize = Math.max(1, Math.floor(options.dedupeWindow ?? 1));
+  const rootCause = options.rootCause !== false;
+  const multilingual = options.multilingual !== false;
+  const formatSampleSize = Math.max(
+    2,
+    Math.floor(options.formatDetectionSampleSize ?? DEFAULT_FORMAT_SAMPLE)
+  );
+  const formatVoter = createFormatVoter(formatSampleSize);
+  let formatVoteApplied = false;
   const tokenEstimator = options.tokenEstimator;
+  const maxTokens = options.maxTokens !== void 0 ? Math.max(0, Math.floor(options.maxTokens)) : void 0;
+  const collapseBlocks = options.collapseBlocks !== void 0 ? Math.max(2, Math.floor(options.collapseBlocks)) : void 0;
+  const outputBuffer = maxTokens !== void 0 || collapseBlocks !== void 0 ? [] : null;
   let inputTokensFromEstimator = 0;
   let outputTokensFromEstimator = 0;
   const customDiagnosticRegexes = merged.diagnosticPatterns.map(
@@ -27633,7 +27899,7 @@ async function processLogStream(input, output, options = {}) {
   const multilineCtx = multilineMode === "auto-source" ? createContinuationContext(multilineMode) : void 0;
   const rawLines = (0, import_node_readline.createInterface)({ input, crlfDelay: Infinity });
   const lines = readLogicalLines(rawLines, multilineMode, multilineCtx);
-  let previousGroup;
+  const pendingGroups = [];
   let hidingInternalStack = false;
   let detectedFormat;
   let outputLineCount = 0;
@@ -27641,7 +27907,7 @@ async function processLogStream(input, output, options = {}) {
     options.onDecision?.(decision);
     recordLineDecision(dynamicAggressiveness, decision);
   };
-  const emitOutputLine = async (line) => {
+  const emitOutputLine = async (line, score = 0) => {
     if (sampleSize !== void 0 && outputLineCount >= sampleSize) {
       stats.droppedLines += line.split("\n").length;
       recordDecision({
@@ -27655,6 +27921,10 @@ async function processLogStream(input, output, options = {}) {
       return false;
     }
     outputLineCount += 1;
+    if (outputBuffer !== null) {
+      outputBuffer.push({ text: line, score, tokens: estimateOutputLineTokens(line) });
+      return true;
+    }
     if (tokenEstimator !== void 0) {
       outputTokensFromEstimator += estimateLineTokens(tokenEstimator, `${line}
 `);
@@ -27662,30 +27932,36 @@ async function processLogStream(input, output, options = {}) {
     await writeOutputLine(output, line, stats);
     return true;
   };
-  const flushPreviousLine = async () => {
-    if (previousGroup === void 0) {
-      return;
+  const estimateOutputLineTokens = (line) => tokenEstimator !== void 0 ? estimateLineTokens(tokenEstimator, `${line}
+`) : estimateTokens(countWords(line));
+  const flushGroup = async (group) => {
+    const line = group.count > 1 ? `[x${group.count}] ${renderRepeatGroup(group)}` : group.firstLine;
+    if (group.count > 1) {
+      stats.duplicateLines += group.count - 1;
     }
-    const line = previousGroup.count > 1 ? `[x${previousGroup.count}] ${renderRepeatGroup(previousGroup)}` : previousGroup.firstLine;
-    if (previousGroup.count > 1) {
-      stats.duplicateLines += previousGroup.count - 1;
-    }
-    await emitOutputLine(line);
-    previousGroup = void 0;
+    await emitOutputLine(line, group.score);
   };
-  const emitCandidate = async (line) => {
+  const flushPendingGroups = async () => {
+    while (pendingGroups.length > 0) {
+      await flushGroup(pendingGroups.shift());
+    }
+  };
+  const emitCandidate = async (line, score = 0) => {
     if (!dedupeEnabled) {
-      await flushPreviousLine();
-      await emitOutputLine(line);
+      await flushPendingGroups();
+      await emitOutputLine(line, score);
       return;
     }
-    const signature = createRepeatSignature(line);
-    if (previousGroup?.signature === signature) {
-      addRepeatGroupLine(previousGroup, line);
+    const signature = repeatSignature(line);
+    const existing = pendingGroups.find((group) => group.signature === signature);
+    if (existing !== void 0) {
+      addRepeatGroupLine(existing, line, score);
       return;
     }
-    await flushPreviousLine();
-    previousGroup = createRepeatGroup(line);
+    pendingGroups.push(createRepeatGroup(line, score, signature));
+    if (pendingGroups.length > dedupeWindowSize) {
+      await flushGroup(pendingGroups.shift());
+    }
   };
   const flushContextBefore = async () => {
     const ejected = flushAccessBucket(accessBucket);
@@ -27696,8 +27972,8 @@ async function processLogStream(input, output, options = {}) {
     }
     contextBefore.length = 0;
   };
-  const dropLine = (line, physicalLineCount, reason) => {
-    stats.droppedLines += physicalLineCount;
+  const dropLine = (line, physicalLineCount2, reason) => {
+    stats.droppedLines += physicalLineCount2;
     hidingInternalStack = false;
     recordDecision({
       line,
@@ -27711,7 +27987,7 @@ async function processLogStream(input, output, options = {}) {
   for await (const rawLine of lines) {
     throwIfAborted(options.signal);
     let line = String(rawLine);
-    const physicalLineCount = line.split("\n").length;
+    const physicalLineCount2 = line.split("\n").length;
     collectDetectedSourceHits(line, detectedSourceState);
     if (multilineCtx !== void 0) {
       const [top] = rankDetectedSources(detectedSourceState, 1);
@@ -27720,7 +27996,7 @@ async function processLogStream(input, output, options = {}) {
         multilineCtx.effectiveMode = resolved;
       }
     }
-    stats.inputLines += physicalLineCount;
+    stats.inputLines += physicalLineCount2;
     stats.inputWords += countWords(line);
     stats.inputBytes += Buffer.byteLength(`${line}
 `, "utf8");
@@ -27728,12 +28004,21 @@ async function processLogStream(input, output, options = {}) {
       inputTokensFromEstimator += estimateLineTokens(tokenEstimator, `${line}
 `);
     }
-    if (detectedFormat === void 0 && line.trim().length > 0) {
-      const fmt = detectFormat(line);
-      if (fmt !== "unknown") detectedFormat = fmt;
+    if (line.trim().length > 0) {
+      if (detectedFormat === void 0) {
+        const fmt = detectFormat(line);
+        if (fmt !== "unknown") detectedFormat = fmt;
+      }
+      if (!formatVoteApplied) {
+        const voted = voteFormat(formatVoter, line);
+        if (formatVoter.decided) {
+          formatVoteApplied = true;
+          if (voted !== void 0) detectedFormat = voted;
+        }
+      }
     }
     if (line.trim().length === 0) {
-      stats.droppedLines += physicalLineCount;
+      stats.droppedLines += physicalLineCount2;
       recordDecision({
         line,
         kept: false,
@@ -27745,44 +28030,48 @@ async function processLogStream(input, output, options = {}) {
       continue;
     }
     if (includePattern !== void 0 && !testRegex(includePattern, line)) {
-      dropLine(line, physicalLineCount, "include-filter");
+      dropLine(line, physicalLineCount2, "include-filter");
       continue;
     }
     if (excludePattern !== void 0 && testRegex(excludePattern, line)) {
-      dropLine(line, physicalLineCount, "exclude-filter");
+      dropLine(line, physicalLineCount2, "exclude-filter");
       continue;
     }
     if (line.length > maxLineLength) {
-      stats.truncatedLines = Number(stats.truncatedLines) + physicalLineCount;
+      stats.truncatedLines = Number(stats.truncatedLines) + physicalLineCount2;
       line = `${line.slice(0, maxLineLength)}\u2026 [truncated]`;
     }
     if (customIgnoreRegexes.some((r) => testRegex(r, line))) {
-      dropLine(line, physicalLineCount, "custom-ignore");
+      dropLine(line, physicalLineCount2, "custom-ignore");
       continue;
     }
     if (severityLevel !== void 0 && !passesSeverityFilter(line, severityLevel)) {
-      dropLine(line, physicalLineCount, "severity");
+      dropLine(line, physicalLineCount2, "severity");
       continue;
     }
     if (isCiNoiseLine(line)) {
-      dropLine(line, physicalLineCount, "ci-noise");
+      dropLine(line, physicalLineCount2, "ci-noise");
       continue;
     }
     if (isProgressBarLine(line)) {
-      dropLine(line, physicalLineCount, "progress");
+      dropLine(line, physicalLineCount2, "progress");
       continue;
     }
     if (isAccessLogNoiseLine(line)) {
-      dropLine(line, physicalLineCount, "ci-noise");
+      dropLine(line, physicalLineCount2, "ci-noise");
       continue;
     }
     if (isIgnoredLogLine(line)) {
-      dropLine(line, physicalLineCount, "ignored-tag");
+      dropLine(line, physicalLineCount2, "ignored-tag");
+      continue;
+    }
+    if (rootCause && isCascadeNoiseLine(line)) {
+      dropLine(line, physicalLineCount2, "cascade");
       continue;
     }
     const masked = maskPemBlock(line, pemState);
     if (masked === null) {
-      dropLine(line, physicalLineCount, "custom-ignore");
+      dropLine(line, physicalLineCount2, "custom-ignore");
       continue;
     }
     line = masked;
@@ -27793,10 +28082,10 @@ async function processLogStream(input, output, options = {}) {
     const isCustomInternalStack = customInternalStackRegexes.length > 0 && customInternalStackRegexes.some((r) => testRegex(r, sanitized));
     const skipInternalStack = detectedFormat === "json" && sanitized.startsWith("{");
     if (!skipInternalStack && (isInternalStackTraceLine(sanitized) || isCustomInternalStack)) {
-      stats.hiddenInternalStackLines += physicalLineCount;
+      stats.hiddenInternalStackLines += physicalLineCount2;
       if (!hidingInternalStack) {
         await flushContextBefore();
-        await emitCandidate(INTERNAL_STACK_MARKER);
+        await emitCandidate(INTERNAL_STACK_MARKER, SCORE_KEEP_THRESHOLD);
         hidingInternalStack = true;
         afterContextRemaining = 0;
       }
@@ -27818,13 +28107,13 @@ async function processLogStream(input, output, options = {}) {
     if (detectedFormat === "json") {
       const parsed = scoreJsonLine(sanitized);
       if (parsed === null) {
-        dropLine(line, physicalLineCount, "ignored-tag");
+        dropLine(line, physicalLineCount2, "ignored-tag");
         continue;
       }
       if (parsed !== void 0) {
         if (parsed >= 80) {
           await flushContextBefore();
-          await emitCandidate(sanitized);
+          await emitCandidate(sanitized, parsed);
           afterContextRemaining = contextWindowAfter;
           recordDecision({
             line,
@@ -27852,10 +28141,13 @@ async function processLogStream(input, output, options = {}) {
         break;
       }
     }
+    if (multilingual && isMultilingualDiagnosticLine(sanitized)) {
+      score += 50;
+    }
     score += scoreSourceDiagnosticBoost(sanitized, detectedSourceState, stats.inputLines);
     if (score >= SCORE_KEEP_THRESHOLD) {
       await flushContextBefore();
-      await emitCandidate(sanitized);
+      await emitCandidate(sanitized, score);
       afterContextRemaining = contextWindowAfter;
       recordDecision({
         line,
@@ -27868,7 +28160,7 @@ async function processLogStream(input, output, options = {}) {
         score
       });
     } else if (afterContextRemaining > 0) {
-      await emitCandidate(sanitized);
+      await emitCandidate(sanitized, score);
       afterContextRemaining -= 1;
       recordDecision({
         line,
@@ -27883,7 +28175,7 @@ async function processLogStream(input, output, options = {}) {
     } else if (score >= 0) {
       let droppedBufferedLine = false;
       if (contextWindowBefore === 0) {
-        stats.droppedLines += physicalLineCount;
+        stats.droppedLines += physicalLineCount2;
         recordDecision({
           line,
           sanitizedLine: sanitized,
@@ -27924,7 +28216,7 @@ async function processLogStream(input, output, options = {}) {
         score
       });
     } else {
-      stats.droppedLines += physicalLineCount;
+      stats.droppedLines += physicalLineCount2;
       afterContextRemaining = 0;
       recordDecision({
         line,
@@ -27940,15 +28232,51 @@ async function processLogStream(input, output, options = {}) {
   }
   stats.droppedLines += contextBefore.length;
   contextBefore.length = 0;
+  if (!formatVoteApplied && detectedFormat === void 0) {
+    detectedFormat = decideFormat(formatVoter);
+  }
   if (pemState.inside) {
     const warningLine = "[PEM block unterminated - input redacted]";
     stats.outputWords += countWords(warningLine);
     stats.outputBytes += Buffer.byteLength(`${warningLine}
 `, "utf8");
     stats.truncatedLines = stats.truncatedLines + 1;
-    await emitOutputLine(warningLine);
+    await emitOutputLine(warningLine, Number.MAX_SAFE_INTEGER);
   }
-  await flushPreviousLine();
+  await flushPendingGroups();
+  if (outputBuffer !== null) {
+    let buffered = outputBuffer;
+    if (collapseBlocks !== void 0) {
+      const plan = planBlockDedupe(
+        buffered.map((item) => item.text),
+        collapseBlocks
+      );
+      if (plan.removedLines > 0) {
+        stats.duplicateLines += plan.removedLines;
+        const rebuilt = [];
+        for (const op of plan.ops) {
+          if (op.kind === "line") {
+            rebuilt.push(buffered[op.index]);
+          } else {
+            const text = `[block x${op.count}]`;
+            rebuilt.push({ text, score: 0, tokens: estimateOutputLineTokens(text) });
+          }
+        }
+        buffered = rebuilt;
+      }
+    }
+    if (maxTokens !== void 0) {
+      const budgeted = applyTokenBudget(buffered, maxTokens);
+      stats.droppedLines += budgeted.droppedPhysicalLines;
+      buffered = budgeted.kept;
+    }
+    for (const item of buffered) {
+      if (tokenEstimator !== void 0) {
+        outputTokensFromEstimator += item.tokens;
+      }
+      await writeOutputLine(output, item.text, stats);
+    }
+  }
   const inputTokens = tokenEstimator === void 0 ? estimateTokens(stats.inputWords) : inputTokensFromEstimator;
   const outputTokens = tokenEstimator === void 0 ? estimateTokens(stats.outputWords) : outputTokensFromEstimator;
   const savedTokens = Math.max(inputTokens - outputTokens, 0);

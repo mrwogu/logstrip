@@ -9,6 +9,7 @@ exports.detectLogSources = detectLogSources;
 exports.scoreSourceDiagnosticBoost = scoreSourceDiagnosticBoost;
 const source_profile_js_1 = require("../sources/source-profile.js");
 const catalog_js_1 = require("../sources/catalog.js");
+const aho_corasick_js_1 = require("./aho-corasick.js");
 exports.SOURCE_ACTIVE_CONFIDENCE = 12;
 exports.SOURCE_DIAGNOSTIC_BOOST = 40;
 /**
@@ -23,16 +24,28 @@ function getEffectiveActiveConfidence(inputLines) {
     return exports.SOURCE_ACTIVE_CONFIDENCE;
 }
 function createSourceDetectionState(sources = catalog_js_1.LOG_SOURCE_SIGNATURES) {
+    const profiles = (0, source_profile_js_1.createSourceProfiles)(sources);
+    const markerValues = new Set();
+    for (const profile of profiles) {
+        for (const marker of profile.markers) {
+            markerValues.add(marker.value);
+        }
+    }
     return {
         hits: new Map(),
-        profiles: (0, source_profile_js_1.createSourceProfiles)(sources),
+        profiles,
+        automaton: (0, aho_corasick_js_1.buildAhoCorasick)(markerValues),
     };
 }
 function collectDetectedSourceHits(line, state) {
     const normalized = line.toLowerCase();
+    const matched = (0, aho_corasick_js_1.matchAll)(state.automaton, normalized);
+    if (matched.size === 0) {
+        return;
+    }
     for (const profile of state.profiles) {
         for (const marker of profile.markers) {
-            if (!normalized.includes(marker.value)) {
+            if (!matched.has(marker.value)) {
                 continue;
             }
             const hit = state.hits.get(profile.name) ?? {
