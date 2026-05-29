@@ -1987,6 +1987,27 @@ describe('logstrip parser', () => {
     });
   });
 
+  describe('multilingual diagnostic keywords', () => {
+    const foreign = [
+      'La connexion a échoué',
+      'Verbindung fehlgeschlagen',
+      '数据库连接失败',
+    ].join('\n');
+
+    it('keeps non-English error lines when enabled', async () => {
+      const { output } = await processLogString(foreign, { multilingual: true });
+      expect(output).toContain('échoué');
+      expect(output).toContain('fehlgeschlagen');
+      expect(output).toContain('数据库连接失败');
+    });
+
+    it('drops non-English error lines by default', async () => {
+      const { output } = await processLogString(foreign);
+      expect(output).not.toContain('échoué');
+      expect(output).not.toContain('fehlgeschlagen');
+    });
+  });
+
   it('createLogStripTransform works with stream consumers', async () => {
     const transform = createLogStripTransform();
     const chunks: Buffer[] = [];
@@ -2091,6 +2112,10 @@ describe('logstrip parser', () => {
     expect(
       explainLogLine('error: aborting due to 2 previous errors').reason,
     ).not.toBe('cascade');
+    expect(
+      explainLogLine('Verbindung fehlgeschlagen', { multilingual: true }).reason,
+    ).toBe('hard-keep');
+    expect(explainLogLine('Verbindung fehlgeschlagen').reason).toBe('low-score');
     expect(explainLogLine('2024-01-01T00:00:00Z').reason).toBe('ci-noise');
     expect(explainLogLine('Downloading package 50%').reason).toBe('progress');
     expect(explainLogLine('[INFO] boot').reason).toBe('ignored-tag');

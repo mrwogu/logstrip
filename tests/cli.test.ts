@@ -686,6 +686,14 @@ describe('runCli', () => {
     expect((check('0') as CliError).exitCode).toBe(2);
   });
 
+  it('parses --multilingual flag', () => {
+    const opts = parseCliOptions(['raw.log', '--multilingual']);
+    expect(opts.multilingual).toBe(true);
+
+    const opts2 = parseCliOptions(['raw.log']);
+    expect(opts2.multilingual).toBe(false);
+  });
+
   it('parses --progress flag', () => {
     const opts = parseCliOptions(['raw.log', '--progress', '-o', 'out.log']);
     expect(opts.progress).toBe(true);
