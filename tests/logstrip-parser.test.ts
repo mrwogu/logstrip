@@ -1904,6 +1904,43 @@ describe('logstrip parser', () => {
     });
   });
 
+  describe('dedupeWindow', () => {
+    const interleaved = [
+      '[ERROR] alpha failed',
+      '[ERROR] beta failed',
+      '[ERROR] alpha failed',
+    ].join('\n');
+
+    it('collapses non-adjacent duplicates within the window', async () => {
+      const { output } = await processLogString(interleaved, { dedupeWindow: 3 });
+      const lines = output.trimEnd().split('\n');
+      expect(lines.length).toBe(2);
+      expect(output).toContain('[x2] [ERROR] alpha failed');
+      expect(output).toContain('[ERROR] beta failed');
+    });
+
+    it('does not collapse non-adjacent duplicates by default', async () => {
+      const { output } = await processLogString(interleaved);
+      const lines = output.trimEnd().split('\n');
+      expect(lines.length).toBe(3);
+      expect(output).not.toContain('[x2]');
+    });
+
+    it('preserves first-occurrence order of survivors', async () => {
+      const input = [
+        '[ERROR] one',
+        '[ERROR] two',
+        '[ERROR] three',
+        '[ERROR] two',
+      ].join('\n');
+      const { output } = await processLogString(input, { dedupeWindow: 4 });
+      const lines = output.trimEnd().split('\n');
+      expect(lines[0]).toContain('one');
+      expect(lines[1]).toContain('[x2] [ERROR] two');
+      expect(lines[2]).toContain('three');
+    });
+  });
+
   it('createLogStripTransform works with stream consumers', async () => {
     const transform = createLogStripTransform();
     const chunks: Buffer[] = [];

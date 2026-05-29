@@ -638,6 +638,26 @@ describe('runCli', () => {
     expect(opts2.collapseRepeatedStacks).toBe(false);
   });
 
+  it('parses --dedupe-window flag', () => {
+    const opts = parseCliOptions(['raw.log', '--dedupe-window', '50']);
+    expect(opts.dedupeWindow).toBe(50);
+
+    const opts2 = parseCliOptions(['raw.log']);
+    expect(opts2.dedupeWindow).toBeUndefined();
+  });
+
+  it('rejects invalid --dedupe-window values', () => {
+    const check = (val: string) => {
+      try { parseCliOptions(['raw.log', '--dedupe-window', val]); return undefined; }
+      catch (e) { return e; }
+    };
+
+    expect(check('0')).toBeInstanceOf(CliError);
+    expect(check('-3')).toBeInstanceOf(CliError);
+    expect(check('xyz')).toBeInstanceOf(CliError);
+    expect((check('0') as CliError).exitCode).toBe(2);
+  });
+
   it('parses --progress flag', () => {
     const opts = parseCliOptions(['raw.log', '--progress', '-o', 'out.log']);
     expect(opts.progress).toBe(true);

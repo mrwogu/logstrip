@@ -57,6 +57,8 @@ Options:
                            highest-scoring lines (LLM context-budget mode).
       --collapse-stacks    Collapse repeated stack-trace windows that differ
                            only in addresses/offsets into a single [xN] group.
+      --dedupe-window <N>  Collapse non-adjacent duplicate lines seen within
+                           the last N distinct lines. Default: 1 (adjacent only).
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -97,6 +99,7 @@ export interface CliOptions {
   preserveIdSuffix?: number;
   maxTokens?: number;
   collapseRepeatedStacks: boolean;
+  dedupeWindow?: number;
   telemetry: boolean;
   help: boolean;
   version: boolean;
@@ -154,6 +157,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         sample: { type: 'string' },
         'max-tokens': { type: 'string' },
         'collapse-stacks': { type: 'boolean', default: false },
+        'dedupe-window': { type: 'string' },
         'max-line-length': { type: 'string' },
         timeout: { type: 'string' },
         progress: { type: 'boolean', default: false },
@@ -237,6 +241,17 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     }
   }
 
+  let dedupeWindow: number | undefined;
+  if (typeof parsed.values['dedupe-window'] === 'string') {
+    if (!/^\d+$/u.test(parsed.values['dedupe-window'])) {
+      throw new CliError(`Invalid --dedupe-window: ${parsed.values['dedupe-window']}. Must be a positive integer.`, 2);
+    }
+    dedupeWindow = Number(parsed.values['dedupe-window']);
+    if (dedupeWindow < 1) {
+      throw new CliError(`Invalid --dedupe-window: ${parsed.values['dedupe-window']}. Must be a positive integer.`, 2);
+    }
+  }
+
   let maxLineLength: number | undefined;
   if (typeof parsed.values['max-line-length'] === 'string') {
     if (!/^\d+$/u.test(parsed.values['max-line-length'])) throw new CliError(`Invalid --max-line-length. Must be >= 100.`, 2);
@@ -285,6 +300,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     preserveIdSuffix,
     maxTokens,
     collapseRepeatedStacks: parsed.values['collapse-stacks'] === true,
+    dedupeWindow,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
@@ -470,6 +486,7 @@ export async function runCli(
       preserveIdSuffix: options.preserveIdSuffix,
       maxTokens: options.maxTokens,
       collapseRepeatedStacks: options.collapseRepeatedStacks,
+      dedupeWindow: options.dedupeWindow,
     };
     result = await processLogStreamWithTimeout(
       input,
