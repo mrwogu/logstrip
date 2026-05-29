@@ -55,18 +55,18 @@ Options:
       --sample <N>         Limit output to first N kept lines.
       --max-tokens <N>     Trim output to at most N tokens, keeping the
                            highest-scoring lines (LLM context-budget mode).
-      --collapse-stacks    Collapse repeated stack-trace windows that differ
-                           only in addresses/offsets into a single [xN] group.
       --dedupe-window <N>  Collapse non-adjacent duplicate lines seen within
                            the last N distinct lines. Default: 1 (adjacent only).
-      --root-cause         Drop downstream cascade restatements (e.g. "aborting
-                           due to previous errors") so the root error stands out.
-      --format-sample <N>  Detect the log format by majority vote over the first
-                           N non-blank lines (robust to mixed-format logs).
-      --multilingual       Also treat non-English error/failure keywords (e.g.
-                           "erreur", "Fehler", "错误") as diagnostic lines.
+      --format-sample <N>  Majority-vote format detection window over the first
+                           N non-blank lines. Default: 50.
       --collapse-blocks <N> Collapse consecutive repeats of a block of up to N
                            lines into one copy plus a [block xM] marker.
+      --no-collapse-stacks Disable auto-collapsing of repeated stack-trace
+                           windows that differ only in addresses/offsets.
+      --no-root-cause      Disable auto-pruning of downstream cascade
+                           restatements (e.g. "aborting due to previous errors").
+      --no-multilingual    Disable auto-detection of non-English error/failure
+                           keywords (e.g. "erreur", "Fehler", "错误").
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -168,12 +168,12 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         exclude: { type: 'string' },
         sample: { type: 'string' },
         'max-tokens': { type: 'string' },
-        'collapse-stacks': { type: 'boolean', default: false },
         'dedupe-window': { type: 'string' },
-        'root-cause': { type: 'boolean', default: false },
         'format-sample': { type: 'string' },
-        multilingual: { type: 'boolean', default: false },
         'collapse-blocks': { type: 'string' },
+        'no-collapse-stacks': { type: 'boolean', default: false },
+        'no-root-cause': { type: 'boolean', default: false },
+        'no-multilingual': { type: 'boolean', default: false },
         'max-line-length': { type: 'string' },
         timeout: { type: 'string' },
         progress: { type: 'boolean', default: false },
@@ -337,11 +337,11 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         : undefined,
     preserveIdSuffix,
     maxTokens,
-    collapseRepeatedStacks: parsed.values['collapse-stacks'] === true,
+    collapseRepeatedStacks: parsed.values['no-collapse-stacks'] !== true,
     dedupeWindow,
-    rootCause: parsed.values['root-cause'] === true,
+    rootCause: parsed.values['no-root-cause'] !== true,
     formatSample,
-    multilingual: parsed.values.multilingual === true,
+    multilingual: parsed.values['no-multilingual'] !== true,
     collapseBlocks,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,

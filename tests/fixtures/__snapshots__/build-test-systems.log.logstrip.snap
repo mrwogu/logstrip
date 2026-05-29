@@ -12,10 +12,8 @@ FAILURE: Build failed with an exception.
 error[E0425]: cannot assign twice to immutable variable `x`
   --> src/main.rs:10:5
    |
-   |         help: consider making this binding mutable: `mut x`
 10 |     x = 6;
    |     ^^^^^ cannot assign twice to immutable variable
-error: could not compile `my_project` due to previous error
 === RUN   TestProcessOrder
 panic: runtime error: index out of range [1] with length 1 [recovered]
         panic: runtime error: index out of range [1] with length 1

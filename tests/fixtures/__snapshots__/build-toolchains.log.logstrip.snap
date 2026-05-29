@@ -17,7 +17,6 @@ BUILD FAILED
 42  |     x = total_amount;
     |     ^ cannot assign twice to immutable variable
     = help: consider making this binding mutable by adding `mut`
-[TIME] [ERROR] error: could not compile `checkout-service` due to previous error
 [TIME] [FATAL] cargo build failed with exit code 101
 --- FAIL: TestCheckout (0.[AGO])
 [x2] [TIME] [ERROR] checkout_test.go:42: unexpected payment status "declined", expected "approved"

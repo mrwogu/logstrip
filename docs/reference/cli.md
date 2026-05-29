@@ -37,12 +37,12 @@ logstrip [INPUT] [options]
 | `--exclude <regex>` | Drop lines matching this regex. Useful for suppressing known noise patterns like `Downloading\|Extracting`. | _(off)_ |
 | `--sample <N>` | Limit output to the first _N_ kept lines. Useful for previewing large logs. | _(off)_ |
 | `--max-tokens <N>` | Trim the compressed output to at most _N_ tokens, keeping the highest-scoring lines first (LLM context-budget mode). Survivors stay in original order. | _(off)_ |
-| `--collapse-stacks` | Collapse repeated stack-trace windows that differ only in memory addresses, Go offsets or goroutine ids into a single `[xN]` group. Pairs well with `--multiline`. | off |
 | `--dedupe-window <N>` | Collapse non-adjacent duplicate lines seen within the last _N_ distinct lines into a single `[xN]` group. `1` keeps adjacent-only deduplication. | `1` |
-| `--root-cause` | Drop downstream cascade restatements (e.g. `aborting due to previous errors`, `skipped because the upstream job failed`) so the original root error stands out. | off |
-| `--format-sample <N>` | Detect the log format by majority vote over the first _N_ non-blank lines instead of locking onto the first recognizable line. Robust to mixed-format logs (e.g. JSON interleaved with plaintext). | _(off)_ |
-| `--multilingual` | Also treat non-English error/failure/exception keywords (e.g. `erreur`, `Fehler`, `fallo`, `ошибка`, `错误`) as diagnostic lines, in addition to the built-in English patterns. | off |
+| `--format-sample <N>` | Majority-vote format-detection window: the number of leading non-blank lines sampled before the first-line format guess may be corrected. Robust to mixed-format logs (e.g. JSON interleaved with plaintext). | `50` |
 | `--collapse-blocks <N>` | Collapse consecutive repeats of a multi-line block (up to _N_ lines) into a single copy followed by a `[block xM]` marker. Complements single-line `[xN]` deduplication. | _(off)_ |
+| `--no-collapse-stacks` | Disable the automatic collapsing of repeated stack-trace windows that differ only in memory addresses, Go offsets or goroutine ids. | _(auto on)_ |
+| `--no-root-cause` | Disable the automatic pruning of downstream cascade restatements (e.g. `aborting due to previous errors`, `skipped because the upstream job failed`). | _(auto on)_ |
+| `--no-multilingual` | Disable the automatic detection of non-English error/failure/exception keywords (e.g. `erreur`, `Fehler`, `fallo`, `ошибка`, `错误`). | _(auto on)_ |
 | `--max-line-length <n>` | Truncate lines longer than _n_ characters. Very long lines (e.g. minified bundles) are replaced with `[TRUNCATED]`. | `100000` |
 | `--timeout <s>` | Stop processing after _s_ seconds. The output is flushed and `timedOut: true` is set in the result. | _(off)_ |
 | `--progress` | Show a progress bar on stderr (file input only, requires `--output`). | off |

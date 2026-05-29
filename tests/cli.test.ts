@@ -630,11 +630,11 @@ describe('runCli', () => {
     expect((check('0') as CliError).exitCode).toBe(2);
   });
 
-  it('parses --collapse-stacks flag', () => {
-    const opts = parseCliOptions(['raw.log', '--collapse-stacks']);
+  it('enables collapse-stacks by default and disables it via --no-collapse-stacks', () => {
+    const opts = parseCliOptions(['raw.log']);
     expect(opts.collapseRepeatedStacks).toBe(true);
 
-    const opts2 = parseCliOptions(['raw.log']);
+    const opts2 = parseCliOptions(['raw.log', '--no-collapse-stacks']);
     expect(opts2.collapseRepeatedStacks).toBe(false);
   });
 
@@ -658,11 +658,11 @@ describe('runCli', () => {
     expect((check('0') as CliError).exitCode).toBe(2);
   });
 
-  it('parses --root-cause flag', () => {
-    const opts = parseCliOptions(['raw.log', '--root-cause']);
+  it('enables root-cause by default and disables it via --no-root-cause', () => {
+    const opts = parseCliOptions(['raw.log']);
     expect(opts.rootCause).toBe(true);
 
-    const opts2 = parseCliOptions(['raw.log']);
+    const opts2 = parseCliOptions(['raw.log', '--no-root-cause']);
     expect(opts2.rootCause).toBe(false);
   });
 
@@ -686,11 +686,11 @@ describe('runCli', () => {
     expect((check('0') as CliError).exitCode).toBe(2);
   });
 
-  it('parses --multilingual flag', () => {
-    const opts = parseCliOptions(['raw.log', '--multilingual']);
+  it('enables multilingual by default and disables it via --no-multilingual', () => {
+    const opts = parseCliOptions(['raw.log']);
     expect(opts.multilingual).toBe(true);
 
-    const opts2 = parseCliOptions(['raw.log']);
+    const opts2 = parseCliOptions(['raw.log', '--no-multilingual']);
     expect(opts2.multilingual).toBe(false);
   });
 
