@@ -74,6 +74,7 @@ export interface LogStripOptions {
   rootCause?: boolean;
   formatDetectionSampleSize?: number;
   multilingual?: boolean;
+  collapseBlocks?: number;
 }
 
 export interface LogStripStats {

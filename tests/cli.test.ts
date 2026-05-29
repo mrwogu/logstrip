@@ -694,6 +694,26 @@ describe('runCli', () => {
     expect(opts2.multilingual).toBe(false);
   });
 
+  it('parses --collapse-blocks flag', () => {
+    const opts = parseCliOptions(['raw.log', '--collapse-blocks', '10']);
+    expect(opts.collapseBlocks).toBe(10);
+
+    const opts2 = parseCliOptions(['raw.log']);
+    expect(opts2.collapseBlocks).toBeUndefined();
+  });
+
+  it('rejects invalid --collapse-blocks values', () => {
+    const check = (val: string) => {
+      try { parseCliOptions(['raw.log', '--collapse-blocks', val]); return undefined; }
+      catch (e) { return e; }
+    };
+
+    expect(check('1')).toBeInstanceOf(CliError);
+    expect(check('-2')).toBeInstanceOf(CliError);
+    expect(check('two')).toBeInstanceOf(CliError);
+    expect((check('1') as CliError).exitCode).toBe(2);
+  });
+
   it('parses --progress flag', () => {
     const opts = parseCliOptions(['raw.log', '--progress', '-o', 'out.log']);
     expect(opts.progress).toBe(true);
