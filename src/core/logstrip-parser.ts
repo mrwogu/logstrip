@@ -296,6 +296,9 @@ export async function processLogStream(
   const repeatSignature = collapseRepeatedStacks
     ? (line: string): string => stackWindowSignature(line) ?? createRepeatSignature(line)
     : createRepeatSignature;
+  // Sliding dedup window: 1 = adjacent-only (default), >1 collapses
+  // non-adjacent duplicates seen within the last N distinct lines.
+  const dedupeWindowSize = Math.max(1, Math.floor(options.dedupeWindow ?? 1));
   const tokenEstimator = options.tokenEstimator;
   const maxTokens =
     options.maxTokens !== undefined ? Math.max(0, Math.floor(options.maxTokens)) : undefined;
@@ -342,7 +345,7 @@ export async function processLogStream(
 
   const rawLines = createInterface({ input, crlfDelay: Infinity });
   const lines = readLogicalLines(rawLines, multilineMode, multilineCtx);
-  let previousGroup: RepeatGroup | undefined;
+  const pendingGroups: RepeatGroup[] = [];
   let hidingInternalStack = false;
   let detectedFormat: string | undefined;
   let outputLineCount = 0;
@@ -382,40 +385,43 @@ export async function processLogStream(
       ? estimateLineTokens(tokenEstimator, `${line}\n`)
       : estimateTokens(countWords(line));
 
-  const flushPreviousLine = async (): Promise<void> => {
-    if (previousGroup === undefined) {
-      return;
-    }
-
+  const flushGroup = async (group: RepeatGroup): Promise<void> => {
     const line =
-      previousGroup.count > 1
-        ? `[x${previousGroup.count}] ${renderRepeatGroup(previousGroup)}`
-        : previousGroup.firstLine;
+      group.count > 1
+        ? `[x${group.count}] ${renderRepeatGroup(group)}`
+        : group.firstLine;
 
-    if (previousGroup.count > 1) {
-      stats.duplicateLines += previousGroup.count - 1;
+    if (group.count > 1) {
+      stats.duplicateLines += group.count - 1;
     }
 
-    await emitOutputLine(line, previousGroup.score);
-    previousGroup = undefined;
+    await emitOutputLine(line, group.score);
+  };
+
+  const flushPendingGroups = async (): Promise<void> => {
+    while (pendingGroups.length > 0) {
+      await flushGroup(pendingGroups.shift()!);
+    }
   };
 
   const emitCandidate = async (line: string, score = 0): Promise<void> => {
     if (!dedupeEnabled) {
-      await flushPreviousLine();
+      await flushPendingGroups();
       await emitOutputLine(line, score);
       return;
     }
 
     const signature = repeatSignature(line);
-
-    if (previousGroup?.signature === signature) {
-      addRepeatGroupLine(previousGroup, line, score);
+    const existing = pendingGroups.find((group) => group.signature === signature);
+    if (existing !== undefined) {
+      addRepeatGroupLine(existing, line, score);
       return;
     }
 
-    await flushPreviousLine();
-    previousGroup = createRepeatGroup(line, score, signature);
+    pendingGroups.push(createRepeatGroup(line, score, signature));
+    if (pendingGroups.length > dedupeWindowSize) {
+      await flushGroup(pendingGroups.shift()!);
+    }
   };
 
   // Flush buffered context lines (retroactive promotion near an error)
@@ -761,7 +767,7 @@ export async function processLogStream(
     await emitOutputLine(warningLine, Number.MAX_SAFE_INTEGER);
   }
 
-  await flushPreviousLine();
+  await flushPendingGroups();
 
   if (budgetBuffer !== null) {
     const budgeted = applyTokenBudget(budgetBuffer, maxTokens!);

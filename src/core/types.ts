@@ -69,6 +69,7 @@ export interface LogStripOptions {
   preserveIdSuffix?: number;
   maxTokens?: number;
   collapseRepeatedStacks?: boolean;
+  dedupeWindow?: number;
 }
 
 export interface LogStripStats {
