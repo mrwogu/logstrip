@@ -1904,6 +1904,20 @@ describe('logstrip parser', () => {
     });
   });
 
+  describe('template signature for instance counters', () => {
+    it('folds lines differing only by an enumerated worker/retry index', async () => {
+      const input = [
+        '[ERROR] worker 1 crashed during checkout',
+        '[ERROR] worker 2 crashed during checkout',
+        '[ERROR] worker 3 crashed during checkout',
+      ].join('\n');
+      const { output } = await processLogString(input);
+      expect(output).toContain('[x3]');
+      expect(output).toContain('worker [1 | 2 | 3] crashed during checkout');
+      expect(output.match(/crashed during checkout/gu)?.length).toBe(1);
+    });
+  });
+
   describe('dedupeWindow', () => {
     const interleaved = [
       '[ERROR] alpha failed',
