@@ -36,6 +36,7 @@ logstrip [INPUT] [options]
 | `--include <regex>` | Keep only lines matching this regex. All non-matching lines are dropped. | _(off)_ |
 | `--exclude <regex>` | Drop lines matching this regex. Useful for suppressing known noise patterns like `Downloading\|Extracting`. | _(off)_ |
 | `--sample <N>` | Limit output to the first _N_ kept lines. Useful for previewing large logs. | _(off)_ |
+| `--max-tokens <N>` | Trim the compressed output to at most _N_ tokens, keeping the highest-scoring lines first (LLM context-budget mode). Survivors stay in original order. | _(off)_ |
 | `--max-line-length <n>` | Truncate lines longer than _n_ characters. Very long lines (e.g. minified bundles) are replaced with `[TRUNCATED]`. | `100000` |
 | `--timeout <s>` | Stop processing after _s_ seconds. The output is flushed and `timedOut: true` is set in the result. | _(off)_ |
 | `--progress` | Show a progress bar on stderr (file input only, requires `--output`). | off |

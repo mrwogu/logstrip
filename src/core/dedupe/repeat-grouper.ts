@@ -8,6 +8,8 @@ export interface RepeatGroup {
   count: number;
   firstSeen: number | null;
   lastSeen: number | null;
+  /** Highest relevance score seen across the collapsed lines (for budgeting). */
+  score: number;
 }
 
 interface RepeatTokenValue {
@@ -42,7 +44,7 @@ export function createRepeatSignature(line: string): string {
     .join(' ');
 }
 
-export function createRepeatGroup(line: string): RepeatGroup {
+export function createRepeatGroup(line: string, score = 0): RepeatGroup {
   const ts = extractTimestampMs(line);
   return {
     firstLine: line,
@@ -52,11 +54,19 @@ export function createRepeatGroup(line: string): RepeatGroup {
     count: 1,
     firstSeen: ts,
     lastSeen: ts,
+    score,
   };
 }
 
-export function addRepeatGroupLine(group: RepeatGroup, line: string): void {
+export function addRepeatGroupLine(
+  group: RepeatGroup,
+  line: string,
+  score = 0,
+): void {
   const tokens = tokenizeRepeatLine(line);
+  if (score > group.score) {
+    group.score = score;
+  }
 
   for (const [index, firstToken] of group.firstTokens.entries()) {
     const firstValue = splitRepeatToken(
