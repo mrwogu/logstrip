@@ -63,6 +63,8 @@ Options:
                            due to previous errors") so the root error stands out.
       --format-sample <N>  Detect the log format by majority vote over the first
                            N non-blank lines (robust to mixed-format logs).
+      --multilingual       Also treat non-English error/failure keywords (e.g.
+                           "erreur", "Fehler", "错误") as diagnostic lines.
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -106,6 +108,7 @@ export interface CliOptions {
   dedupeWindow?: number;
   rootCause: boolean;
   formatSample?: number;
+  multilingual: boolean;
   telemetry: boolean;
   help: boolean;
   version: boolean;
@@ -166,6 +169,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         'dedupe-window': { type: 'string' },
         'root-cause': { type: 'boolean', default: false },
         'format-sample': { type: 'string' },
+        multilingual: { type: 'boolean', default: false },
         'max-line-length': { type: 'string' },
         timeout: { type: 'string' },
         progress: { type: 'boolean', default: false },
@@ -322,6 +326,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     dedupeWindow,
     rootCause: parsed.values['root-cause'] === true,
     formatSample,
+    multilingual: parsed.values.multilingual === true,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
@@ -510,6 +515,7 @@ export async function runCli(
       dedupeWindow: options.dedupeWindow,
       rootCause: options.rootCause,
       formatDetectionSampleSize: options.formatSample,
+      multilingual: options.multilingual,
     };
     result = await processLogStreamWithTimeout(
       input,

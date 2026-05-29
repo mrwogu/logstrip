@@ -73,6 +73,7 @@ export interface LogStripOptions {
   dedupeWindow?: number;
   rootCause?: boolean;
   formatDetectionSampleSize?: number;
+  multilingual?: boolean;
 }
 
 export interface LogStripStats {

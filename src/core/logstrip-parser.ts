@@ -68,6 +68,7 @@ import {
 } from './sanitize/pem-block.js';
 import { passesSeverityFilter } from './severity/severity-filter.js';
 import { isCascadeNoiseLine } from './scoring/cascade-filter.js';
+import { isMultilingualDiagnosticLine } from './scoring/multilingual-keywords.js';
 import type { SeverityLevel } from './severity/severity-filter.js';
 import {
   estimateTokens,
@@ -132,6 +133,7 @@ export {
   applyTokenBudget,
 } from './budget/token-budget.js';
 export { isCascadeNoiseLine } from './scoring/cascade-filter.js';
+export { isMultilingualDiagnosticLine } from './scoring/multilingual-keywords.js';
 export { sanitizeLine } from './sanitize/sanitize-line.js';
 export {
   createPemBlockState,
@@ -313,6 +315,7 @@ export async function processLogStream(
   // non-adjacent duplicates seen within the last N distinct lines.
   const dedupeWindowSize = Math.max(1, Math.floor(options.dedupeWindow ?? 1));
   const rootCause = options.rootCause === true;
+  const multilingual = options.multilingual === true;
   const formatVoter =
     options.formatDetectionSampleSize !== undefined &&
     options.formatDetectionSampleSize > 1
@@ -686,6 +689,9 @@ export async function processLogStream(
         break;
       }
     }
+    if (multilingual && isMultilingualDiagnosticLine(sanitized)) {
+      score += 50;
+    }
     score += scoreSourceDiagnosticBoost(sanitized, detectedSourceState, stats.inputLines);
 
     if (score >= SCORE_KEEP_THRESHOLD) {
@@ -1032,6 +1038,9 @@ export function explainLogLine(
       score += 50;
       break;
     }
+  }
+  if (options.multilingual === true && isMultilingualDiagnosticLine(sanitized)) {
+    score += 50;
   }
 
   if (score >= SCORE_KEEP_THRESHOLD) {
