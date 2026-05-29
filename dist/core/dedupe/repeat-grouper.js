@@ -7,11 +7,30 @@ exports.getRepeatGroupSpreadMs = getRepeatGroupSpreadMs;
 exports.renderRepeatGroup = renderRepeatGroup;
 const constants_js_1 = require("../constants.js");
 const STANDALONE_REPEAT_VALUE_PATTERN = /^\d+(?:[.:,-]\d+)*$/u;
+// Labels that precede an enumerable instance counter. Numbers after these
+// collapse into a single delta-tracked group so otherwise-identical lines
+// fold via [xN]. Intentionally excludes labels whose numbers carry meaning
+// (e.g. "error"/"code"/"status"/"exit") to avoid merging distinct diagnostics.
 const STANDALONE_REPEAT_LABELS = new Set([
+    'attempt',
+    'batch',
     'child',
+    'chunk',
+    'connection',
+    'epoch',
+    'iteration',
+    'job',
+    'partition',
     'pid',
+    'replica',
+    'retry',
+    'session',
+    'shard',
     'slot',
     'state',
+    'task',
+    'thread',
+    'worker',
 ]);
 function createRepeatSignature(line) {
     const tokens = tokenizeRepeatLine(line);
@@ -24,20 +43,24 @@ function createRepeatSignature(line) {
     })
         .join(' ');
 }
-function createRepeatGroup(line) {
+function createRepeatGroup(line, score = 0, signature) {
     const ts = extractTimestampMs(line);
     return {
         firstLine: line,
         firstTokens: tokenizeRepeatLine(line),
-        signature: createRepeatSignature(line),
+        signature: signature ?? createRepeatSignature(line),
         deltas: new Map(),
         count: 1,
         firstSeen: ts,
         lastSeen: ts,
+        score,
     };
 }
-function addRepeatGroupLine(group, line) {
+function addRepeatGroupLine(group, line, score = 0) {
     const tokens = tokenizeRepeatLine(line);
+    if (score > group.score) {
+        group.score = score;
+    }
     for (const [index, firstToken] of group.firstTokens.entries()) {
         const firstValue = splitRepeatToken(firstToken, group.firstTokens[index - 1]);
         const nextValue = splitRepeatToken(tokens[index], tokens[index - 1]);

@@ -46,6 +46,20 @@ Options:
       --include <regex>    Keep only lines matching this regex.
       --exclude <regex>    Drop lines matching this regex.
       --sample <N>         Limit output to first N kept lines.
+      --max-tokens <N>     Trim output to at most N tokens, keeping the
+                           highest-scoring lines (LLM context-budget mode).
+      --dedupe-window <N>  Collapse non-adjacent duplicate lines seen within
+                           the last N distinct lines. Default: 1 (adjacent only).
+      --format-sample <N>  Majority-vote format detection window over the first
+                           N non-blank lines. Default: 50.
+      --collapse-blocks <N> Collapse consecutive repeats of a block of up to N
+                           lines into one copy plus a [block xM] marker.
+      --no-collapse-stacks Disable auto-collapsing of repeated stack-trace
+                           windows that differ only in addresses/offsets.
+      --no-root-cause      Disable auto-pruning of downstream cascade
+                           restatements (e.g. "aborting due to previous errors").
+      --no-multilingual    Disable auto-detection of non-English error/failure
+                           keywords (e.g. "erreur", "Fehler", "错误").
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -103,6 +117,13 @@ function parseCliOptions(argv) {
                 include: { type: 'string' },
                 exclude: { type: 'string' },
                 sample: { type: 'string' },
+                'max-tokens': { type: 'string' },
+                'dedupe-window': { type: 'string' },
+                'format-sample': { type: 'string' },
+                'collapse-blocks': { type: 'string' },
+                'no-collapse-stacks': { type: 'boolean', default: false },
+                'no-root-cause': { type: 'boolean', default: false },
+                'no-multilingual': { type: 'boolean', default: false },
                 'max-line-length': { type: 'string' },
                 timeout: { type: 'string' },
                 progress: { type: 'boolean', default: false },
@@ -174,6 +195,46 @@ function parseCliOptions(argv) {
         if (sample < 1)
             throw new CliError(`Invalid --sample: ${parsed.values.sample}. Must be a positive integer.`, 2);
     }
+    let maxTokens;
+    if (typeof parsed.values['max-tokens'] === 'string') {
+        if (!/^\d+$/u.test(parsed.values['max-tokens'])) {
+            throw new CliError(`Invalid --max-tokens: ${parsed.values['max-tokens']}. Must be a positive integer.`, 2);
+        }
+        maxTokens = Number(parsed.values['max-tokens']);
+        if (maxTokens < 1) {
+            throw new CliError(`Invalid --max-tokens: ${parsed.values['max-tokens']}. Must be a positive integer.`, 2);
+        }
+    }
+    let dedupeWindow;
+    if (typeof parsed.values['dedupe-window'] === 'string') {
+        if (!/^\d+$/u.test(parsed.values['dedupe-window'])) {
+            throw new CliError(`Invalid --dedupe-window: ${parsed.values['dedupe-window']}. Must be a positive integer.`, 2);
+        }
+        dedupeWindow = Number(parsed.values['dedupe-window']);
+        if (dedupeWindow < 1) {
+            throw new CliError(`Invalid --dedupe-window: ${parsed.values['dedupe-window']}. Must be a positive integer.`, 2);
+        }
+    }
+    let formatSample;
+    if (typeof parsed.values['format-sample'] === 'string') {
+        if (!/^\d+$/u.test(parsed.values['format-sample'])) {
+            throw new CliError(`Invalid --format-sample: ${parsed.values['format-sample']}. Must be a positive integer.`, 2);
+        }
+        formatSample = Number(parsed.values['format-sample']);
+        if (formatSample < 1) {
+            throw new CliError(`Invalid --format-sample: ${parsed.values['format-sample']}. Must be a positive integer.`, 2);
+        }
+    }
+    let collapseBlocks;
+    if (typeof parsed.values['collapse-blocks'] === 'string') {
+        if (!/^\d+$/u.test(parsed.values['collapse-blocks'])) {
+            throw new CliError(`Invalid --collapse-blocks: ${parsed.values['collapse-blocks']}. Must be an integer >= 2.`, 2);
+        }
+        collapseBlocks = Number(parsed.values['collapse-blocks']);
+        if (collapseBlocks < 2) {
+            throw new CliError(`Invalid --collapse-blocks: ${parsed.values['collapse-blocks']}. Must be an integer >= 2.`, 2);
+        }
+    }
     let maxLineLength;
     if (typeof parsed.values['max-line-length'] === 'string') {
         if (!/^\d+$/u.test(parsed.values['max-line-length']))
@@ -218,6 +279,13 @@ function parseCliOptions(argv) {
             ? parsed.values.config
             : undefined,
         preserveIdSuffix,
+        maxTokens,
+        collapseRepeatedStacks: parsed.values['no-collapse-stacks'] !== true,
+        dedupeWindow,
+        rootCause: parsed.values['no-root-cause'] !== true,
+        formatSample,
+        multilingual: parsed.values['no-multilingual'] !== true,
+        collapseBlocks,
         telemetry: parsed.values.telemetry === true,
         help: parsed.values.help === true,
         version: parsed.values.version === true,
@@ -359,6 +427,13 @@ async function runCli(argv, io) {
             sampleSize: options.sample,
             maxLineLength: options.maxLineLength,
             preserveIdSuffix: options.preserveIdSuffix,
+            maxTokens: options.maxTokens,
+            collapseRepeatedStacks: options.collapseRepeatedStacks,
+            dedupeWindow: options.dedupeWindow,
+            rootCause: options.rootCause,
+            formatDetectionSampleSize: options.formatSample,
+            multilingual: options.multilingual,
+            collapseBlocks: options.collapseBlocks,
         };
         result = await (0, logstrip_parser_1.processLogStreamWithTimeout)(input, output, logStripOptions, options.timeout);
     }
