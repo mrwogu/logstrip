@@ -24,11 +24,30 @@ interface RepeatDelta {
 }
 
 const STANDALONE_REPEAT_VALUE_PATTERN = /^\d+(?:[.:,-]\d+)*$/u;
+// Labels that precede an enumerable instance counter. Numbers after these
+// collapse into a single delta-tracked group so otherwise-identical lines
+// fold via [xN]. Intentionally excludes labels whose numbers carry meaning
+// (e.g. "error"/"code"/"status"/"exit") to avoid merging distinct diagnostics.
 const STANDALONE_REPEAT_LABELS = new Set([
+  'attempt',
+  'batch',
   'child',
+  'chunk',
+  'connection',
+  'epoch',
+  'iteration',
+  'job',
+  'partition',
   'pid',
+  'replica',
+  'retry',
+  'session',
+  'shard',
   'slot',
   'state',
+  'task',
+  'thread',
+  'worker',
 ]);
 
 export function createRepeatSignature(line: string): string {
