@@ -39,6 +39,7 @@ logstrip [INPUT] [options]
 | `--max-tokens <N>` | Trim the compressed output to at most _N_ tokens, keeping the highest-scoring lines first (LLM context-budget mode). Survivors stay in original order. | _(off)_ |
 | `--collapse-stacks` | Collapse repeated stack-trace windows that differ only in memory addresses, Go offsets or goroutine ids into a single `[xN]` group. Pairs well with `--multiline`. | off |
 | `--dedupe-window <N>` | Collapse non-adjacent duplicate lines seen within the last _N_ distinct lines into a single `[xN]` group. `1` keeps adjacent-only deduplication. | `1` |
+| `--root-cause` | Drop downstream cascade restatements (e.g. `aborting due to previous errors`, `skipped because the upstream job failed`) so the original root error stands out. | off |
 | `--max-line-length <n>` | Truncate lines longer than _n_ characters. Very long lines (e.g. minified bundles) are replaced with `[TRUNCATED]`. | `100000` |
 | `--timeout <s>` | Stop processing after _s_ seconds. The output is flushed and `timedOut: true` is set in the result. | _(off)_ |
 | `--progress` | Show a progress bar on stderr (file input only, requires `--output`). | off |

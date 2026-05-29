@@ -1941,6 +1941,24 @@ describe('logstrip parser', () => {
     });
   });
 
+  describe('rootCause cascade pruning', () => {
+    const input = [
+      '[ERROR] E0382: borrow of moved value `config`',
+      'error: aborting due to 2 previous errors',
+    ].join('\n');
+
+    it('drops cascade restatements when enabled', async () => {
+      const { output } = await processLogString(input, { rootCause: true });
+      expect(output).toContain('E0382');
+      expect(output).not.toContain('aborting due to');
+    });
+
+    it('keeps cascade restatements by default', async () => {
+      const { output } = await processLogString(input);
+      expect(output).toContain('aborting due to');
+    });
+  });
+
   it('createLogStripTransform works with stream consumers', async () => {
     const transform = createLogStripTransform();
     const chunks: Buffer[] = [];
@@ -2037,6 +2055,14 @@ describe('logstrip parser', () => {
     expect(explainLogLine('[INFO] boot', { severity: 'error' }).reason).toBe(
       'severity',
     );
+    expect(
+      explainLogLine('error: aborting due to 2 previous errors', {
+        rootCause: true,
+      }).reason,
+    ).toBe('cascade');
+    expect(
+      explainLogLine('error: aborting due to 2 previous errors').reason,
+    ).not.toBe('cascade');
     expect(explainLogLine('2024-01-01T00:00:00Z').reason).toBe('ci-noise');
     expect(explainLogLine('Downloading package 50%').reason).toBe('progress');
     expect(explainLogLine('[INFO] boot').reason).toBe('ignored-tag');

@@ -59,6 +59,8 @@ Options:
                            only in addresses/offsets into a single [xN] group.
       --dedupe-window <N>  Collapse non-adjacent duplicate lines seen within
                            the last N distinct lines. Default: 1 (adjacent only).
+      --root-cause         Drop downstream cascade restatements (e.g. "aborting
+                           due to previous errors") so the root error stands out.
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -100,6 +102,7 @@ export interface CliOptions {
   maxTokens?: number;
   collapseRepeatedStacks: boolean;
   dedupeWindow?: number;
+  rootCause: boolean;
   telemetry: boolean;
   help: boolean;
   version: boolean;
@@ -158,6 +161,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         'max-tokens': { type: 'string' },
         'collapse-stacks': { type: 'boolean', default: false },
         'dedupe-window': { type: 'string' },
+        'root-cause': { type: 'boolean', default: false },
         'max-line-length': { type: 'string' },
         timeout: { type: 'string' },
         progress: { type: 'boolean', default: false },
@@ -301,6 +305,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     maxTokens,
     collapseRepeatedStacks: parsed.values['collapse-stacks'] === true,
     dedupeWindow,
+    rootCause: parsed.values['root-cause'] === true,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
@@ -487,6 +492,7 @@ export async function runCli(
       maxTokens: options.maxTokens,
       collapseRepeatedStacks: options.collapseRepeatedStacks,
       dedupeWindow: options.dedupeWindow,
+      rootCause: options.rootCause,
     };
     result = await processLogStreamWithTimeout(
       input,

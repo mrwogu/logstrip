@@ -62,6 +62,7 @@ import {
   type PemBlockState,
 } from './sanitize/pem-block.js';
 import { passesSeverityFilter } from './severity/severity-filter.js';
+import { isCascadeNoiseLine } from './scoring/cascade-filter.js';
 import type { SeverityLevel } from './severity/severity-filter.js';
 import {
   estimateTokens,
@@ -119,6 +120,7 @@ export {
   type BudgetResult,
   applyTokenBudget,
 } from './budget/token-budget.js';
+export { isCascadeNoiseLine } from './scoring/cascade-filter.js';
 export { sanitizeLine } from './sanitize/sanitize-line.js';
 export {
   createPemBlockState,
@@ -299,6 +301,7 @@ export async function processLogStream(
   // Sliding dedup window: 1 = adjacent-only (default), >1 collapses
   // non-adjacent duplicates seen within the last N distinct lines.
   const dedupeWindowSize = Math.max(1, Math.floor(options.dedupeWindow ?? 1));
+  const rootCause = options.rootCause === true;
   const tokenEstimator = options.tokenEstimator;
   const maxTokens =
     options.maxTokens !== undefined ? Math.max(0, Math.floor(options.maxTokens)) : undefined;
@@ -545,6 +548,13 @@ export async function processLogStream(
     // errors do not close the context window prematurely.
     if (isIgnoredLogLine(line)) {
       dropLine(line, physicalLineCount, 'ignored-tag');
+      continue;
+    }
+
+    // Root-cause anchoring: drop downstream cascade restatements so the
+    // original error stands out.
+    if (rootCause && isCascadeNoiseLine(line)) {
+      dropLine(line, physicalLineCount, 'cascade');
       continue;
     }
 
@@ -957,6 +967,9 @@ export function explainLogLine(
   }
   if (isIgnoredLogLine(line)) {
     return createDecision(line, undefined, false, 'ignored-tag');
+  }
+  if (options.rootCause === true && isCascadeNoiseLine(line)) {
+    return createDecision(line, undefined, false, 'cascade');
   }
 
   let sanitized = sanitizeLine(line, options.preserveIdSuffix ?? 0);
