@@ -67,6 +67,7 @@ export interface LogStripOptions {
   dedupe?: boolean;
   tokenEstimator?: (line: string) => number;
   preserveIdSuffix?: number;
+  maxTokens?: number;
 }
 
 export interface LogStripStats {

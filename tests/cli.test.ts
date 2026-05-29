@@ -610,6 +610,26 @@ describe('runCli', () => {
     expect(opts.timeout).toBe(30000);
   });
 
+  it('parses --max-tokens flag', () => {
+    const opts = parseCliOptions(['raw.log', '--max-tokens', '5000']);
+    expect(opts.maxTokens).toBe(5000);
+
+    const opts2 = parseCliOptions(['raw.log']);
+    expect(opts2.maxTokens).toBeUndefined();
+  });
+
+  it('rejects invalid --max-tokens values', () => {
+    const check = (val: string) => {
+      try { parseCliOptions(['raw.log', '--max-tokens', val]); return undefined; }
+      catch (e) { return e; }
+    };
+
+    expect(check('0')).toBeInstanceOf(CliError);
+    expect(check('-5')).toBeInstanceOf(CliError);
+    expect(check('abc')).toBeInstanceOf(CliError);
+    expect((check('0') as CliError).exitCode).toBe(2);
+  });
+
   it('parses --progress flag', () => {
     const opts = parseCliOptions(['raw.log', '--progress', '-o', 'out.log']);
     expect(opts.progress).toBe(true);

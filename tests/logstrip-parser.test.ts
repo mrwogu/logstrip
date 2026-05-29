@@ -1822,6 +1822,51 @@ describe('logstrip parser', () => {
     expect(result.stats.outputLines).toBe(1);
   });
 
+  describe('maxTokens budget', () => {
+    const threeErrors = [
+      '[ERROR] critical alpha failed',
+      '[ERROR] critical beta failed',
+      '[ERROR] critical gamma failed',
+    ].join('\n');
+
+    it('keeps the full output when it already fits the budget', async () => {
+      const result = await processLogString(threeErrors, { maxTokens: 10_000 });
+      expect(result.output).toBe(`${threeErrors}\n`);
+      expect(result.stats.outputLines).toBe(3);
+    });
+
+    it('trims output to the highest-scoring lines under the budget', async () => {
+      const result = await processLogString(threeErrors, { maxTokens: 12 });
+      const kept = result.output.trimEnd().split('\n');
+      expect(kept.length).toBe(2);
+      expect(result.output).toContain('alpha');
+      expect(result.output).toContain('beta');
+      expect(result.output).not.toContain('gamma');
+      expect(result.stats.outputLines).toBe(2);
+      expect(result.stats.droppedLines).toBeGreaterThanOrEqual(1);
+    });
+
+    it('prioritises errors over low-scored context lines', async () => {
+      const input = [
+        'plain context line one',
+        'plain context line two',
+        '[ERROR] payment service crashed',
+      ].join('\n');
+      const result = await processLogString(input, { maxTokens: 6 });
+      expect(result.output).toContain('[ERROR] payment service crashed');
+    });
+
+    it('honours a custom tokenEstimator while budgeting', async () => {
+      const result = await processLogString(threeErrors, {
+        maxTokens: 40,
+        tokenEstimator: (line) => line.length,
+      });
+      const kept = result.output.trimEnd().split('\n');
+      expect(kept.length).toBe(1);
+      expect(result.outputTokens).toBeLessThanOrEqual(40);
+    });
+  });
+
   it('createLogStripTransform works with stream consumers', async () => {
     const transform = createLogStripTransform();
     const chunks: Buffer[] = [];

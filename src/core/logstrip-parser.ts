@@ -42,6 +42,7 @@ import {
   isContinuationLine,
 } from './multiline/multiline-buffer.js';
 import { effectiveMultilineMode } from './multiline/auto-multiline-resolver.js';
+import { applyTokenBudget, type BudgetLine } from './budget/token-budget.js';
 import {
   accessBucketPush,
   flushAccessBucket,
@@ -107,6 +108,11 @@ export {
   effectiveMultilineMode,
   resolveAutoMultiline,
 } from './multiline/auto-multiline-resolver.js';
+export {
+  type BudgetLine,
+  type BudgetResult,
+  applyTokenBudget,
+} from './budget/token-budget.js';
 export { sanitizeLine } from './sanitize/sanitize-line.js';
 export {
   createPemBlockState,
@@ -281,6 +287,9 @@ export async function processLogStream(
   const dedupeEnabled =
     options.dedupe !== false && options.outputFormat !== 'jsonl-preserve';
   const tokenEstimator = options.tokenEstimator;
+  const maxTokens =
+    options.maxTokens !== undefined ? Math.max(0, Math.floor(options.maxTokens)) : undefined;
+  const budgetBuffer: BudgetLine[] | null = maxTokens !== undefined ? [] : null;
   let inputTokensFromEstimator = 0;
   let outputTokensFromEstimator = 0;
 
@@ -333,7 +342,7 @@ export async function processLogStream(
     recordLineDecision(dynamicAggressiveness, decision);
   };
 
-  const emitOutputLine = async (line: string): Promise<boolean> => {
+  const emitOutputLine = async (line: string, score = 0): Promise<boolean> => {
     if (sampleSize !== undefined && outputLineCount >= sampleSize) {
       stats.droppedLines += line.split('\n').length;
       recordDecision({
@@ -347,12 +356,21 @@ export async function processLogStream(
       return false;
     }
     outputLineCount += 1;
+    if (budgetBuffer !== null) {
+      budgetBuffer.push({ text: line, score, tokens: estimateOutputLineTokens(line) });
+      return true;
+    }
     if (tokenEstimator !== undefined) {
       outputTokensFromEstimator += estimateLineTokens(tokenEstimator, `${line}\n`);
     }
     await writeOutputLine(output, line, stats);
     return true;
   };
+
+  const estimateOutputLineTokens = (line: string): number =>
+    tokenEstimator !== undefined
+      ? estimateLineTokens(tokenEstimator, `${line}\n`)
+      : estimateTokens(countWords(line));
 
   const flushPreviousLine = async (): Promise<void> => {
     if (previousGroup === undefined) {
@@ -368,26 +386,26 @@ export async function processLogStream(
       stats.duplicateLines += previousGroup.count - 1;
     }
 
-    await emitOutputLine(line);
+    await emitOutputLine(line, previousGroup.score);
     previousGroup = undefined;
   };
 
-  const emitCandidate = async (line: string): Promise<void> => {
+  const emitCandidate = async (line: string, score = 0): Promise<void> => {
     if (!dedupeEnabled) {
       await flushPreviousLine();
-      await emitOutputLine(line);
+      await emitOutputLine(line, score);
       return;
     }
 
     const signature = createRepeatSignature(line);
 
     if (previousGroup?.signature === signature) {
-      addRepeatGroupLine(previousGroup, line);
+      addRepeatGroupLine(previousGroup, line, score);
       return;
     }
 
     await flushPreviousLine();
-    previousGroup = createRepeatGroup(line);
+    previousGroup = createRepeatGroup(line, score);
   };
 
   // Flush buffered context lines (retroactive promotion near an error)
@@ -543,7 +561,7 @@ export async function processLogStream(
 
       if (!hidingInternalStack) {
         await flushContextBefore();
-        await emitCandidate(INTERNAL_STACK_MARKER);
+        await emitCandidate(INTERNAL_STACK_MARKER, SCORE_KEEP_THRESHOLD);
         hidingInternalStack = true;
         afterContextRemaining = 0;
       }
@@ -587,7 +605,7 @@ export async function processLogStream(
         // through to standard context-window buffering.
         if (parsed >= 80) {
           await flushContextBefore();
-          await emitCandidate(sanitized);
+          await emitCandidate(sanitized, parsed);
           afterContextRemaining = contextWindowAfter;
           recordDecision({
             line,
@@ -627,7 +645,7 @@ export async function processLogStream(
     if (score >= SCORE_KEEP_THRESHOLD) {
       // Hard keep: flush buffered context, emit, open after-context window
       await flushContextBefore();
-      await emitCandidate(sanitized);
+      await emitCandidate(sanitized, score);
       afterContextRemaining = contextWindowAfter;
       recordDecision({
         line,
@@ -641,7 +659,7 @@ export async function processLogStream(
       });
     } else if (afterContextRemaining > 0) {
       // Inside after-context window: emit regardless of score
-      await emitCandidate(sanitized);
+      await emitCandidate(sanitized, score);
       afterContextRemaining -= 1;
       recordDecision({
         line,
@@ -730,10 +748,21 @@ export async function processLogStream(
     stats.outputWords += countWords(warningLine);
     stats.outputBytes += Buffer.byteLength(`${warningLine}\n`, 'utf8');
     stats.truncatedLines = stats.truncatedLines! + 1;
-    await emitOutputLine(warningLine);
+    await emitOutputLine(warningLine, Number.MAX_SAFE_INTEGER);
   }
 
   await flushPreviousLine();
+
+  if (budgetBuffer !== null) {
+    const budgeted = applyTokenBudget(budgetBuffer, maxTokens!);
+    stats.droppedLines += budgeted.droppedPhysicalLines;
+    for (const item of budgeted.kept) {
+      if (tokenEstimator !== undefined) {
+        outputTokensFromEstimator += item.tokens;
+      }
+      await writeOutputLine(output, item.text, stats);
+    }
+  }
 
   const inputTokens =
     tokenEstimator === undefined
