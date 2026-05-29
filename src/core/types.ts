@@ -12,6 +12,7 @@ export type LogStripErrorCode =
   | 'TIMEOUT';
 export type LogStripDecisionReason =
   | 'after-context'
+  | 'cascade'
   | 'ci-noise'
   | 'context-buffered'
   | 'context-disabled'
@@ -70,6 +71,7 @@ export interface LogStripOptions {
   maxTokens?: number;
   collapseRepeatedStacks?: boolean;
   dedupeWindow?: number;
+  rootCause?: boolean;
 }
 
 export interface LogStripStats {

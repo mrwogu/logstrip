@@ -658,6 +658,14 @@ describe('runCli', () => {
     expect((check('0') as CliError).exitCode).toBe(2);
   });
 
+  it('parses --root-cause flag', () => {
+    const opts = parseCliOptions(['raw.log', '--root-cause']);
+    expect(opts.rootCause).toBe(true);
+
+    const opts2 = parseCliOptions(['raw.log']);
+    expect(opts2.rootCause).toBe(false);
+  });
+
   it('parses --progress flag', () => {
     const opts = parseCliOptions(['raw.log', '--progress', '-o', 'out.log']);
     expect(opts.progress).toBe(true);
