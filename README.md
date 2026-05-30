@@ -420,17 +420,18 @@ console.log(`saved ${result.savedTokens} tokens (${result.savingsPercent}%)`);
 ```
 
 `processLogStream(input, output, options)` is also exported for non-file streams
-(stdin, network sockets, custom transforms). Pass `configPath` (or an inline
-`config`) in options for custom config integration. Additional options:
-`include`, `exclude`, `sampleSize`, `maxLineLength`, `maxTokens`, `dedupeWindow`,
-`collapseBlocks`, `formatDetectionSampleSize`, `preserveIdSuffix`,
-`contextBefore`, `contextAfter`, `dedupe`, `outputFormat`, and the tri-state
-boosters `collapseRepeatedStacks`, `rootCause`, `multilingual`,
-`adaptiveContext` (all default-on in `auto`; set to `false` to disable).
-Programmatic hooks `signal` (`AbortSignal`), `onDecision` (per-line decision
-callback), and `tokenEstimator` (custom token counter) are also accepted; see
-the [core reference](docs/reference/core.md) for the full table.
-Use `processLogStreamWithTimeout` for time-bounded processing - it sets
+(stdin, network sockets, custom transforms). `LogStripOptions` groups into:
+
+- **Filtering & limits** — `include`, `exclude`, `sampleSize`, `maxLineLength`, `maxTokens`
+- **Dedupe & folding** — `dedupe`, `dedupeWindow`, `collapseBlocks`
+- **Context & sanitization** — `contextBefore`, `contextAfter`, `preserveIdSuffix`
+- **Auto-mode boosters** (default-on; set `false` to disable) — `collapseRepeatedStacks`, `rootCause`, `multilingual`, `adaptiveContext`
+- **Detection & output** — `formatDetectionSampleSize`, `outputFormat`
+- **Custom config** — `config` (inline) or `configPath` (path to `.logstrip.yml`)
+- **Programmatic hooks** — `signal` (`AbortSignal`), `onDecision` (per-line decision callback), `tokenEstimator` (custom token counter)
+
+See the [core reference](docs/reference/core.md) for the full option table.
+For time-bounded processing use `processLogStreamWithTimeout`, which sets
 `result.timedOut = true` when the deadline is reached.
 
 ## GitHub Action <a id="github-action"></a>
