@@ -52,9 +52,16 @@ body,
   display: none !important;
 }
 
-.md-main__inner:has(.logstrip-hero) .md-sidebar--primary,
-.md-main__inner:has(.logstrip-hero) .md-sidebar--secondary {
-  display: none;
+/* Hide sidebars on the hero (landing) page only on desktop, where they are
+ * rendered inline next to .md-content. On mobile / tablet, .md-sidebar--primary
+ * IS the slide-in navigation drawer toggled by the hamburger button, so hiding
+ * it would break the mobile menu. MkDocs Material switches to the desktop
+ * sidebar layout at 76.25em. */
+@media screen and (min-width: 76.25em) {
+  .md-main__inner:has(.logstrip-hero) .md-sidebar--primary,
+  .md-main__inner:has(.logstrip-hero) .md-sidebar--secondary {
+    display: none;
+  }
 }
 
 .md-main__inner:has(.logstrip-hero) .md-content {
@@ -1207,11 +1214,11 @@ html {
   display: flex;
   width: max-content;
   gap: 0.45rem;
-  animation: logstrip-marquee 50s linear infinite;
+  animation: logstrip-marquee 28s linear infinite;
 }
 
 .logstrip-ecosystem-marquee__row--reverse .logstrip-ecosystem-marquee__track {
-  animation: logstrip-marquee-reverse 55s linear infinite;
+  animation: logstrip-marquee-reverse 32s linear infinite;
 }
 
 .logstrip-ecosystem-marquee__row:hover .logstrip-ecosystem-marquee__track {

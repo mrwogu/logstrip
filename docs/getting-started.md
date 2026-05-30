@@ -106,15 +106,11 @@ the full contract.
   run: your-ai-agent analyze --file "${{ steps.logstrip.outputs.output-path }}"
 ```
 
-## Verify locally
+## Next steps
 
-```bash
-npm install
-npm run typecheck
-npm run test:coverage
-npm run build
-node dist/cli/index.js --help
-```
+- [CLI Reference](reference/cli.md) - every flag, exit code, JSON schema.
+- [Configuration](guides/configuration.md) - custom sources and patterns via `.logstrip.yml`.
+- [Agent Plugins](guides/plugins.md) - drop-in instructions for Claude Code, Copilot, Cursor, Codex, Droid, and OpenCode.
+- [Examples](examples/index.md) - real-world CI recipes.
 
-The parser is stream-based, so local verification never requires loading the
-full log into memory.
+Want to hack on LogStrip itself? See [CONTRIBUTING.md](https://github.com/mrwogu/logstrip/blob/main/CONTRIBUTING.md).

@@ -11,6 +11,12 @@ GitHub Step Summary for free.
 
 [![Publish to GitHub Marketplace](https://img.shields.io/badge/marketplace-LogStrip-blue?logo=githubactions&logoColor=white)](https://github.com/marketplace/actions/logstrip)
 
+!!! tip "CLI is preferred"
+    The CLI is the canonical interface. Use this action only when a one-step,
+    GitHub-native integration with a Step Summary is more convenient than a
+    `run:` step. Everything below is achievable with the CLI plus four lines
+    of YAML.
+
 If you can call shell from your workflow, prefer the CLI directly:
 
 ```yaml

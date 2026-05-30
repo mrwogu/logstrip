@@ -122,4 +122,9 @@ nav:
       - Security: guides/security.md
       - Troubleshooting: guides/troubleshooting.md
   - Examples:
-      - examples/index.md
+      - Cookbook: examples/index.md
+      - npm test: examples/npm-test.md
+      - pytest: examples/pytest.md
+      - docker compose: examples/docker-compose.md
+      - Kubernetes: examples/k8s.md
+      - Jenkins: examples/jenkins.md
