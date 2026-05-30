@@ -7,6 +7,7 @@ When a task involves CI, build, test, runtime, scanner, or deployment logs, prep
 When the user pastes content that resembles log output into the chat, automatically compress it with LogStrip before analysing.
 
 **Detection heuristics** - treat the paste as log output when 2+ of these match:
+
 - Timestamps (ISO 8601, `HH:MM:SS`, relative deltas)
 - Log levels (`[INFO]`, `[ERROR]`, `WARN`, `DEBUG`, `FATAL`)
 - Stack traces (`at package.Class.method(`)
@@ -14,6 +15,7 @@ When the user pastes content that resembles log output into the chat, automatica
 - Repeated line patterns across 5+ lines
 
 **Auto-activation procedure:**
+
 1. Write the pasted content to a temp file: `mktemp` → `<temp>.log`
 2. Run `logstrip <temp>.log -o <temp>.log.logstrip.log --stats`
 3. If `logstrip` is not installed, suggest: `npm i -g logstrip`

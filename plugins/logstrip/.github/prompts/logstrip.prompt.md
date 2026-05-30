@@ -1,6 +1,6 @@
 ---
+description: 'Compress a log with LogStrip and report token savings. Auto-detects pasted log output.'
 mode: agent
-description: Compress a log with LogStrip and report token savings. Auto-detects pasted log output.
 ---
 
 # LogStrip log compression

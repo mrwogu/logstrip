@@ -1,0 +1,57 @@
+# LogStrip plugin content - Claude flavor.
+# Produces the claude-targeted skill, command, and agents for the bundle.
+@meta {
+  id: "logstrip-plugin-claude"
+  syntax: "1.2.0"
+}
+
+@use ./shared-agents
+
+@skills {
+  logstrip: {
+    description: "Compress noisy CI, build, runtime, and test logs with the LogStrip CLI. Use when the user asks to trim, compress, reduce, or prepare logs for LLM analysis, or when the user pastes log-like output (timestamps, log levels, stack traces, CI markers)."
+    userInvocable: true
+    content: """
+      # LogStrip Log Compression
+
+      Use LogStrip when a user provides or points to a verbose log and wants the diagnostic signal preserved while noise is removed.
+
+      ## Procedure
+
+      1. Identify the input log path and desired output path. If no output path is given, use `<input>.logstrip.log`.
+      2. Verify `logstrip` is already installed. If missing, instruct the user to run `npm i -g logstrip`.
+      3. Run `logstrip <input> -o <output> --stats`, adding `--aggressiveness <level>` when requested.
+      4. Report the output path, savings percentage, estimated input/output tokens, dropped lines, duplicate lines, and hidden internal stack lines.
+      5. If the command fails, show the concise error and suggest the smallest next step.
+
+      ## Guardrails
+
+      - Do not print raw logs unless the user explicitly asks for excerpts.
+      - Do not install packages automatically.
+      - Do not use `--json` unless an output path is present.
+      - Keep stats separate from compressed content when piping.
+      """
+  }
+}
+
+@shortcuts {
+  "/logstrip": {
+    prompt: true
+    description: "Compress a log with LogStrip and report token savings. Also auto-detects pasted log output."
+    content: """
+      Use the LogStrip CLI to compress the log described in `$ARGUMENTS`.
+
+      If the user pasted log-like output instead of providing a file path, write the pasted content to a temp file first, then compress it.
+
+      Workflow:
+
+      1. Parse the input path, optional output path, and optional aggressiveness level from `$ARGUMENTS`.
+      2. Verify `logstrip` is available with `logstrip --version`.
+      3. If the binary does not exist, tell the user to install it with `npm i -g logstrip`; do not install it automatically.
+      4. Run the CLI with `--stats`, using `-o <output-log>` when an output path is provided.
+      5. Summarize the output path, savings percentage, input/output token estimates, dropped lines, duplicate lines, and hidden internal stack lines.
+
+      Do not paste full raw logs back into the conversation.
+      """
+  }
+}

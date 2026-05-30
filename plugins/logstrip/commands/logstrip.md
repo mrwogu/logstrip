@@ -1,5 +1,5 @@
 ---
-description: Compress a log with LogStrip and report token savings. Also auto-detects pasted log output.
+description: 'Compress a log with LogStrip and report token savings. Also auto-detects pasted log output.'
 argument-hint: <input-log> [--output <output-log>] [--aggressiveness low|medium|high|aggressive|auto]
 ---
 

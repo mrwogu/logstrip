@@ -1,6 +1,6 @@
 ---
-name: logstrip
-description: Compress noisy CI, build, runtime, and test logs with the LogStrip CLI. Use when the user asks to trim, compress, reduce, or prepare logs for LLM analysis, or when the user pastes log-like output (timestamps, log levels, stack traces, CI markers).
+name: 'logstrip'
+description: 'Compress noisy CI, build, runtime, and test logs with the LogStrip CLI. Use when the user asks to trim, compress, reduce, or prepare logs for LLM analysis, or when the user pastes log-like output (timestamps, log levels, stack traces, CI markers).'
 user-invocable: true
 ---
 
