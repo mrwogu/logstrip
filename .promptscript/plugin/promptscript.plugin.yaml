@@ -11,9 +11,14 @@ universalDir: false
 includePromptScriptSkill: false
 input:
   entry: .promptscript/plugin/codex.prs
+  include: ['.promptscript/plugin/**/*.prs']
 targets:
   - codex
 builds:
+  plugin-claude:
+    entry: .promptscript/plugin/claude.prs
+    targets:
+      - claude
   plugin-codex:
     entry: .promptscript/plugin/codex.prs
     targets:
@@ -22,3 +27,27 @@ builds:
     entry: .promptscript/plugin/opencode.prs
     targets:
       - opencode
+  plugin-opencode-command:
+    entry: .promptscript/plugin/opencode-command.prs
+    targets:
+      - opencode
+  plugin-github:
+    entry: .promptscript/plugin/github.prs
+    targets:
+      - github
+  plugin-factory:
+    entry: .promptscript/plugin/factory.prs
+    targets:
+      - factory
+  plugin-cursor-rule-main:
+    entry: .promptscript/plugin/cursor-rule-main.prs
+    targets:
+      - codex
+  plugin-cursor-rule-paste:
+    entry: .promptscript/plugin/cursor-rule-paste.prs
+    targets:
+      - codex
+  plugin-github-instructions:
+    entry: .promptscript/plugin/github-instructions.prs
+    targets:
+      - codex
