@@ -3,21 +3,20 @@ title: Log Compression CLI for AI Agents
 description: Free, zero-dependency CLI that compresses noisy logs into high-signal AI context. 705+ detected ecosystems, stream-safe, deterministic output. Install with npm.
 ---
 
-<h1 class="logstrip-sr-only">LogStrip - Log Compression CLI for AI Agents</h1>
-
 <section class="logstrip-hero" markdown="1">
 <div class="logstrip-hero__inner" markdown="1">
 <div class="logstrip-hero__copy" markdown="1">
 <p class="logstrip-kicker">cli compression for agentic pipelines</p>
 
 # smaller logs. cleaner agents.
+<span class="logstrip-sr-only">LogStrip - log compression CLI for AI agents.</span>
 
 <p class="logstrip-lede">A zero-dependency CLI that turns chaotic server logs, build pipelines, vulnerability scanners, and container workloads into compact, high-signal context that AI agents can actually reason about.</p>
 
-<p class="logstrip-actions">
+<div class="logstrip-actions">
   <a class="logstrip-button" href="getting-started/">install the cli</a>
   <a class="logstrip-button logstrip-button--ghost" href="guides/plugins/">agent plugins</a>
-</p>
+</div>
 </div>
 
 <div class="logstrip-demo logstrip-demo--toggle" data-logstrip-compare aria-label="Interactive raw-to-LogStrip terminal comparison">
@@ -183,20 +182,12 @@ LogStrip produces deterministic, AI-ready logs that are cheaper to analyze.
 </div>
 
 
-### validation that catches regressions
-
-<div class="logstrip-grid" markdown="1">
-<div class="logstrip-card" data-logstrip-reveal data-delay="1" markdown="1"><span class="logstrip-metric">snapshots</span>Golden outputs lock down exact compression behavior, including sanitization, duplicate-shaped grouping, context windows, and hidden internal frames.</div>
-<div class="logstrip-card" data-logstrip-reveal data-delay="2" markdown="1"><span class="logstrip-metric">smoke corpus</span>Fixtures cover noisy server logs, CI failures, scanner findings, container crashes, Spring Boot stacks, nginx upstream failures, and Node runtime crashes.</div>
-<div class="logstrip-card" data-logstrip-reveal data-delay="3" markdown="1"><span class="logstrip-metric">100%</span>TypeScript units and smoke tests run under a strict **100/100/100/100** coverage gate before release.</div>
-</div>
-
 ### why teams keep it in every pipeline
 
 <div class="logstrip-grid" markdown="1">
 <div class="logstrip-card" data-logstrip-reveal data-delay="1" markdown="1"><span class="logstrip-metric">ops-first</span>Built for incident workflows where raw logs hit AI assistants under pressure.</div>
 <div class="logstrip-card" data-logstrip-reveal data-delay="2" markdown="1"><span class="logstrip-metric">700+</span>Automatic source awareness across CI, runtimes, scanners, infra, and cloud logs.</div>
-<div class="logstrip-card" data-logstrip-reveal data-delay="3" markdown="1"><span class="logstrip-metric">deterministic</span>Snapshot-tested output and a strict **100/100/100/100** quality gate.</div>
+<div class="logstrip-card" data-logstrip-reveal data-delay="3" markdown="1"><span class="logstrip-metric">deterministic</span>Snapshot-tested output, fixtures spanning CI, runtimes, scanners and crashes, locked behind a **100/100/100/100** coverage gate.</div>
 <div class="logstrip-card" data-logstrip-reveal data-delay="4" markdown="1"><span class="logstrip-metric">cheaper prompts</span>Lower token usage per incident while keeping root-cause context intact.</div>
 </div>
 
@@ -215,49 +206,19 @@ LogStrip produces deterministic, AI-ready logs that are cheaper to analyze.
 
 ## cli in one line
 
-`logstrip` and `logstrip` are two command names for the same CLI executable.
-
-```bash
-logstrip raw.log -o clean.log --stats
-```
-
-The CLI writes the compressed log to `clean.log` and a short stats block to
-`stderr`. Stdin and stdout are supported too:
-
-```bash
-cat raw.log | logstrip > clean.log
-```
-
-You can also run it instantly without installation via `npx`:
-
 ```bash
 npx -y logstrip raw.log -o clean.log --stats
 ```
 
-Run `logstrip --help` for every flag, or read the [CLI reference](reference/cli.md).
-
-## optional: github action
-
-When you would rather not call the CLI from a `run:` step, the same parser is
-exposed as a thin GitHub Action wrapper:
-
-```yaml
-- name: Compress logs with LogStrip
-  uses: mrwogu/logstrip@v1
-  id: logstrip
-  with:
-    log-path: raw_logs.txt
-    aggressiveness: auto
-```
-
-The action writes `steps.logstrip.outputs.output-path` and a GitHub Step Summary
-with estimated input tokens, output tokens, and savings.
+Writes the compressed log to `clean.log` and a stats block to `stderr`.
+Stdin/stdout, file I/O, JSON reports and a GitHub Action wrapper are all
+covered in [Getting Started](getting-started.md).
 
 ## next steps
 
-- [Getting Started](getting-started.md)
-- [CLI Reference](reference/cli.md)
-- [Core TypeScript API](reference/core.md)
-- [GitHub Action](reference/action.md)
-- [Plugin Installation](guides/plugins.md)
-- [Workflow Examples](examples/index.md)
+- [Getting Started](getting-started.md) - install, pipe, script
+- [CLI Reference](reference/cli.md) - every flag and exit code
+- [Core TypeScript API](reference/core.md) - embed the parser
+- [GitHub Action](reference/action.md) - optional workflow wrapper
+- [Plugin Installation](guides/plugins.md) - Claude, Copilot, Cursor, Codex, Droid, OpenCode
+- [Workflow Examples](examples/index.md) - real CI recipes
