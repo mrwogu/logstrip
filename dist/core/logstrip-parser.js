@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LogStripError = exports.saveTelemetry = exports.recordTelemetry = exports.loadTelemetry = exports.formatTelemetrySummary = exports.resolveConfigPath = exports.parseLogStripConfig = exports.LOG_SOURCE_SIGNATURES = exports.KNOWN_LOG_SOURCES = exports.shouldKeepLine = exports.scoreLineRelevance = exports.looksLikeDiagnosticLine = exports.isProgressBarLine = exports.isCiNoiseLine = exports.isInternalStackTraceLine = exports.isAccessLogNoiseLine = exports.estimateTokens = exports.maskPemBlock = exports.createPemBlockState = exports.sanitizeLine = exports.planBlockDedupe = exports.isMultilingualDiagnosticLine = exports.isCascadeNoiseLine = exports.applyTokenBudget = exports.resolveAutoMultiline = exports.effectiveMultilineMode = exports.isContinuationLine = exports.detectLogSources = exports.stackWindowSignature = exports.normalizeStackFrameLineCol = exports.createRepeatSignature = exports.TFIDF_REPEAT_THRESHOLD = exports.TFIDF_PENALTY = exports.TFIDF_MAP_LIMIT = exports.SCORE_KEEP_THRESHOLD = exports.MAX_REPEAT_DELTA_VALUES = exports.INTERNAL_STACK_MARKER = exports.CONTEXT_WINDOW_BEFORE = exports.CONTEXT_WINDOW_AFTER = exports.parseAggressiveness = exports.voteFormat = exports.decideFormat = exports.createFormatVoter = exports.detectFormat = exports.passesSeverityFilter = exports.parseSeverityLevel = exports.inferSeverity = void 0;
+exports.LogStripError = exports.saveTelemetry = exports.recordTelemetry = exports.loadTelemetry = exports.formatTelemetrySummary = exports.resolveConfigPath = exports.parseLogStripConfig = exports.LOG_SOURCE_SIGNATURES = exports.KNOWN_LOG_SOURCES = exports.shouldKeepLine = exports.scoreLineRelevance = exports.looksLikeDiagnosticLine = exports.isProgressBarLine = exports.isCiNoiseLine = exports.isInternalStackTraceLine = exports.isAccessLogNoiseLine = exports.estimateTokens = exports.maskPemBlock = exports.createPemBlockState = exports.sanitizeLine = exports.planBlockDedupe = exports.isMultilingualDiagnosticLine = exports.isCascadeNoiseLine = exports.resolveAdaptiveAfterWindow = exports.neutralErrorGap = exports.buildAdaptiveAfterBounds = exports.applyTokenBudget = exports.resolveAutoMultiline = exports.effectiveMultilineMode = exports.isContinuationLine = exports.detectLogSources = exports.stackWindowSignature = exports.normalizeStackFrameLineCol = exports.createRepeatSignature = exports.TFIDF_REPEAT_THRESHOLD = exports.TFIDF_PENALTY = exports.TFIDF_MAP_LIMIT = exports.SCORE_KEEP_THRESHOLD = exports.MAX_REPEAT_DELTA_VALUES = exports.INTERNAL_STACK_MARKER = exports.CONTEXT_WINDOW_BEFORE = exports.CONTEXT_WINDOW_AFTER = exports.parseAggressiveness = exports.voteFormat = exports.decideFormat = exports.createFormatVoter = exports.detectFormat = exports.passesSeverityFilter = exports.parseSeverityLevel = exports.inferSeverity = void 0;
 exports.buildMergedConfig = buildMergedConfig;
 exports.processLogStream = processLogStream;
 exports.processLogFile = processLogFile;
@@ -27,6 +27,7 @@ const repeat_grouper_js_1 = require("./dedupe/repeat-grouper.js");
 const source_detector_js_1 = require("./detection/source-detector.js");
 const multiline_buffer_js_1 = require("./multiline/multiline-buffer.js");
 const auto_multiline_resolver_js_1 = require("./multiline/auto-multiline-resolver.js");
+const adaptive_window_js_1 = require("./context/adaptive-window.js");
 const token_budget_js_1 = require("./budget/token-budget.js");
 const block_deduper_js_1 = require("./dedupe/block-deduper.js");
 const access_log_bucket_js_1 = require("./formats/access-log-bucket.js");
@@ -77,6 +78,10 @@ Object.defineProperty(exports, "effectiveMultilineMode", { enumerable: true, get
 Object.defineProperty(exports, "resolveAutoMultiline", { enumerable: true, get: function () { return auto_multiline_resolver_js_2.resolveAutoMultiline; } });
 var token_budget_js_2 = require("./budget/token-budget.js");
 Object.defineProperty(exports, "applyTokenBudget", { enumerable: true, get: function () { return token_budget_js_2.applyTokenBudget; } });
+var adaptive_window_js_2 = require("./context/adaptive-window.js");
+Object.defineProperty(exports, "buildAdaptiveAfterBounds", { enumerable: true, get: function () { return adaptive_window_js_2.buildAdaptiveAfterBounds; } });
+Object.defineProperty(exports, "neutralErrorGap", { enumerable: true, get: function () { return adaptive_window_js_2.neutralErrorGap; } });
+Object.defineProperty(exports, "resolveAdaptiveAfterWindow", { enumerable: true, get: function () { return adaptive_window_js_2.resolveAdaptiveAfterWindow; } });
 var cascade_filter_js_2 = require("./scoring/cascade-filter.js");
 Object.defineProperty(exports, "isCascadeNoiseLine", { enumerable: true, get: function () { return cascade_filter_js_2.isCascadeNoiseLine; } });
 var multilingual_keywords_js_2 = require("./scoring/multilingual-keywords.js");
@@ -198,6 +203,15 @@ async function processLogStream(input, output, options = {}) {
     const sampleSize = options.sampleSize;
     const contextWindowBefore = Math.max(0, Math.floor(options.contextBefore ?? constants_js_1.CONTEXT_WINDOW_BEFORE));
     const contextWindowAfter = Math.max(0, Math.floor(options.contextAfter ?? constants_js_1.CONTEXT_WINDOW_AFTER));
+    // Adaptive context window: ON by default in auto mode. Explicit context
+    // sizes (contextBefore/contextAfter) opt out so a caller-pinned window is
+    // always honored verbatim.
+    const adaptiveContext = options.adaptiveContext ??
+        (requestedAggressiveness === 'auto' &&
+            options.contextBefore === undefined &&
+            options.contextAfter === undefined);
+    const adaptiveBounds = (0, adaptive_window_js_1.buildAdaptiveAfterBounds)(contextWindowAfter);
+    let linesSinceError = (0, adaptive_window_js_1.neutralErrorGap)(adaptiveBounds);
     const dedupeEnabled = options.dedupe !== false && options.outputFormat !== 'jsonl-preserve';
     // Behavioral detection/compression boosters are ON by default in auto mode;
     // pass the matching option explicitly as false (CLI: --no-*) to disable.
@@ -328,6 +342,16 @@ async function processLogStream(input, output, options = {}) {
         }
         contextBefore.length = 0;
     };
+    // Open the context window for a kept error: flush the before-context, open
+    // the after-context window (sized by error density in auto mode), and reset
+    // the error-distance counter that drives that sizing.
+    const openContextWindow = async () => {
+        await flushContextBefore();
+        afterContextRemaining = adaptiveContext
+            ? (0, adaptive_window_js_1.resolveAdaptiveAfterWindow)(linesSinceError, adaptiveBounds)
+            : contextWindowAfter;
+        linesSinceError = 0;
+    };
     const dropLine = (line, physicalLineCount, reason) => {
         stats.droppedLines += physicalLineCount;
         hidingInternalStack = false;
@@ -387,6 +411,10 @@ async function processLogStream(input, output, options = {}) {
             });
             continue;
         }
+        // Distance (in non-empty logical lines) since the last kept error. Drives
+        // the adaptive context window: small gaps mean clustered, self-contextual
+        // errors; large gaps mean isolated errors that warrant more context.
+        linesSinceError += 1;
         if (includePattern !== undefined && !testRegex(includePattern, line)) {
             dropLine(line, physicalLineCount, 'include-filter');
             continue;
@@ -496,9 +524,8 @@ async function processLogStream(input, output, options = {}) {
                 // Hard-keep error/fatal/critical JSON lines; warn lines (50) fall
                 // through to standard context-window buffering.
                 if (parsed >= 80) {
-                    await flushContextBefore();
+                    await openContextWindow();
                     await emitCandidate(sanitized, parsed);
-                    afterContextRemaining = contextWindowAfter;
                     recordDecision({
                         line,
                         sanitizedLine: sanitized,
@@ -531,9 +558,8 @@ async function processLogStream(input, output, options = {}) {
         score += (0, source_detector_js_1.scoreSourceDiagnosticBoost)(sanitized, detectedSourceState, stats.inputLines);
         if (score >= constants_js_1.SCORE_KEEP_THRESHOLD) {
             // Hard keep: flush buffered context, emit, open after-context window
-            await flushContextBefore();
+            await openContextWindow();
             await emitCandidate(sanitized, score);
-            afterContextRemaining = contextWindowAfter;
             recordDecision({
                 line,
                 sanitizedLine: sanitized,

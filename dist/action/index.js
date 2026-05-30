@@ -25826,6 +25826,9 @@ var TFIDF_REPEAT_THRESHOLD = 3;
 var TFIDF_PENALTY = 8;
 var MAX_REPEAT_DELTA_VALUES = 3;
 var DEFAULT_FORMAT_SAMPLE = 50;
+var ADAPTIVE_CONTEXT_DENSE_GAP = 2;
+var ADAPTIVE_CONTEXT_SPARSE_GAP = 12;
+var ADAPTIVE_CONTEXT_AFTER_EXPANSION = 2;
 
 // src/core/dedupe/repeat-grouper.ts
 var STANDALONE_REPEAT_VALUE_PATTERN = /^\d+(?:[.:,-]\d+)*$/u;
@@ -27208,6 +27211,29 @@ function effectiveMultilineMode(requested, detectedSources) {
   return resolveAutoMultiline(detectedSources);
 }
 
+// src/core/context/adaptive-window.ts
+function buildAdaptiveAfterBounds(baseAfter) {
+  return {
+    minAfter: Math.max(1, baseAfter - 1),
+    baseAfter,
+    maxAfter: baseAfter + ADAPTIVE_CONTEXT_AFTER_EXPANSION,
+    denseGap: ADAPTIVE_CONTEXT_DENSE_GAP,
+    sparseGap: ADAPTIVE_CONTEXT_SPARSE_GAP
+  };
+}
+function neutralErrorGap(bounds) {
+  return Math.floor((bounds.denseGap + bounds.sparseGap) / 2);
+}
+function resolveAdaptiveAfterWindow(linesSinceError, bounds) {
+  if (linesSinceError <= bounds.denseGap) {
+    return bounds.minAfter;
+  }
+  if (linesSinceError >= bounds.sparseGap) {
+    return bounds.maxAfter;
+  }
+  return bounds.baseAfter;
+}
+
 // src/core/budget/token-budget.ts
 function physicalLineCount(text) {
   return text.split("\n").length;
@@ -27859,6 +27885,9 @@ async function processLogStream(input, output, options = {}) {
     0,
     Math.floor(options.contextAfter ?? CONTEXT_WINDOW_AFTER)
   );
+  const adaptiveContext = options.adaptiveContext ?? (requestedAggressiveness === "auto" && options.contextBefore === void 0 && options.contextAfter === void 0);
+  const adaptiveBounds = buildAdaptiveAfterBounds(contextWindowAfter);
+  let linesSinceError = neutralErrorGap(adaptiveBounds);
   const dedupeEnabled = options.dedupe !== false && options.outputFormat !== "jsonl-preserve";
   const collapseRepeatedStacks = options.collapseRepeatedStacks !== false;
   const repeatSignature = collapseRepeatedStacks ? (line) => stackWindowSignature(line) ?? createRepeatSignature(line) : createRepeatSignature;
@@ -27972,6 +28001,11 @@ async function processLogStream(input, output, options = {}) {
     }
     contextBefore.length = 0;
   };
+  const openContextWindow = async () => {
+    await flushContextBefore();
+    afterContextRemaining = adaptiveContext ? resolveAdaptiveAfterWindow(linesSinceError, adaptiveBounds) : contextWindowAfter;
+    linesSinceError = 0;
+  };
   const dropLine = (line, physicalLineCount2, reason) => {
     stats.droppedLines += physicalLineCount2;
     hidingInternalStack = false;
@@ -28029,6 +28063,7 @@ async function processLogStream(input, output, options = {}) {
       });
       continue;
     }
+    linesSinceError += 1;
     if (includePattern !== void 0 && !testRegex(includePattern, line)) {
       dropLine(line, physicalLineCount2, "include-filter");
       continue;
@@ -28112,9 +28147,8 @@ async function processLogStream(input, output, options = {}) {
       }
       if (parsed !== void 0) {
         if (parsed >= 80) {
-          await flushContextBefore();
+          await openContextWindow();
           await emitCandidate(sanitized, parsed);
-          afterContextRemaining = contextWindowAfter;
           recordDecision({
             line,
             sanitizedLine: sanitized,
@@ -28146,9 +28180,8 @@ async function processLogStream(input, output, options = {}) {
     }
     score += scoreSourceDiagnosticBoost(sanitized, detectedSourceState, stats.inputLines);
     if (score >= SCORE_KEEP_THRESHOLD) {
-      await flushContextBefore();
+      await openContextWindow();
       await emitCandidate(sanitized, score);
-      afterContextRemaining = contextWindowAfter;
       recordDecision({
         line,
         sanitizedLine: sanitized,

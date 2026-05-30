@@ -283,6 +283,7 @@ const result = await processLogStream(input, output, {
                                 //   differ only in addresses/offsets/goroutine ids
   rootCause: true,              // prune downstream cascade restatements
   multilingual: true,           // detect non-English / CJK error keywords
+  adaptiveContext: true,        // size the after-error context by error density
 
   // Numeric tuning / budget options:
   maxTokens: 8_000,             // trim to the highest-scoring lines within a
@@ -300,6 +301,7 @@ const result = await processLogStream(input, output, {
 | `collapseRepeatedStacks` | `boolean` | auto-on | Folds repeated stack-trace windows differing only in volatile frame data into a single `[xN]` group. |
 | `rootCause` | `boolean` | auto-on | Drops downstream cascade restatements (`aborting due to previous errors`, `could not compile … due to previous error`, `skipped because the upstream job failed`). Conservative - genuine first errors are kept. |
 | `multilingual` | `boolean` | auto-on | Boosts the score of error/failure/exception keywords in 8+ languages plus CJK (`erreur`, `Fehler`, `fallo`, `ошибка`, `错误`, …). |
+| `adaptiveContext` | `boolean` | auto-on | Sizes the after-error context window by error density: wider for isolated errors, tighter for clustered, self-contextualizing ones. Disabled automatically when `contextBefore`/`contextAfter` are set explicitly. |
 | `maxTokens` | `number` | _(off)_ | LLM context-budget mode: keeps the highest-scoring lines until the token budget is reached, preserving original order. |
 | `dedupeWindow` | `number` | `1` | Collapses non-adjacent duplicate lines seen within the last _N_ distinct lines. `1` keeps adjacent-only deduplication. |
 | `collapseBlocks` | `number` | _(off)_ | Collapses consecutive repeats of a multi-line block (up to _N_ lines) into one copy plus a `[block xM]` marker. |

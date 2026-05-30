@@ -60,6 +60,9 @@ Options:
                            restatements (e.g. "aborting due to previous errors").
       --no-multilingual    Disable auto-detection of non-English error/failure
                            keywords (e.g. "erreur", "Fehler", "错误").
+      --no-adaptive-context Disable auto-mode adaptive context windows that
+                           widen around isolated errors and tighten around
+                           clustered ones.
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -124,6 +127,7 @@ function parseCliOptions(argv) {
                 'no-collapse-stacks': { type: 'boolean', default: false },
                 'no-root-cause': { type: 'boolean', default: false },
                 'no-multilingual': { type: 'boolean', default: false },
+                'no-adaptive-context': { type: 'boolean', default: false },
                 'max-line-length': { type: 'string' },
                 timeout: { type: 'string' },
                 progress: { type: 'boolean', default: false },
@@ -286,6 +290,7 @@ function parseCliOptions(argv) {
         formatSample,
         multilingual: parsed.values['no-multilingual'] !== true,
         collapseBlocks,
+        adaptiveContext: parsed.values['no-adaptive-context'] !== true,
         telemetry: parsed.values.telemetry === true,
         help: parsed.values.help === true,
         version: parsed.values.version === true,
@@ -434,6 +439,7 @@ async function runCli(argv, io) {
             formatDetectionSampleSize: options.formatSample,
             multilingual: options.multilingual,
             collapseBlocks: options.collapseBlocks,
+            adaptiveContext: options.adaptiveContext ? undefined : false,
         };
         result = await (0, logstrip_parser_1.processLogStreamWithTimeout)(input, output, logStripOptions, options.timeout);
     }

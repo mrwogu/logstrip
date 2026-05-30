@@ -26,4 +26,3 @@ github.com/example/project/orders.ProcessOrder(...)
         /repo/orders/process.go:42
 github.com/example/project/orders.TestProcessOrder(0xc000082900)
         /repo/orders/process_test.go:[NN] +0x85
-testing.tRunner(0xc000082900, 0x1055748)

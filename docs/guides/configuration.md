@@ -50,7 +50,8 @@ Accepted values:
 `auto` is the default. It starts at `high`, adapts the effective level to the
 log via a sliding decision window, and runs the detection and compression
 boosters (stack-window collapse, root-cause cascade pruning, multilingual
-keyword detection, majority-vote format detection) automatically. The fixed
+keyword detection, majority-vote format detection, adaptive context windows)
+automatically. The fixed
 levels (`low`, `medium`, `high`, `aggressive`) give you deterministic, non-adaptive
 filtering when you need it.
 

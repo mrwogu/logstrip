@@ -43,6 +43,12 @@ import {
   isContinuationLine,
 } from './multiline/multiline-buffer.js';
 import { effectiveMultilineMode } from './multiline/auto-multiline-resolver.js';
+import {
+  type AdaptiveAfterBounds,
+  buildAdaptiveAfterBounds,
+  neutralErrorGap,
+  resolveAdaptiveAfterWindow,
+} from './context/adaptive-window.js';
 import { applyTokenBudget, type BudgetLine } from './budget/token-budget.js';
 import { planBlockDedupe } from './dedupe/block-deduper.js';
 import {
@@ -134,6 +140,12 @@ export {
   type BudgetResult,
   applyTokenBudget,
 } from './budget/token-budget.js';
+export {
+  type AdaptiveAfterBounds,
+  buildAdaptiveAfterBounds,
+  neutralErrorGap,
+  resolveAdaptiveAfterWindow,
+} from './context/adaptive-window.js';
 export { isCascadeNoiseLine } from './scoring/cascade-filter.js';
 export { isMultilingualDiagnosticLine } from './scoring/multilingual-keywords.js';
 export {
@@ -312,6 +324,17 @@ export async function processLogStream(
     0,
     Math.floor(options.contextAfter ?? CONTEXT_WINDOW_AFTER),
   );
+  // Adaptive context window: ON by default in auto mode. Explicit context
+  // sizes (contextBefore/contextAfter) opt out so a caller-pinned window is
+  // always honored verbatim.
+  const adaptiveContext =
+    options.adaptiveContext ??
+    (requestedAggressiveness === 'auto' &&
+      options.contextBefore === undefined &&
+      options.contextAfter === undefined);
+  const adaptiveBounds: AdaptiveAfterBounds =
+    buildAdaptiveAfterBounds(contextWindowAfter);
+  let linesSinceError = neutralErrorGap(adaptiveBounds);
   const dedupeEnabled =
     options.dedupe !== false && options.outputFormat !== 'jsonl-preserve';
   // Behavioral detection/compression boosters are ON by default in auto mode;
@@ -480,6 +503,17 @@ export async function processLogStream(
     contextBefore.length = 0;
   };
 
+  // Open the context window for a kept error: flush the before-context, open
+  // the after-context window (sized by error density in auto mode), and reset
+  // the error-distance counter that drives that sizing.
+  const openContextWindow = async (): Promise<void> => {
+    await flushContextBefore();
+    afterContextRemaining = adaptiveContext
+      ? resolveAdaptiveAfterWindow(linesSinceError, adaptiveBounds)
+      : contextWindowAfter;
+    linesSinceError = 0;
+  };
+
   const dropLine = (
     line: string,
     physicalLineCount: number,
@@ -546,6 +580,11 @@ export async function processLogStream(
       });
       continue;
     }
+
+    // Distance (in non-empty logical lines) since the last kept error. Drives
+    // the adaptive context window: small gaps mean clustered, self-contextual
+    // errors; large gaps mean isolated errors that warrant more context.
+    linesSinceError += 1;
 
     if (includePattern !== undefined && !testRegex(includePattern, line)) {
       dropLine(line, physicalLineCount, 'include-filter');
@@ -679,9 +718,8 @@ export async function processLogStream(
         // Hard-keep error/fatal/critical JSON lines; warn lines (50) fall
         // through to standard context-window buffering.
         if (parsed >= 80) {
-          await flushContextBefore();
+          await openContextWindow();
           await emitCandidate(sanitized, parsed);
-          afterContextRemaining = contextWindowAfter;
           recordDecision({
             line,
             sanitizedLine: sanitized,
@@ -722,9 +760,8 @@ export async function processLogStream(
 
     if (score >= SCORE_KEEP_THRESHOLD) {
       // Hard keep: flush buffered context, emit, open after-context window
-      await flushContextBefore();
+      await openContextWindow();
       await emitCandidate(sanitized, score);
-      afterContextRemaining = contextWindowAfter;
       recordDecision({
         line,
         sanitizedLine: sanitized,
