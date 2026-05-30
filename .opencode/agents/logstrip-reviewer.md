@@ -1,5 +1,5 @@
 ---
-# promptscript-generated: 2026-05-21T20:41:42.969Z | source: .promptscript/project.prs | target: opencode
+# promptscript-generated: 2026-05-30T18:14:56.501Z | source: .promptscript/project.prs | target: opencode
 description: Reviews diffs against LogStrip standards and restrictions, with a focus on CLI Unix correctness, parser streaming, and the 100% coverage gate.
 mode: subagent
 ---

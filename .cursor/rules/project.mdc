@@ -1,4 +1,5 @@
 ---
+# promptscript-generated: 2026-05-30T18:14:56.499Z | source: .promptscript/project.prs | target: cursor
 description: "Project-specific rules"
 alwaysApply: true
 ---
@@ -24,6 +25,13 @@ Architecture:
     - Match the existing style: small pure helpers, named exports, only node:* built-ins on the CLI/parser hot path. @actions/* packages stay scoped to src/action/.
 
 Code style:
+- Use code-review-graph MCP tools BEFORE Grep/Glob/Read when exploring the codebase
+- Exploring code: use semantic_search_nodes or query_graph instead of Grep
+- Understanding impact: use get_impact_radius instead of manually tracing imports
+- Code review: use detect_changes + get_review_context instead of reading entire files
+- Finding relationships: use query_graph with callers_of/callees_of/imports_of/tests_for
+- Architecture questions: use get_architecture_overview + list_communities
+- Fall back to Grep/Glob/Read only when the graph does not cover what you need
 - Strict mode is non-negotiable - tsconfig.json has strict: true
 - Target ES2022, module Node16, esModuleInterop on, consistent casing required
 - Prefer named exports - default exports are avoided across the codebase
@@ -87,6 +95,32 @@ Commands:
 /compress - Use the CLI (logstrip or node dist/cli/index.js) to compress a log path the user provides and summarise the resulting LogStripResult (input/output tokens, savings %, droppedLines, duplicateLines, hiddenInternalStackLines).
 /parser - Walk through src/core/logstrip-parser.ts: regex tables, shouldKeepLine flow, processLogStream loop, sanitizeLine, internal-stack collapsing, deduplication. Reference line numbers.
 /limits - List the documented limitations from @context (UUID v6+, Java/Python stack patterns, compound exception names, aggressiveness placeholder, internal-stack pattern gaps) so the user can pick one to fix.
+
+## MCP Tools: code-review-graph
+
+This project has a knowledge graph built with code-review-graph. The graph is faster,
+cheaper (fewer tokens), and gives structural context (callers, dependents, test coverage)
+that file scanning cannot.
+
+### Key Tools
+
+| Tool | Use when |
+| ---- | -------- |
+| `detect_changes` | Reviewing code changes - gives risk-scored analysis |
+| `get_review_context` | Need source snippets for review - token-efficient |
+| `get_impact_radius` | Understanding blast radius of a change |
+| `get_affected_flows` | Finding which execution paths are impacted |
+| `query_graph` | Tracing callers, callees, imports, tests, dependencies |
+| `semantic_search_nodes` | Finding functions/classes by name or keyword |
+| `get_architecture_overview` | Understanding high-level codebase structure |
+| `refactor_tool` | Planning renames, finding dead code |
+
+### Workflow
+
+1. The graph auto-updates on file changes (via hooks).
+2. Use `detect_changes` for code review.
+3. Use `get_affected_flows` to understand impact.
+4. Use `query_graph` pattern="tests_for" to check coverage.
 
 ## Build & test commands
 
@@ -310,8 +344,6 @@ Never:
 
 # AI Writing Detection
 
-<!-- PromptScript 2026-05-21T20:23:43.925Z | source: .promptscript/project.prs | target: codex - do not edit -->
-
 Words, phrases, and punctuation patterns commonly associated with AI-generated text. Avoid these to ensure writing sounds natural and human.
 
 Sources: Grammarly (2025), Microsoft 365 Life Hacks (2025), GPTHuman (2025), Walter Writes (2025), Textero (2025), Plagiarism Today (2025), Rolling Stone (2025), MDPI Blog (2025)
@@ -517,8 +549,6 @@ These words often add nothing to meaning. Remove them or find specific alternati
 ### international-seo.md (from seo-audit)
 
 # International SEO: Evidence & Sources
-
-<!-- PromptScript 2026-05-21T20:23:43.925Z | source: .promptscript/project.prs | target: codex - do not edit -->
 
 Detailed evidence backing the International SEO & Localization section of the SEO Audit skill. Organized by topic with source URLs and key quotes.
 

@@ -18,6 +18,24 @@
           "prs hook post-edit"
         ],
         "timeout_ms": 15000
+      },
+      {
+        "command": [
+          "bash",
+          "-c",
+          "git rev-parse --git-dir >/dev/null 2>&1 && code-review-graph update --skip-flows --repo \"$(pwd)\" || true"
+        ],
+        "timeout_ms": 30000
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": [
+          "bash",
+          "-c",
+          "git rev-parse --git-dir >/dev/null 2>&1 && code-review-graph update --skip-flows --repo \"$(pwd)\" || true"
+        ],
+        "timeout_ms": 30000
       }
     ]
   }
