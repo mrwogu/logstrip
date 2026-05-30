@@ -336,6 +336,7 @@ Options:
       --no-root-cause      Disable auto-pruning of downstream cascade restatements (auto on).
       --no-multilingual    Disable auto-detection of non-English error/failure keywords (auto on).
       --no-adaptive-context Disable auto-mode adaptive context windows around errors (auto on).
+      --preserve-id-suffix <N> Keep the last N chars of redacted UUIDs/hashes (0-16, default 0).
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -419,12 +420,16 @@ console.log(`saved ${result.savedTokens} tokens (${result.savingsPercent}%)`);
 ```
 
 `processLogStream(input, output, options)` is also exported for non-file streams
-(stdin, network sockets, custom transforms). Pass `configPath` in options for
-custom config integration. Additional options: `include`, `exclude`,
-`sampleSize`, `maxLineLength`, `maxTokens`, `dedupeWindow`, `collapseBlocks`,
-`formatDetectionSampleSize`, and the tri-state boosters `collapseRepeatedStacks`,
-`rootCause`, `multilingual`, `adaptiveContext` (all default-on in `auto`; set to
-`false` to disable).
+(stdin, network sockets, custom transforms). Pass `configPath` (or an inline
+`config`) in options for custom config integration. Additional options:
+`include`, `exclude`, `sampleSize`, `maxLineLength`, `maxTokens`, `dedupeWindow`,
+`collapseBlocks`, `formatDetectionSampleSize`, `preserveIdSuffix`,
+`contextBefore`, `contextAfter`, `dedupe`, `outputFormat`, and the tri-state
+boosters `collapseRepeatedStacks`, `rootCause`, `multilingual`,
+`adaptiveContext` (all default-on in `auto`; set to `false` to disable).
+Programmatic hooks `signal` (`AbortSignal`), `onDecision` (per-line decision
+callback), and `tokenEstimator` (custom token counter) are also accepted; see
+the [core reference](docs/reference/core.md) for the full table.
 Use `processLogStreamWithTimeout` for time-bounded processing - it sets
 `result.timedOut = true` when the deadline is reached.
 
