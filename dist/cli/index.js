@@ -63,6 +63,9 @@ Options:
       --no-adaptive-context Disable auto-mode adaptive context windows that
                            widen around isolated errors and tighten around
                            clustered ones.
+      --preserve-id-suffix <N> Keep the last N chars of redacted UUIDs/hashes
+                           (e.g. [ID:74000]) instead of fully masking. 0-16,
+                           0 masks fully. Default: 0.
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).

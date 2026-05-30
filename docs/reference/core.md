@@ -317,6 +317,30 @@ const result = await processLogFile('raw.log', 'raw.logstrip.log', {
 
 This helper creates Node.js file streams and returns the same `LogStripResult`.
 
+## Context, dedupe and sanitization options
+
+These library-level options are not surfaced as dedicated CLI flags but are
+available on `LogStripOptions`:
+
+| Option | Type | Default | Behavior |
+| :--- | :--- | :--- | :--- |
+| `contextBefore` | `number` | `3` | Lines kept before each retained error (the "before" half of the context window). Setting it (or `contextAfter`) disables the auto-mode adaptive window. |
+| `contextAfter` | `number` | `2` | Lines kept after each retained error (the "after" half of the context window). Setting it (or `contextBefore`) disables the auto-mode adaptive window. |
+| `dedupe` | `boolean` | `true` | Collapses repeated lines into `[xN]` groups. Set `false` for a raw pass. Forced off for `outputFormat: 'jsonl-preserve'`. |
+| `preserveIdSuffix` | `number` | `0` | Keeps the last _N_ (`0`–`16`) characters of redacted UUIDs/hashes (`[ID:174000]`) instead of fully masking. Mirrors `--preserve-id-suffix`. |
+| `outputFormat` | `'text' \| 'jsonl-preserve'` | `'text'` | `'jsonl-preserve'` keeps the original JSONL structure of each line (no folding/dedupe) while still scoring and dropping noise. |
+| `config` | `LogStripCustomConfig` | _(none)_ | Inline custom config (ignore/sanitize/keep patterns). Equivalent to a parsed `.logstrip.yml`. |
+| `configPath` | `string` | _(auto)_ | Path to a `.logstrip.yml` file to load. When omitted, `.logstrip.yml` is auto-detected from the cwd. |
+
+### Programmatic-only hooks
+
+| Option | Type | Behavior |
+| :--- | :--- | :--- |
+| `signal` | `AbortSignal` | Aborts processing cooperatively; the partial output is flushed and an `ABORTED` error is raised. |
+| `onDecision` | `(decision: LogStripLineDecision) => void` | Per-line callback exposing the keep/drop decision, reason, and score - useful for debugging or building custom reports. |
+| `tokenEstimator` | `(line: string) => number` | Overrides the built-in token estimate used for `maxTokens` budgeting and the `inputTokens` / `outputTokens` totals. |
+| `timeoutMs` | `number` | Hard deadline in milliseconds; on expiry the output is flushed and `result.timedOut` is set. `processLogStreamWithTimeout` is the convenience wrapper. |
+
 ## `detectLogSources`
 
 ```ts
@@ -376,6 +400,18 @@ The sanitizer replaces:
 | long hexadecimal or alphanumeric hashes | `[HASH]` |
 | HTTP status codes | `[2xx]`, `[4xx]`, `[5xx]`, etc. |
 | ANSI color escapes | removed |
+
+Pass a second argument to keep a trailing slice of redacted UUIDs and hashes
+instead of fully masking them - the same behavior the CLI exposes as
+`--preserve-id-suffix`:
+
+```ts
+sanitizeLine('request 123e4567-e89b-12d3-a456-426614174000 failed', 6);
+// request [ID:174000] failed
+```
+
+`preserveIdSuffix` accepts `0`–`16`; `0` (the default) masks the value entirely
+to `[ID]` / `[HASH]`.
 
 ## `createRepeatSignature`
 
