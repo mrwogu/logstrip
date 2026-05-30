@@ -21,7 +21,7 @@ Add at least one error or warning line to verify the pipeline:
 Exit code `2` is a usage error. Common causes:
 
 - Unknown flag - run `logstrip --help` to see the supported options.
-- Unsupported `--aggressiveness` value - use one of `low`, `medium`, `high`, `aggressive`.
+- Unsupported `--aggressiveness` value - use one of `low`, `medium`, `high`, `aggressive`, `auto`.
 - `--json` without `--output` - JSON would collide with the compressed log on stdout.
 - No `INPUT` argument and `stdin` is a terminal - either pass a file path or pipe a log.
 

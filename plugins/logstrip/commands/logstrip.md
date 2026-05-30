@@ -1,6 +1,6 @@
 ---
 description: Compress a log with LogStrip and report token savings. Also auto-detects pasted log output.
-argument-hint: <input-log> [--output <output-log>] [--aggressiveness low|medium|high|aggressive]
+argument-hint: <input-log> [--output <output-log>] [--aggressiveness low|medium|high|aggressive|auto]
 ---
 
 Use the LogStrip CLI to compress the log described in `$ARGUMENTS`.

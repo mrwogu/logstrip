@@ -257,7 +257,7 @@ Exported from `src/action/index.ts` (used by tests, do not break):
 ```yaml
     inputs:
       log-path:        # required; path to the raw log
-      aggressiveness:  # optional; low | medium | high | aggressive (default: high)
+      aggressiveness:  # optional; low | medium | high | aggressive | auto (default: auto)
     outputs:
       output-path:     # path to the compressed log; defaults to <input>.logstrip.log
     runs:

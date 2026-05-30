@@ -247,7 +247,7 @@ exposed as a thin GitHub Action wrapper:
   id: logstrip
   with:
     log-path: raw_logs.txt
-    aggressiveness: high
+    aggressiveness: auto
 ```
 
 The action writes `steps.logstrip.outputs.output-path` and a GitHub Step Summary
