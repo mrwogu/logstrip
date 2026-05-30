@@ -19,6 +19,7 @@ import {
   recordTelemetry,
 } from '../core/telemetry/telemetry-store';
 import { runHookCommand } from './hook-runner';
+import { checkForUpdates, formatUpdateNotification } from './version-check';
 
 export const CLI_VERSION = '1.8.0'; // x-release-please-version
 
@@ -129,6 +130,7 @@ export interface CliIo {
   stdout: NodeJS.WritableStream;
   stderr: NodeJS.WritableStream;
   stdinIsTTY: boolean;
+  stderrIsTTY?: boolean;
 }
 
 export class CliError extends Error {
@@ -584,7 +586,28 @@ export async function runCli(
     return 1;
   }
 
+  await maybeNotifyUpdate(io, options);
+
   return 0;
+}
+
+async function maybeNotifyUpdate(
+  io: CliIo,
+  options: CliOptions,
+): Promise<void> {
+  // Only nudge interactive users. Skip JSON output mode so machine-readable
+  // runs stay clean, and skip when stderr is redirected (CI logs).
+  if (options.json || io.stderrIsTTY !== true) {
+    return;
+  }
+  try {
+    const info = await checkForUpdates(CLI_VERSION);
+    if (info) {
+      await writeAll(io.stderr, formatUpdateNotification(info));
+    }
+  } catch {
+    /* update check is best-effort; never fail the run because of it */
+  }
 }
 
 /* v8 ignore start */
@@ -594,6 +617,7 @@ if (require.main === module) {
     stdout: process.stdout,
     stderr: process.stderr,
     stdinIsTTY: Boolean(process.stdin.isTTY),
+    stderrIsTTY: Boolean(process.stderr.isTTY),
   })
     .then((code) => {
       process.exitCode = code;

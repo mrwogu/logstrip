@@ -338,6 +338,28 @@ LogStrip Telemetry
 The store keeps at most 1,000 entries; older entries are pruned
 automatically.
 
+## Update notifications
+
+When `stderr` is attached to a terminal, `logstrip` checks the npm
+registry once every 24 hours and prints a single line to `stderr` if a
+newer release is available:
+
+```text
+logstrip: update available 1.8.0 → 1.9.0 (npm i -g logstrip)
+```
+
+The check is best-effort and never affects the exit code, stdout output
+or your pipeline. It is skipped automatically in the following cases:
+
+- when `stderr` is redirected (CI logs, files, pipes),
+- when `--json` is used (machine-readable mode stays clean),
+- when the `LOGSTRIP_NO_UPDATE_CHECK` environment variable is set to any
+  non-empty value.
+
+The last-known latest version is cached at
+`~/.logstrip/.cache/version.json` for 24 hours. Override the cache
+directory with the `LOGSTRIP_CACHE_DIR` environment variable.
+
 ## Embedding in Node
 
 If you'd rather call the CLI from JavaScript without spawning a subprocess,
@@ -351,6 +373,7 @@ const exitCode = await runCli(['raw.log', '-o', 'clean.log', '--json'], {
   stdout: process.stdout,
   stderr: process.stderr,
   stdinIsTTY: Boolean(process.stdin.isTTY),
+  stderrIsTTY: Boolean(process.stderr.isTTY),
 });
 ```
 
