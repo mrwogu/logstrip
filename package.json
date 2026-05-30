@@ -60,6 +60,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/bundle-action.js && node scripts/post-build.js",
+    "build:plugins": "node scripts/build-plugins.js",
     "docs:build": "mkdocs build --strict",
     "docs:serve": "mkdocs serve",
     "prepack": "npm run build",

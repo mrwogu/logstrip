@@ -1,0 +1,24 @@
+# Dedicated PromptScript config for the agent plugin bundle (plugins/logstrip/**).
+# Compiled by scripts/build-plugins.js, which stages the output and assembles
+# it into the plugin package layout. Manifests and hooks stay hand-maintained.
+#
+# universalDir/includePromptScriptSkill are disabled so the plugin builds stay
+# isolated from repo-level skill auto-discovery (.agents/skills) and the bundled
+# PromptScript skill - only the plugin instruction body is emitted.
+id: logstrip-plugin
+syntax: "1.2.0"
+universalDir: false
+includePromptScriptSkill: false
+input:
+  entry: .promptscript/plugin/codex.prs
+targets:
+  - codex
+builds:
+  plugin-codex:
+    entry: .promptscript/plugin/codex.prs
+    targets:
+      - codex
+  plugin-opencode:
+    entry: .promptscript/plugin/opencode.prs
+    targets:
+      - opencode
