@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.9.0](https://github.com/mrwogu/logstrip/compare/v1.8.0...v1.9.0) (2026-05-30)
+
+
+### Features
+
+* adaptive context window in auto mode ([922b29e](https://github.com/mrwogu/logstrip/commit/922b29e3b34f9238d79c786c9dbfc5e079b4af00))
+* **cli:** add --max-tokens budget mode for LLM context limits ([5b21bcd](https://github.com/mrwogu/logstrip/commit/5b21bcd65b6039b7ce5781537d88a6a6ada86848))
+* **cli:** notify when a newer logstrip release is on npm ([aa7f9c9](https://github.com/mrwogu/logstrip/commit/aa7f9c926f34a6a2c645a1c0c755f3af0f8bc161))
+* comprehensive sanitize, scoring, multiline, and perf enhancements ([3e41bba](https://github.com/mrwogu/logstrip/commit/3e41bba4431aa6752649bac6a3810397aecb25bc))
+* **core:** enable detection/compression boosters by default in auto mode ([71dae82](https://github.com/mrwogu/logstrip/commit/71dae82d0d8cf875efd326edb55df9b5ff71beb8))
+* **dedupe:** add --collapse-blocks for repeated multiline blocks ([21ed869](https://github.com/mrwogu/logstrip/commit/21ed8690fca045b80bbdb20e0e3e27b13a1758d1))
+* **dedupe:** add --dedupe-window for non-adjacent duplicate collapsing ([d6a8ae2](https://github.com/mrwogu/logstrip/commit/d6a8ae292d4aabb8ff9bad0bd0f9c92731191c73))
+* **dedupe:** collapse repeated stack-trace windows via --collapse-stacks ([b1e66eb](https://github.com/mrwogu/logstrip/commit/b1e66eb6d99e73fb9ba87da908102c96b0ea8ef9))
+* **dedupe:** fold enumerated instance counters into the repeat signature ([a6e5934](https://github.com/mrwogu/logstrip/commit/a6e5934aadd07c93c65eacc70b836a8f18183b21))
+* **formats:** add --format-sample majority-vote format detection ([d97ae13](https://github.com/mrwogu/logstrip/commit/d97ae133615090d75dadd15ba420c740aa168898))
+* **scoring:** add --multilingual diagnostic keyword detection ([c852425](https://github.com/mrwogu/logstrip/commit/c852425bad5750c8b2e7a6f22d8b5651c6ca7e70))
+* **scoring:** add --root-cause cascade pruning ([1eef9d0](https://github.com/mrwogu/logstrip/commit/1eef9d0f46e5fb68420d8dceedd49d570248f652))
+
+
+### Performance Improvements
+
+* **detection:** match source markers with an Aho-Corasick automaton ([bc744f8](https://github.com/mrwogu/logstrip/commit/bc744f8febb89f9045dede2d0f6a7484e54588f7))
+
 ## [1.8.0](https://github.com/mrwogu/logstrip/compare/v1.7.0...v1.8.0) (2026-05-28)
 
 
