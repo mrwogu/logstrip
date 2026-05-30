@@ -139,15 +139,16 @@ Statement, branch, function, and line coverage are pinned to 100% across the par
 
 ## advanced detection, not regex-only filtering
 
-LogStrip scores each sanitized line, keeps nearby context, dampens repeated spam, folds near-identical diagnostics with volatile values, and hides internal framework frames: compact incident narrative, not a noisy transcript.
+LogStrip scores each sanitized line, keeps nearby context, dampens repeated spam, folds near-identical diagnostics with volatile values, prunes downstream cascades, and hides internal framework frames: compact incident narrative, not a noisy transcript. In the default `auto` mode every booster below runs automatically - no flags required.
 
 <div class="logstrip-engine__grid" markdown="1">
-<div class="logstrip-engine__step" markdown="1"><span>01</span>**Score signals** from log level, JSON severity, container failures, scanner findings, package managers, diagnostic keywords, and stack frames.</div>
+<div class="logstrip-engine__step" markdown="1"><span>01</span>**Score signals** from log level, JSON severity, container failures, scanner findings, package managers, diagnostic keywords (including non-English and CJK terms), and stack frames.</div>
 <div class="logstrip-engine__step" markdown="1"><span>02</span>**Promote context** with a before/after window so setup lines near the failure survive even when they are not errors themselves.</div>
-<div class="logstrip-engine__step" markdown="1"><span>03</span>**Dampen repeats** with TF-IDF-style frequency tracking, then fold adjacent diagnostic variants into `[xN]` summaries.</div>
-<div class="logstrip-engine__step" markdown="1"><span>04</span>**Summarize deltas** by listing only differing `key=value` values when repeated events share the same shape.</div>
-<div class="logstrip-engine__step" markdown="1"><span>05</span>**Collapse internals** by replacing low-value framework/runtime stack frames with one marker while preserving app frames.</div>
-<div class="logstrip-engine__step" markdown="1"><span>06</span>**Detect sources** across 700+ ecosystems so JSON reports can tell agents what kind of log they are reading.</div>
+<div class="logstrip-engine__step" markdown="1"><span>03</span>**Dampen repeats** with TF-IDF-style frequency tracking, then fold adjacent diagnostic variants - and repeated multi-line stack windows - into `[xN]` summaries.</div>
+<div class="logstrip-engine__step" markdown="1"><span>04</span>**Summarize deltas** by listing only differing `key=value` values when repeated events share the same shape, including enumerated instance counters like `worker [1 | 2 | 3]`.</div>
+<div class="logstrip-engine__step" markdown="1"><span>05</span>**Prune cascades** by dropping downstream restatements (`aborting due to previous errors`, `skipped because the upstream job failed`) so the originating failure stands out.</div>
+<div class="logstrip-engine__step" markdown="1"><span>06</span>**Collapse internals** by replacing low-value framework/runtime stack frames with one marker while preserving app frames.</div>
+<div class="logstrip-engine__step" markdown="1"><span>07</span>**Detect sources and format** across 700+ ecosystems with a single-pass Aho-Corasick automaton, then majority-vote the dominant format over the first 50 lines so JSON reports tell agents exactly what they are reading.</div>
 </div>
 </section>
 
