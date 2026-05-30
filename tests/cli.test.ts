@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough, Readable, Writable } from 'node:stream';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CLI_VERSION,
   CliError,
@@ -58,6 +58,9 @@ const telemetryDir = vi.hoisted(() => {
   const { tmpdir } = require('node:os');
   const dir = pJoin(tmpdir(), 'logstrip-cli-telemetry');
   process.env.LOGSTRIP_TELEMETRY_DIR = dir;
+  // Disable the npm update-check ping for the entire CLI test file; the
+  // dedicated tests/version-check.test.ts covers that path explicitly.
+  process.env.LOGSTRIP_NO_UPDATE_CHECK = '1';
   return dir;
 });
 
@@ -888,5 +891,97 @@ describe('runCli', () => {
     const store = load();
     expect(store.totalRuns).toBeGreaterThanOrEqual(1);
     expect(store.totalSavedTokens).toBeGreaterThan(0);
+  });
+});
+
+describe('runCli update notification', () => {
+  const ORIGINAL_FETCH = globalThis.fetch;
+  let cacheDir: string;
+  let inputPath: string;
+
+  beforeAll(async () => {
+    cacheDir = await mkdtemp(join(tmpdir(), 'logstrip-cli-update-'));
+    process.env.LOGSTRIP_CACHE_DIR = cacheDir;
+  });
+
+  afterAll(async () => {
+    await rm(cacheDir, { force: true, recursive: true });
+    delete process.env.LOGSTRIP_CACHE_DIR;
+    process.env.LOGSTRIP_NO_UPDATE_CHECK = '1';
+    globalThis.fetch = ORIGINAL_FETCH;
+  });
+
+  beforeEach(async () => {
+    delete process.env.LOGSTRIP_NO_UPDATE_CHECK;
+    await rm(cacheDir, { force: true, recursive: true });
+    inputPath = join(workDir, `update-raw-${Date.now()}.log`);
+    await writeFile(inputPath, '[INFO] boot ok\n[ERROR] x\n', 'utf8');
+  });
+
+  afterEach(() => {
+    // Restore guard for any tests that come after in other describes.
+    process.env.LOGSTRIP_NO_UPDATE_CHECK = '1';
+    globalThis.fetch = ORIGINAL_FETCH;
+  });
+
+  function mockFetch(body: unknown): void {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => body,
+    } as unknown as Response)) as unknown as typeof globalThis.fetch;
+  }
+
+  it('prints notification on stderr when stderrIsTTY and a newer version exists', async () => {
+    mockFetch({ version: '999.0.0' });
+    const { io, stderr } = makeIo(new PassThrough());
+    io.stderrIsTTY = true;
+
+    const code = await runCli([inputPath], io);
+
+    expect(code).toBe(0);
+    expect(stderr.value()).toContain('update available');
+    expect(stderr.value()).toContain('999.0.0');
+  });
+
+  it('does not print when stderr is not a TTY', async () => {
+    mockFetch({ version: '999.0.0' });
+    const { io, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli([inputPath], io);
+
+    expect(code).toBe(0);
+    expect(stderr.value()).not.toContain('update available');
+  });
+
+  it('does not print when --json is set, even on a TTY', async () => {
+    mockFetch({ version: '999.0.0' });
+    const outputPath = join(workDir, `update-out-${Date.now()}.log`);
+    const { io, stderr } = makeIo(new PassThrough());
+    io.stderrIsTTY = true;
+
+    const code = await runCli([inputPath, '-o', outputPath, '--json'], io);
+
+    expect(code).toBe(0);
+    expect(stderr.value()).not.toContain('update available');
+  });
+
+  it('swallows unexpected errors from the update check', async () => {
+    // fetch returns a malformed response whose .json() throws.
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new Error('bad json');
+      },
+    } as unknown as Response)) as unknown as typeof globalThis.fetch;
+
+    const { io, stderr } = makeIo(new PassThrough());
+    io.stderrIsTTY = true;
+
+    const code = await runCli([inputPath], io);
+
+    expect(code).toBe(0);
+    expect(stderr.value()).not.toContain('update available');
   });
 });
