@@ -43,12 +43,16 @@ Accepted values:
 | :--- | :--- |
 | `low` | accepted |
 | `medium` | accepted |
-| `high` | default |
+| `high` | accepted |
 | `aggressive` | accepted |
+| `auto` | default |
 
-In the current release, all levels use the same four-cut pipeline. The option
-is validated up front so planned enhancements can tune filter strength without
-changing the CLI or workflow syntax.
+`auto` is the default. It starts at `high`, adapts the effective level to the
+log via a sliding decision window, and runs the detection and compression
+boosters (stack-window collapse, root-cause cascade pruning, multilingual
+keyword detection, majority-vote format detection) automatically. The fixed
+levels (`low`, `medium`, `high`, `aggressive`) give you deterministic, non-adaptive
+filtering when you need it.
 
 ## Stats and reports
 

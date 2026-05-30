@@ -54,7 +54,7 @@ jobs:
         uses: mrwogu/logstrip@v1
         with:
           log-path: tests/fixtures/ci-platforms.log
-          aggressiveness: high
+          aggressiveness: auto
 
       - name: Security audit
         run: npm audit

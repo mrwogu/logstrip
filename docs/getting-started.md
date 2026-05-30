@@ -46,7 +46,9 @@ Get-Content raw.log | logstrip > clean.log
 logstrip raw.log --stats > clean.log
 ```
 
-The default aggressiveness is `high`. Override with `-a low|medium|high|aggressive`.
+The default aggressiveness is `auto`, which starts at `high` and adapts to the
+log while running every detection booster automatically. Override with
+`-a low|medium|high|aggressive` for a fixed level.
 
 ## 3. Wire it into a script
 
@@ -98,7 +100,7 @@ the full contract.
   id: logstrip
   with:
     log-path: raw_logs.txt
-    aggressiveness: high
+    aggressiveness: auto
 
 - name: Analyze compact logs
   run: your-ai-agent analyze --file "${{ steps.logstrip.outputs.output-path }}"

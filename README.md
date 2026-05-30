@@ -440,7 +440,7 @@ CLI is the primary distribution channel.
   id: logstrip
   with:
     log-path: raw_logs.txt
-    aggressiveness: high
+    aggressiveness: auto
 
 - name: Send compact logs to your AI agent
   run: your-agent analyze --file "${{ steps.logstrip.outputs.output-path }}"
