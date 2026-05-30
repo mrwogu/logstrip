@@ -14,7 +14,7 @@ _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub
 [![Coverage](https://codecov.io/gh/mrwogu/logstrip/branch/main/graph/badge.svg)](https://codecov.io/gh/mrwogu/logstrip)
 [![License: MIT](https://img.shields.io/badge/license-MIT-white.svg)](https://opensource.org/licenses/MIT)
 
-![80%+ token savings](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-savings.svg)![705+ ecosystems](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-ecosystems.svg)![0 runtime deps](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-deps.svg)![100% coverage](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-coverage.svg)![38 fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-fixtures.svg)![557+ tests](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-tests.svg)
+![80%+ token savings](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-savings.svg)![705+ ecosystems](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-ecosystems.svg)![0 runtime deps](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-deps.svg)![100% coverage](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-coverage.svg)![41 fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-fixtures.svg)![810+ tests](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-tests.svg)
 
 [Install](#install) ·
 [Quick Start](#quick-start) ·
@@ -78,7 +78,7 @@ LogStrip output:
 <a id="benchmarks"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-benchmarks.svg" alt="Benchmarks" width="320">
 
-Compression ratios from the 38 fixture test suite across real-world log sources:
+Compression ratios from the 41 fixture test suite across real-world log sources:
 
 | Category | Sample fixture | Input lines | Output lines | Token savings |
 |:---|:---|---:|---:|---:|
@@ -95,7 +95,7 @@ Compression ratios from the 38 fixture test suite across real-world log sources:
 
 Production logs with millions of lines routinely hit **80%+** token savings because noise ratios scale with log size.
 
-> Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) - 38 `.log` files covering 705+ ecosystem signatures. Each fixture has a committed snapshot baseline.
+> Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) - 41 `.log` files covering 705+ ecosystem signatures. Each fixture has a committed snapshot baseline.
 
 <a id="vs-alternatives"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-competitors.svg" alt="vs Alternatives" width="320">
@@ -208,7 +208,8 @@ in Claude Code and Cursor.
 <a id="how-it-works"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-how.svg" alt="How It Works" width="320">
 
-LogStrip detects **705+ log ecosystems** and applies several cuts to every streamed line:
+LogStrip detects **705+ log ecosystems** (matched in a single pass with an
+Aho-Corasick automaton) and applies several cuts to every streamed line:
 
 | Cut | What it does |
 |:---|:---|
@@ -217,9 +218,17 @@ LogStrip detects **705+ log ecosystems** and applies several cuts to every strea
 | **Context scoring** | Keeps high-signal diagnostics and nearby context while dampening repeated spam (TF-IDF). |
 | **Smart dedup** | Folds repeated sanitized lines, including same-shape variants, into `[xN] message` with only differing values listed. |
 | **Stack collapse** | Replaces internal `node_modules/` and runtime frames with one marker line. |
+| **Stack-window collapse** _(auto)_ | Folds repeated multi-line stack traces that differ only in addresses, Go offsets, or goroutine ids into a single `[xN]` group. |
+| **Root-cause pruning** _(auto)_ | Drops downstream cascade restatements (`aborting due to previous errors`, `could not compile … due to previous error`, `skipped because the upstream job failed`) so the originating failure stands out. |
+| **Multilingual detection** _(auto)_ | Recognizes error/failure/exception keywords in 8+ languages plus CJK (`erreur`, `Fehler`, `fallo`, `ошибка`, `错误`, …). |
+| **Format voting** _(auto)_ | Locks the fast path onto the first recognizable line, then self-corrects the detected format with a majority vote over the first 50 non-blank lines. |
+| **Instance-counter folding** | Folds enumerated counters (`worker [1 \| 2 \| 3]`, `retry …`) into the repeat signature; labels whose numbers carry meaning (error/code/status/exit) are excluded. |
 | **Multiline joining** | Joins indented continuation lines (Python tracebacks, Node stack frames, Java `Caused by:` chains, Go goroutine dumps) with their parent into a single logical line. |
 | **Severity filtering** | Drops lines below a configurable minimum severity (`fatal` / `error` / `warn` / `info` / `debug` / `trace`). |
 | **CI noise filters** | Drops progress bars, timestamp-only lines, K8s `Normal` events, and rate-limited repetition messages. |
+
+Cuts marked _(auto)_ are enabled by default in `auto` mode; disable any of them
+with the matching `--no-*` flag.
 
 ```text
 [INFO] boot ok                                           ← dropped (noise tag)
@@ -319,6 +328,13 @@ Options:
       --include <regex>    Keep only lines matching this regex.
       --exclude <regex>    Drop lines matching this regex.
       --sample <N>         Limit output to first N kept lines.
+      --max-tokens <N>     Trim output to at most N tokens, keeping the highest-scoring lines (LLM context-budget mode).
+      --dedupe-window <N>  Collapse non-adjacent duplicate lines seen within the last N distinct lines. Default: 1 (adjacent only).
+      --format-sample <N>  Majority-vote format detection window over the first N non-blank lines. Default: 50.
+      --collapse-blocks <N> Collapse consecutive repeats of a block of up to N lines into one copy plus a [block xM] marker.
+      --no-collapse-stacks Disable auto-collapsing of repeated stack-trace windows that differ only in addresses/offsets (auto on).
+      --no-root-cause      Disable auto-pruning of downstream cascade restatements (auto on).
+      --no-multilingual    Disable auto-detection of non-English error/failure keywords (auto on).
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -329,6 +345,11 @@ Options:
   -h, --help               Show help text and exit.
   -v, --version            Print the CLI version and exit.
 ```
+
+In the default `auto` mode the detection and compression boosters
+(`--collapse-stacks`, `--root-cause`, `--multilingual`, and majority-vote
+format detection) are **on automatically** - the `--no-*` flags above are
+opt-outs for when you want the raw, unboosted pass.
 
 ### Recipes
 
@@ -399,8 +420,11 @@ console.log(`saved ${result.savedTokens} tokens (${result.savingsPercent}%)`);
 `processLogStream(input, output, options)` is also exported for non-file streams
 (stdin, network sockets, custom transforms). Pass `configPath` in options for
 custom config integration. Additional options: `include`, `exclude`,
-`sampleSize`, `maxLineLength`. Use `processLogStreamWithTimeout` for time-bounded
-processing - it sets `result.timedOut = true` when the deadline is reached.
+`sampleSize`, `maxLineLength`, `maxTokens`, `dedupeWindow`, `collapseBlocks`,
+`formatDetectionSampleSize`, and the tri-state boosters `collapseRepeatedStacks`,
+`rootCause`, `multilingual` (all default-on in `auto`; set to `false` to disable).
+Use `processLogStreamWithTimeout` for time-bounded processing - it sets
+`result.timedOut = true` when the deadline is reached.
 
 ## GitHub Action <a id="github-action"></a>
 

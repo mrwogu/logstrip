@@ -56,8 +56,11 @@ folds them into a single `[xN]` line and generalizes volatile fields such as
 `amount=99.99`, `amount=49.50`, and `amount=12.00` to
 `amount=[99.99 | 49.50 | 12.00]`.
 
-`detectedFormat` is set when the parser infers a log format (e.g. `node`,
-`python`, `java`, `go`) from markers in the stream. `timedOut` is `true` when
+`detectedFormat` is set whenever the parser can infer a log format (e.g. `node`,
+`python`, `java`, `go`). The detection is hybrid and always-on: the parser locks
+onto the first recognizable line for speed, then self-corrects via a majority
+vote over the first `formatDetectionSampleSize` (default 50) non-blank lines, so
+mixed-format streams resolve to their dominant format. `timedOut` is `true` when
 `processLogStreamWithTimeout` was used and the deadline was reached.
 `truncatedLines` counts lines that exceeded `maxLineLength` and were replaced
 with `[TRUNCATED]`.
@@ -206,10 +209,16 @@ detectFormat('npm ERR! code ERESOLVE\n    at module (app.js:1:1)');
 // 'node'
 ```
 
-When `multiline` is not `'off'`, `processLogStream` sets `detectedFormat` on
-the result. The `detectFormat` function checks for Python (`Traceback`),
-Node.js (`at ` stack frames), Java (`Exception in thread`), Go (`goroutine`),
-and other format markers.
+`processLogStream` always attempts format detection and sets `detectedFormat`
+on the result when a format is recognized (independent of the `multiline`
+setting). The `detectFormat` function checks for Python (`Traceback`), Node.js
+(`at ` stack frames), Java (`Exception in thread`), Go (`goroutine`), and other
+format markers. For the streaming parser the first-line guess is refined by a
+majority vote over the first `formatDetectionSampleSize` non-blank lines, which
+keeps detection robust on logs that interleave formats (e.g. JSON lines mixed
+with plaintext). Source-marker matching itself runs through a single-pass
+Aho-Corasick automaton built from all 705+ ecosystem signatures - same results
+as the previous per-marker scan, just faster on the hot path.
 
 ## HTTP status code grouping
 
@@ -259,6 +268,42 @@ const result = await processLogStream(input, output, {
 `include` and `exclude` accept `RegExp` objects. `sampleSize` caps the total
 kept lines. `maxLineLength` replaces lines exceeding the limit with
 `[TRUNCATED]` and increments `stats.truncatedLines`.
+
+## Automatic boosters and budget options
+
+In the default `auto` mode LogStrip enables a set of detection and compression
+boosters automatically. They are exposed as tri-state options on
+`LogStripOptions`: leave them `undefined` to keep the auto-on default, or set
+them to `false` to opt out (the CLI surfaces the opt-outs as `--no-*` flags).
+
+```ts
+const result = await processLogStream(input, output, {
+  // Tri-state boosters (default-on in auto; set false to disable):
+  collapseRepeatedStacks: true, // fold repeated multi-line stack windows that
+                                //   differ only in addresses/offsets/goroutine ids
+  rootCause: true,              // prune downstream cascade restatements
+  multilingual: true,           // detect non-English / CJK error keywords
+
+  // Numeric tuning / budget options:
+  maxTokens: 8_000,             // trim to the highest-scoring lines within a
+                                //   token budget (original order preserved)
+  dedupeWindow: 200,            // collapse non-adjacent duplicates within the
+                                //   last N distinct lines (1 = adjacent only)
+  collapseBlocks: 20,           // collapse consecutive repeats of a multi-line
+                                //   block (up to N lines) into one + [block xM]
+  formatDetectionSampleSize: 50,// majority-vote window for format detection
+});
+```
+
+| Option | Type | Default | Behavior |
+| :--- | :--- | :--- | :--- |
+| `collapseRepeatedStacks` | `boolean` | auto-on | Folds repeated stack-trace windows differing only in volatile frame data into a single `[xN]` group. |
+| `rootCause` | `boolean` | auto-on | Drops downstream cascade restatements (`aborting due to previous errors`, `could not compile … due to previous error`, `skipped because the upstream job failed`). Conservative - genuine first errors are kept. |
+| `multilingual` | `boolean` | auto-on | Boosts the score of error/failure/exception keywords in 8+ languages plus CJK (`erreur`, `Fehler`, `fallo`, `ошибка`, `错误`, …). |
+| `maxTokens` | `number` | _(off)_ | LLM context-budget mode: keeps the highest-scoring lines until the token budget is reached, preserving original order. |
+| `dedupeWindow` | `number` | `1` | Collapses non-adjacent duplicate lines seen within the last _N_ distinct lines. `1` keeps adjacent-only deduplication. |
+| `collapseBlocks` | `number` | _(off)_ | Collapses consecutive repeats of a multi-line block (up to _N_ lines) into one copy plus a `[block xM]` marker. |
+| `formatDetectionSampleSize` | `number` | `50` | Number of leading non-blank lines sampled before the first-line format guess may be corrected by majority vote. |
 
 ```ts
 import { processLogFile } from 'logstrip';
