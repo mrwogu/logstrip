@@ -15,7 +15,8 @@ const node_util_1 = require("node:util");
 const logstrip_parser_1 = require("../core/logstrip-parser");
 const telemetry_store_1 = require("../core/telemetry/telemetry-store");
 const hook_runner_1 = require("./hook-runner");
-exports.CLI_VERSION = '1.8.0'; // x-release-please-version
+const version_check_1 = require("./version-check");
+exports.CLI_VERSION = '1.9.0'; // x-release-please-version
 exports.HOOK_SUBCOMMAND = 'hook';
 exports.HELP_TEXT = `Usage: logstrip [INPUT] [options]
        logstrip hook
@@ -477,7 +478,24 @@ async function runCli(argv, io) {
         await writeAll(io.stderr, 'logstrip: processing timed out\n');
         return 1;
     }
+    await maybeNotifyUpdate(io, options);
     return 0;
+}
+async function maybeNotifyUpdate(io, options) {
+    // Only nudge interactive users. Skip JSON output mode so machine-readable
+    // runs stay clean, and skip when stderr is redirected (CI logs).
+    if (options.json || io.stderrIsTTY !== true) {
+        return;
+    }
+    try {
+        const info = await (0, version_check_1.checkForUpdates)(exports.CLI_VERSION);
+        if (info) {
+            await writeAll(io.stderr, (0, version_check_1.formatUpdateNotification)(info));
+        }
+    }
+    catch {
+        /* update check is best-effort; never fail the run because of it */
+    }
 }
 /* v8 ignore start */
 if (require.main === module) {
@@ -486,6 +504,7 @@ if (require.main === module) {
         stdout: process.stdout,
         stderr: process.stderr,
         stdinIsTTY: Boolean(process.stdin.isTTY),
+        stderrIsTTY: Boolean(process.stderr.isTTY),
     })
         .then((code) => {
         process.exitCode = code;
