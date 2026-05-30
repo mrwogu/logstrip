@@ -143,7 +143,7 @@ LogStrip scores each sanitized line, keeps nearby context, dampens repeated spam
 
 <div class="logstrip-engine__grid" markdown="1">
 <div class="logstrip-engine__step" markdown="1"><span>01</span>**Score signals** from log level, JSON severity, container failures, scanner findings, package managers, diagnostic keywords (including non-English and CJK terms), and stack frames.</div>
-<div class="logstrip-engine__step" markdown="1"><span>02</span>**Promote context** with a before/after window so setup lines near the failure survive even when they are not errors themselves.</div>
+<div class="logstrip-engine__step" markdown="1"><span>02</span>**Promote context** with a before/after window so setup lines near the failure survive even when they are not errors themselves - sized adaptively by error density in `auto` mode (wider for isolated errors, tighter for clustered ones).</div>
 <div class="logstrip-engine__step" markdown="1"><span>03</span>**Dampen repeats** with TF-IDF-style frequency tracking, then fold adjacent diagnostic variants - and repeated multi-line stack windows - into `[xN]` summaries.</div>
 <div class="logstrip-engine__step" markdown="1"><span>04</span>**Summarize deltas** by listing only differing `key=value` values when repeated events share the same shape, including enumerated instance counters like `worker [1 | 2 | 3]`.</div>
 <div class="logstrip-engine__step" markdown="1"><span>05</span>**Prune cascades** by dropping downstream restatements (`aborting due to previous errors`, `skipped because the upstream job failed`) so the originating failure stands out.</div>

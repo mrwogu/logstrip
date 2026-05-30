@@ -1511,6 +1511,49 @@ describe('logstrip parser', () => {
     expect(content).not.toContain('unrelated soft');
   });
 
+  it('adaptive context (auto) widens the after-window for an isolated error', async () => {
+    const logs = [
+      '[ERROR] first failure',
+      ...Array.from({ length: 13 }, (_, i) => `filler line ${i}`),
+      '[ERROR] second failure', // gap >= sparse threshold → after-window widens to 4
+      'tail 0',
+      'tail 1',
+      'tail 2',
+      'tail 3',
+      'tail 4',
+    ].join('\n');
+
+    const adaptive = new MemoryWritable();
+    await processLogStream(Readable.from([logs]), adaptive);
+    const adaptiveContent = adaptive.content();
+
+    const fixed = new MemoryWritable();
+    await processLogStream(Readable.from([logs]), fixed, { adaptiveContext: false });
+    const fixedContent = fixed.content();
+
+    // Widened window keeps two extra after-context lines around the isolated error.
+    expect(adaptiveContent).toContain('tail 3');
+    expect(fixedContent).not.toContain('tail 3');
+    expect(fixedContent).toContain('tail 1');
+  });
+
+  it('adaptive context (auto) tightens the after-window for clustered errors', async () => {
+    const logs = ['[ERROR] alpha', '[ERROR] beta', 'soft 0', 'soft 1'].join('\n');
+
+    const adaptive = new MemoryWritable();
+    await processLogStream(Readable.from([logs]), adaptive);
+    const adaptiveContent = adaptive.content();
+
+    const fixed = new MemoryWritable();
+    await processLogStream(Readable.from([logs]), fixed, { adaptiveContext: false });
+    const fixedContent = fixed.content();
+
+    // Clustered errors are self-contextualizing, so the after-window shrinks.
+    expect(adaptiveContent).toContain('soft 0');
+    expect(adaptiveContent).not.toContain('soft 1');
+    expect(fixedContent).toContain('soft 1');
+  });
+
   it('TF-IDF dampening reduces score for high-frequency non-error lines', async () => {
     // "Retrying connection" has base score ~50 (DIAGNOSTIC: "failed"? no, "Retrying" no)
     // Use a line that matches DIAGNOSTIC_PATTERN to get base score 50, then

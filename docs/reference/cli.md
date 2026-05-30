@@ -43,6 +43,7 @@ logstrip [INPUT] [options]
 | `--no-collapse-stacks` | Disable the automatic collapsing of repeated stack-trace windows that differ only in memory addresses, Go offsets or goroutine ids. | _(auto on)_ |
 | `--no-root-cause` | Disable the automatic pruning of downstream cascade restatements (e.g. `aborting due to previous errors`, `skipped because the upstream job failed`). | _(auto on)_ |
 | `--no-multilingual` | Disable the automatic detection of non-English error/failure/exception keywords (e.g. `erreur`, `Fehler`, `fallo`, `ошибка`, `错误`). | _(auto on)_ |
+| `--no-adaptive-context` | Disable the auto-mode adaptive context window. By default `auto` widens the after-error context around isolated errors and tightens it around clustered, self-contextualizing ones. | _(auto on)_ |
 | `--max-line-length <n>` | Truncate lines longer than _n_ characters. Very long lines (e.g. minified bundles) are replaced with `[TRUNCATED]`. | `100000` |
 | `--timeout <s>` | Stop processing after _s_ seconds. The output is flushed and `timedOut: true` is set in the result. | _(off)_ |
 | `--progress` | Show a progress bar on stderr (file input only, requires `--output`). | off |

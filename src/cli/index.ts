@@ -67,6 +67,9 @@ Options:
                            restatements (e.g. "aborting due to previous errors").
       --no-multilingual    Disable auto-detection of non-English error/failure
                            keywords (e.g. "erreur", "Fehler", "错误").
+      --no-adaptive-context Disable auto-mode adaptive context windows that
+                           widen around isolated errors and tighten around
+                           clustered ones.
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -112,6 +115,7 @@ export interface CliOptions {
   formatSample?: number;
   multilingual: boolean;
   collapseBlocks?: number;
+  adaptiveContext: boolean;
   telemetry: boolean;
   help: boolean;
   version: boolean;
@@ -174,6 +178,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         'no-collapse-stacks': { type: 'boolean', default: false },
         'no-root-cause': { type: 'boolean', default: false },
         'no-multilingual': { type: 'boolean', default: false },
+        'no-adaptive-context': { type: 'boolean', default: false },
         'max-line-length': { type: 'string' },
         timeout: { type: 'string' },
         progress: { type: 'boolean', default: false },
@@ -343,6 +348,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     formatSample,
     multilingual: parsed.values['no-multilingual'] !== true,
     collapseBlocks,
+    adaptiveContext: parsed.values['no-adaptive-context'] !== true,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
@@ -533,6 +539,7 @@ export async function runCli(
       formatDetectionSampleSize: options.formatSample,
       multilingual: options.multilingual,
       collapseBlocks: options.collapseBlocks,
+      adaptiveContext: options.adaptiveContext ? undefined : false,
     };
     result = await processLogStreamWithTimeout(
       input,

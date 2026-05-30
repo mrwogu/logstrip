@@ -75,6 +75,7 @@ export interface LogStripOptions {
   formatDetectionSampleSize?: number;
   multilingual?: boolean;
   collapseBlocks?: number;
+  adaptiveContext?: boolean;
 }
 
 export interface LogStripStats {

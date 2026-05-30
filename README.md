@@ -335,6 +335,7 @@ Options:
       --no-collapse-stacks Disable auto-collapsing of repeated stack-trace windows that differ only in addresses/offsets (auto on).
       --no-root-cause      Disable auto-pruning of downstream cascade restatements (auto on).
       --no-multilingual    Disable auto-detection of non-English error/failure keywords (auto on).
+      --no-adaptive-context Disable auto-mode adaptive context windows around errors (auto on).
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -347,9 +348,9 @@ Options:
 ```
 
 In the default `auto` mode the detection and compression boosters
-(`--collapse-stacks`, `--root-cause`, `--multilingual`, and majority-vote
-format detection) are **on automatically** - the `--no-*` flags above are
-opt-outs for when you want the raw, unboosted pass.
+(`--collapse-stacks`, `--root-cause`, `--multilingual`, adaptive context
+windows, and majority-vote format detection) are **on automatically** - the
+`--no-*` flags above are opt-outs for when you want the raw, unboosted pass.
 
 ### Recipes
 
@@ -422,7 +423,8 @@ console.log(`saved ${result.savedTokens} tokens (${result.savingsPercent}%)`);
 custom config integration. Additional options: `include`, `exclude`,
 `sampleSize`, `maxLineLength`, `maxTokens`, `dedupeWindow`, `collapseBlocks`,
 `formatDetectionSampleSize`, and the tri-state boosters `collapseRepeatedStacks`,
-`rootCause`, `multilingual` (all default-on in `auto`; set to `false` to disable).
+`rootCause`, `multilingual`, `adaptiveContext` (all default-on in `auto`; set to
+`false` to disable).
 Use `processLogStreamWithTimeout` for time-bounded processing - it sets
 `result.timedOut = true` when the deadline is reached.
 

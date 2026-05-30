@@ -361,6 +361,18 @@ describe('runCli', () => {
     );
   });
 
+  it('disables the adaptive context window via --no-adaptive-context', async () => {
+    const outputPath = join(workDir, `out-${counter}.log`);
+    const { io } = makeIo(new PassThrough());
+
+    const code = await runCli([inputPath, '-o', outputPath, '--no-adaptive-context'], io);
+
+    expect(code).toBe(0);
+    expect(await readFile(outputPath, 'utf8')).toContain(
+      '[x2] [ERROR] request [ID] failed',
+    );
+  });
+
   it('rejects identical input and output paths before truncating the log', async () => {
     const original = await readFile(inputPath, 'utf8');
     const { io, stderr } = makeIo(new PassThrough());
@@ -692,6 +704,14 @@ describe('runCli', () => {
 
     const opts2 = parseCliOptions(['raw.log', '--no-multilingual']);
     expect(opts2.multilingual).toBe(false);
+  });
+
+  it('enables adaptive context by default and disables it via --no-adaptive-context', () => {
+    const opts = parseCliOptions(['raw.log']);
+    expect(opts.adaptiveContext).toBe(true);
+
+    const opts2 = parseCliOptions(['raw.log', '--no-adaptive-context']);
+    expect(opts2.adaptiveContext).toBe(false);
   });
 
   it('parses --collapse-blocks flag', () => {
