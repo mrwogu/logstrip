@@ -1,30 +1,81 @@
 {
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "prs hook pre-edit",
-            "timeout": 5,
-            "statusMessage": "PromptScript: checking generated files..."
-          }
+    "env": {
+        "DISABLE_TELEMETRY": "1",
+        "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    },
+    "attribution": {
+        "commit": "",
+        "pr": ""
+    },
+    "hooks": {
+        "PreToolUse": [
+            {
+                "matcher": "Edit|Write",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "prs hook pre-edit",
+                        "timeout": 5,
+                        "statusMessage": "PromptScript: checking generated files..."
+                    }
+                ]
+            }
+        ],
+        "PostToolUse": [
+            {
+                "matcher": "Edit|Write",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "prs hook post-edit",
+                        "timeout": 15,
+                        "statusMessage": "PromptScript: compiling..."
+                    }
+                ]
+            },
+            {
+                "matcher": "Edit|Write|Bash",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "cat >/dev/null || true; git rev-parse --git-dir >/dev/null 2>&1 && code-review-graph update --skip-flows --repo \"$(pwd)\" || true",
+                        "timeout": 30
+                    }
+                ]
+            }
+        ],
+        "SessionStart": [
+            {
+                "matcher": "",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "cat >/dev/null || true; git rev-parse --git-dir >/dev/null 2>&1 && code-review-graph status --repo \"$(pwd)\" || echo 'Not a git repo, skipping'",
+                        "timeout": 10
+                    }
+                ]
+            }
         ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "prs hook post-edit",
-            "timeout": 15,
-            "statusMessage": "PromptScript: compiling..."
-          }
-        ]
-      }
-    ]
-  }
+    },
+    "statusLine": {
+        "type": "command",
+        "command": "input=$(cat); model=$(echo \"$input\" | jq -r '.model.display_name'); used=$(echo \"$input\" | jq -r '.context_window.used_percentage // empty'); max_tokens=$(echo \"$input\" | jq -r '.context_window.context_window_size // 0'); branch=$(git -C $(pwd) branch --show-current 2>/dev/null || echo 'no-git'); if [ -n \"$used\" ]; then used_k=$(echo \"$used $max_tokens\" | awk '{printf \"%.0f\", $1 * $2 / 100000}'); max_k=$((max_tokens / 1000)); printf \"%s | Context: %.1f%% [%dk/%dk] | %s\" \"$model\" \"$used\" \"$used_k\" \"$max_k\" \"$branch\"; else printf \"%s | %s\" \"$model\" \"$branch\"; fi"
+    },
+    "enabledPlugins": {
+        "feature-dev@claude-plugins-official": true,
+        "security-guidance@claude-plugins-official": true,
+        "code-simplifier@claude-plugins-official": true,
+        "superpowers@claude-plugins-official": true,
+        "caveman@caveman": true,
+        "remember@claude-plugins-official": true
+    },
+    "extraKnownMarketplaces": {
+        "caveman": {
+            "source": {
+                "source": "github",
+                "repo": "JuliusBrussee/caveman"
+            }
+        }
+    },
+    "plansDirectory": "docs/plans"
 }

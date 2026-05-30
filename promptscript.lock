@@ -1,0 +1,7 @@
+version: 1
+dependencies:
+  github.com/coreyhaines31/marketingskills/skills/seo-audit/SKILL.md:
+    version: latest
+    commit: 7f4af1ea8e7809e0142c55bf19243a706f539c25
+    integrity: sha256-pending
+    source: md

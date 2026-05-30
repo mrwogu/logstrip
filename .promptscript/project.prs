@@ -12,6 +12,8 @@
 @use ./restrictions
 @use ./shortcuts
 @use ./knowledge
+@use ./graph
+@use github.com/coreyhaines31/marketingskills/skills/seo-audit/SKILL.md
 
 @identity {
   """
