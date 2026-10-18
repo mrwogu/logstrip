@@ -232,7 +232,8 @@
         8
       ],
       [
-        "d"
+        "k",
+        9
       ],
       [
         "k",
@@ -323,7 +324,7 @@
     ],
     "metrics": [
       [
-        "56.29%",
+        "58.61%",
         "token savings"
       ],
       [
@@ -387,9 +388,9 @@
     "clean": [
       "❯ logstrip build.log --stats",
       "✓ detected: github-actions · npm · vitest · typescript",
-      " ✓ tests/cart.test.ts (14 tests) 213ms",
-      " ✓ tests/inventory.test.ts (9 tests) 102ms",
-      " ✓ tests/pricing.test.ts (22 tests) 187ms",
+      "> checkout-api@2.3.1 test",
+      "> vitest run --coverage",
+      " RUN  v3.1.4 /home/runner/work/checkout-api",
       " ❯ tests/charge.test.ts (6 tests | 1 failed) 154ms",
       "FAIL tests/charge.test.ts > ChargeService > retries declined cards once",
       "AssertionError: expected 2 to be 1 // Object.is equality",
@@ -457,15 +458,6 @@
         "d"
       ],
       [
-        "d"
-      ],
-      [
-        "d"
-      ],
-      [
-        "d"
-      ],
-      [
         "k",
         2
       ],
@@ -476,6 +468,15 @@
       [
         "k",
         4
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
       ],
       [
         "k",
@@ -985,8 +986,7 @@
         4
       ],
       [
-        "k",
-        5
+        "d"
       ],
       [
         "k",
@@ -1017,8 +1017,7 @@
         12
       ],
       [
-        "k",
-        13
+        "d"
       ],
       [
         "k",
@@ -1089,8 +1088,7 @@
         30
       ],
       [
-        "k",
-        31
+        "d"
       ],
       [
         "k",
@@ -1156,12 +1154,10 @@
         46
       ],
       [
-        "k",
-        47
+        "d"
       ],
       [
-        "k",
-        48
+        "d"
       ],
       [
         "k",
@@ -1276,8 +1272,7 @@
         104
       ],
       [
-        "k",
-        105
+        "d"
       ],
       [
         "k",
@@ -1337,12 +1332,10 @@
         "d"
       ],
       [
-        "k",
-        115
+        "d"
       ],
       [
-        "k",
-        116
+        "d"
       ],
       [
         "d"
@@ -1648,8 +1641,7 @@
         131
       ],
       [
-        "k",
-        132
+        "d"
       ],
       [
         "k",
@@ -1715,12 +1707,10 @@
         147
       ],
       [
-        "k",
-        148
+        "d"
       ],
       [
-        "k",
-        149
+        "d"
       ],
       [
         "k",
