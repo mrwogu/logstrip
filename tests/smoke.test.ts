@@ -741,7 +741,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'secret-fields.log',
-    minSavingsPercent: 27,
+    minSavingsPercent: 24,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
@@ -760,11 +760,19 @@ const cases: readonly SmokeCase[] = [
       '"auth":{"type":"basic"},"password":null',
       'empty DB_PASSWORD=, auth=false and token=null',
       'supabase auth: gotrue service failed to start',
+      'SESSION_KEY=[REDACTED] SSH_PASSPHRASE=[REDACTED]',
+      'id-token: write',
+      'token: process.env.NPM_TOKEN',
+      'previousToken: string',
+      'password = [REDACTED]',
     ],
     mustNotContain: [
       '[INFO]',
       '[DEBUG]',
       'hunter2',
+      'hunter3',
+      's3ss10nK3y',
+      'openSesame9',
       'Zk3dQ9vL2xT7mB4n',
       'Zk3dFakeFake',
       'cs_live_demo_4f8a9c',

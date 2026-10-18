@@ -188,9 +188,11 @@ blocks are masked with the same rules the compressor uses (a private key's
 lines are dropped and counted). Identifiers, timestamps, IP addresses, emails
 and prose are not touched, so a file without secrets comes out as it went in,
 apart from line endings being normalized to `\n` and a final newline being
-added. The masking favours safety over fidelity, so a permission such as
-`id-token: write`, a type annotation such as `previousToken: string` or a
-sentence that mentions an `Authorization:` header is masked too. A page that
+added. The masking favours safety over fidelity, so an assignment in source
+code such as `const accessToken = load()` or a sentence that mentions an
+`Authorization:` header is masked too. A type (`previousToken: string`), a
+plain environment read (`process.env.NPM_TOKEN`) and a GitHub permission
+(`id-token: write`) are not. A page that
 only names the private key header (`-----BEGIN PRIVATE KEY-----`) inside a
 sentence or table is left alone; only a header that ends its line opens a key
 block. Filters such as `--include`, `--exclude`, `--severity`, `--sample`,

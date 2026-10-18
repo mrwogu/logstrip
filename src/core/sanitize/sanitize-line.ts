@@ -84,6 +84,12 @@ const SLACK_TOKEN_PATTERN =
 const AUTHORIZATION_HEADER_PATTERN =
   /\bAuthorization\s*:\s*\S+(?:\s+\S+)*/giu;
 
+// A read of one environment variable or config value, with no default: the
+// value of a secret field in source code is then where the secret comes from,
+// not the secret. Used to capture the whole read (bare values stop at quotes)
+// and, anchored, to judge it.
+const ENV_READ_SOURCE = String.raw`(?:process\.env\.[A-Za-z_]\w*|(?:process\.env|os\.environ|ENV)\[(?:"[\w.-]+"|'[\w.-]+')\]|(?:os\.environ\.get|os\.getenv|env|getenv|System\.getenv|core\.getInput)\((?:"[\w.-]+"|'[\w.-]+')\)|\$ENV\{\w+\}|secrets\.[A-Za-z_]\w*)`;
+
 // Generic secret fields: KEY=value, key: value, key := value and quoted JSON /
 // dict properties ("key": "value"). The pieces are joined into one pattern
 // with three groups: 1 the name, 2 the quote around the key (if any) and 3 the
@@ -93,7 +99,8 @@ const SECRET_FIELD_PATTERN = new RegExp(
   [
     // A key that ENDS in a name matches (DB_PASSWORD, apiKey, x-api-key,
     // spring.datasource.password), so there is no word boundary in front.
-    String.raw`(password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|bearer|`,
+    String.raw`(password|passwd|passphrase|pwd|secret|token|(?:auth|refresh|access|id)[_-]?token|`,
+    String.raw`(?:api|access|private|secret|signing|encryption|session|master|service|client)[_-]?key|bearer|`,
     // auth and credentials are also plain words in logs and prose
     // ("supabase auth: gotrue service started"). They count as the end of a
     // longer key (basic_auth, x-auth), as a quoted key, or with an = style
@@ -106,11 +113,16 @@ const SECRET_FIELD_PATTERN = new RegExp(
     // surrounding syntax survives. After an opening quote there is always a
     // match: a missing closing quote or an odd escape takes the rest of the
     // line instead of leaking. The escaped form is JSON logged inside a string.
-    // A ${...} or $(...) body may hold spaces, so it is taken whole (bounded
-    // so that a crafted line cannot make the scan quadratic).
+    // A ${...} or $(...) body, or the arguments of a call, may hold spaces and
+    // quotes, so they are taken whole (bounded so that a crafted line cannot
+    // make the scan quadratic). An environment read is taken whole only when
+    // it ends there; otherwise the bare token takes it and it is judged as it
+    // is.
     String.raw`(\\"(?:(?!\\").)*(?:\\")?`,
     String.raw`|"(?:[^"\\]|\\[\s\S]|\\$)*"?`,
     String.raw`|'(?:[^'\\]|\\[\s\S]|\\$)*'?`,
+    `|${ENV_READ_SOURCE}(?=[\\s,;)}\\]\\x60]|$)`,
+    String.raw`|[A-Za-z_][\w.]*\((?:[^()]|\([^()]*\)){0,200}\)[^\s"',;]*`,
     String.raw`|\$(?:\((?:[^()]|\([^()]*\)){0,200}\)|\{[^}]{0,200}\})[^\s"',;]*`,
     String.raw`|[^\s"',;]+)`,
   ].join(''),
@@ -123,6 +135,19 @@ const SECRET_FIELD_PATTERN = new RegExp(
 // GitHub expression (${{ ... }}). A reference with a default or a command
 // (${NAME:-x}, $(cmd)) or with anything after it ($HOME/x, ${NAME}x) is not.
 const SECRET_PLAIN_VALUE_PATTERN = /^(?:null|true|false|\d{1,3})$/iu;
+// Also a type, as in "previousToken: string" or "password: Optional[str]", and
+// an environment read as the entire value. A bare identifier followed by a call
+// (load(), readSecret()) is neither.
+const TYPE_NAMES =
+  'string|number|boolean|bigint|symbol|unknown|any|never|undefined|void|str|int|float|bool|bytes|None|nil|String|Integer|Boolean|Buffer|Secret|SecretStr';
+const TYPE_ANNOTATION_PATTERN = new RegExp(
+  `^(?:${TYPE_NAMES}|(?:Optional\\[|Option<|Promise<)(?:${TYPE_NAMES})[\\]>])(?:\\[\\])?(?:\\|(?:null|undefined))*[)}\\]:]*$`,
+  'u',
+);
+const ENV_READ_PATTERN = new RegExp(`^${ENV_READ_SOURCE}$`, 'u');
+// A GitHub permission such as "id-token: write" is not a token.
+const TOKEN_NAME_PATTERN = /token$/iu;
+const PERMISSION_WORD_PATTERN = /^(?:read|write|none)$/u;
 const SECRET_REFERENCE_PATTERN =
   /^\$(?:[A-Za-z_]\w*|\{[A-Za-z_][\w.]*\}|\{\{[^}]{0,200}\}\})$/u;
 const QUOTED_VALUE_PATTERN = /^(\\"|"|')([\s\S]*)\1$/u;
@@ -177,12 +202,15 @@ function maskAge(match: string, offset: number, whole: string): string {
 // consume them, while the AWS keys and the entropy fallback run on whatever
 // the hash rules left behind. maskSecrets applies both halves in that order.
 
-function isHarmlessValue(value: string): boolean {
+function isHarmlessValue(value: string, name: string): boolean {
   const inner = QUOTED_VALUE_PATTERN.exec(value)?.[2] ?? value;
   return (
     inner === '' ||
     SECRET_PLAIN_VALUE_PATTERN.test(inner) ||
-    SECRET_REFERENCE_PATTERN.test(inner)
+    SECRET_REFERENCE_PATTERN.test(inner) ||
+    TYPE_ANNOTATION_PATTERN.test(inner) ||
+    ENV_READ_PATTERN.test(inner) ||
+    (TOKEN_NAME_PATTERN.test(name) && PERMISSION_WORD_PATTERN.test(inner))
   );
 }
 
@@ -205,7 +233,7 @@ function maskSecretField(
   }
   const head = match.slice(0, match.length - value.length);
   if (keyQuote === undefined) {
-    return isHarmlessValue(value) ? match : `${head}[REDACTED]`;
+    return isHarmlessValue(value, name) ? match : `${head}[REDACTED]`;
   }
   // "auth": {...} is an object; its own fields are masked on their own.
   if (value.startsWith('{') || value.startsWith('[')) return match;
@@ -213,7 +241,7 @@ function maskSecretField(
   // pair is not part of the value, and the value stays a string so the line
   // still parses.
   const closing = /[}\]]*$/u.exec(value)![0];
-  if (isHarmlessValue(value.slice(0, value.length - closing.length))) return match;
+  if (isHarmlessValue(value.slice(0, value.length - closing.length), name)) return match;
   return `${head}${keyQuote}[REDACTED]${keyQuote}${closing}`;
 }
 

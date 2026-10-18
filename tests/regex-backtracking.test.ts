@@ -63,6 +63,14 @@ const ADVERSARIAL: ReadonlyArray<readonly [string, string]> = [
   ['secret quotes', repeated('password="')],
   ['secret escapes', repeated('password:\\"x')],
   ['secret labels', repeated('token: ')],
+  ['secret call openings', repeated('password=a(')],
+  ['secret calls with quotes', repeated('password=a("b" ')],
+  ['secret environment reads', repeated('token=process.env.')],
+  ['secret environment calls', repeated('token=os.getenv("a')],
+  ['secret type wrappers', repeated('token: Optional[')],
+  ['a secret value that is one long word', repeated('a', 'token=', '(')],
+  ['a secret value that is one long dotted word', repeated('a.', 'token=', '(')],
+  ['secret key names', repeated('session_key ')],
   ['secret names', repeated('auth ')],
 ];
 
