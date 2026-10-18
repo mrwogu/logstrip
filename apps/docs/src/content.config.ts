@@ -9,7 +9,7 @@ export const collections = {
   docs: defineCollection({
     loader: glob({
       base: DOCS_BASE,
-      pattern: ['**/*.md', '!index.md'],
+      pattern: '**/*.md',
       generateId: ({ entry }) => docIdFromEntry(entry),
     }),
     schema: docsSchema(),
