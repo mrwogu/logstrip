@@ -11,7 +11,7 @@ LogStrip is designed to reduce accidental data exposure before logs are passed t
 The parser replaces common high-cardinality identifiers:
 
 - UUIDs become `[ID]`;
-- ISO and UTC timestamps become `[TIME]`;
+- timestamps become `[TIME]` - ISO and UTC, comma-fraction (Python logging, log4j), syslog, Tomcat/PHP/Redis month-name formats, bare times of day, and epoch numbers under `time`/`ts`/`timestamp` keys;
 - long hexadecimal or alphanumeric hashes become `[HASH]`;
 - IPv4 addresses become `[IP]`;
 - IPv6 addresses become `[IPV6]`;

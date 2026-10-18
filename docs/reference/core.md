@@ -392,7 +392,7 @@ The sanitizer replaces:
 | Pattern | Replacement |
 | :--- | :--- |
 | UUID | `[ID]` |
-| ISO and UTC timestamps | `[TIME]` |
+| Timestamps (ISO with `.` or `,` fractions and zone, UTC/GMT, syslog `May 16 10:24:31`, `16-May-2026 10:24:31`, Go `log`, bare `10:24:31.044`, epoch values under `time`/`ts`/`timestamp` keys) | `[TIME]` |
 | IPv4 addresses | `[IP]` |
 | IPv4 address + port | `[IP]:[PORT]` |
 | GitHub tokens (`ghp_`, `gho_`, `ghu_`, etc.) | `[REDACTED]` |
