@@ -1,5 +1,54 @@
 # Changelog
 
+## [2.0.0](https://github.com/mrwogu/logstrip/compare/v1.12.0...v2.0.0) (2026-10-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* text passthrough, compression tuning, Astro docs, Node 22
+* text passthrough, compression tuning, Astro docs, Node 22 ([#72](https://github.com/mrwogu/logstrip/issues/72))
+* Node.js 20 reached end of life, so engines.node is now >=22, CI tests 22.x and 24.x and the GitHub Action runs on the node24 runtime. vitest moves to 5.x, which needs Node 22.12 or newer. The compiled agent instruction files follow the updated PromptScript sources.
+
+### Features
+
+* **cli:** add --force to compress non-log input ([90dfaff](https://github.com/mrwogu/logstrip/commit/90dfaffd234cf04365b190db61063210d277b122))
+* **cli:** leave non-log files alone in the agent hooks ([47bec05](https://github.com/mrwogu/logstrip/commit/47bec05aad14abc28bfccb9ae53a0bef639f485e))
+* **core:** add content kind classifier for log vs plain text ([4e044c4](https://github.com/mrwogu/logstrip/commit/4e044c4972b3458baa11e4f7782a2a812c132fd4))
+* **core:** pass non-log text through with credentials masked ([d43c998](https://github.com/mrwogu/logstrip/commit/d43c998d3f2a6e01d86ef036fbe30ce0fa4c22a5))
+* **dedupe:** fold access-log bursts that differ in size and timing ([fb46550](https://github.com/mrwogu/logstrip/commit/fb46550ffa7605e5e32ff03bcf3c725757c301b8))
+* **dedupe:** fold retry lines with unit or parenthesized counters ([6d7da1a](https://github.com/mrwogu/logstrip/commit/6d7da1a34a555577329b653ca614106945f7f178))
+* **dedupe:** reference repeated blocks instead of reprinting them ([92c8c23](https://github.com/mrwogu/logstrip/commit/92c8c239b3dc900210f53c5c85835f69140ed816))
+* require Node.js 22 and run the action on node24 ([c3bebff](https://github.com/mrwogu/logstrip/commit/c3bebffd4add71682861d59bbb354e027b14d8b0))
+* **sanitize:** keep types and env reads, mask more key names ([71f4bcd](https://github.com/mrwogu/logstrip/commit/71f4bcd3ada478c4c7f6537180d27fe4af106508))
+* **sanitize:** mask comma, syslog, bare time and epoch timestamps ([a4880f8](https://github.com/mrwogu/logstrip/commit/a4880f8f0a78e557bd0a901d05c331c6495622f5))
+* **scoring:** drop passing-test reports and keep Go package failures ([20f085e](https://github.com/mrwogu/logstrip/commit/20f085e086db2fea356c4d7800181df6fbe38eac))
+* **scoring:** recognize unbracketed log levels in the line header ([4ea41c5](https://github.com/mrwogu/logstrip/commit/4ea41c5ec4420152540a302502a1ce675c37a79f))
+* **scoring:** treat package transfer lines as progress noise ([0bf9e58](https://github.com/mrwogu/logstrip/commit/0bf9e58e17c229a0a986bd51bf5acb9c300d3e2a))
+* text passthrough, compression tuning, Astro docs, Node 22 ([7177d40](https://github.com/mrwogu/logstrip/commit/7177d40f6fae78707b75c43795bfb70696c41cf3))
+* text passthrough, compression tuning, Astro docs, Node 22 ([#72](https://github.com/mrwogu/logstrip/issues/72)) ([7177d40](https://github.com/mrwogu/logstrip/commit/7177d40f6fae78707b75c43795bfb70696c41cf3))
+
+
+### Bug Fixes
+
+* **action:** load @actions/core with a dynamic import ([178b6fc](https://github.com/mrwogu/logstrip/commit/178b6fcf4ec741b5b42f9e2e3364e826540fe8cb))
+* **bench:** ignore compressed outputs left next to the fixtures ([b4b248e](https://github.com/mrwogu/logstrip/commit/b4b248e9991bcc137603cb47b73a4e299d75ff9e))
+* **cli:** exit quietly when the stdout reader closes the pipe ([8f9b9c8](https://github.com/mrwogu/logstrip/commit/8f9b9c83b7208aaafe4d6f338cf5b11c5ff976c3))
+* **core:** match content patterns in linear time ([f05f075](https://github.com/mrwogu/logstrip/commit/f05f07557c3c779b344837d6468bed126750e35d))
+* **core:** track PEM key blocks before any noise or ignore filter ([b06b67d](https://github.com/mrwogu/logstrip/commit/b06b67dbfb8ce580e78ae74a3f45b9d1d1658ec3))
+* **deps:** refresh devDependencies, patch bundled undici ([eb37451](https://github.com/mrwogu/logstrip/commit/eb37451da176fbd4855f0f5e92449adddbb4ed67))
+* **sanitize:** apply type and env exemptions to unquoted values only ([26470c9](https://github.com/mrwogu/logstrip/commit/26470c90af7cb694fb1d747f2a87a9020494995c))
+* **sanitize:** judge secret field exemptions on the whole value ([6766e6b](https://github.com/mrwogu/logstrip/commit/6766e6b5b8b8e2ef59ad7547e99319c5298652ee))
+* **sanitize:** keep measured durations instead of masking as [AGO] ([9478e5c](https://github.com/mrwogu/logstrip/commit/9478e5c1de63454669bd230d00f025abe4abcd98))
+* **sanitize:** keep parenthesized test runner durations like "(1s)" ([5cec8ca](https://github.com/mrwogu/logstrip/commit/5cec8ca1b99e566718eace280debd9a0a850faba))
+* **sanitize:** mask prefixed and JSON secret fields ([9174b9d](https://github.com/mrwogu/logstrip/commit/9174b9dec6a09975d572d15ea32056c5da7907e2))
+* **sanitize:** mask unterminated quotes and references with bodies ([9e1a023](https://github.com/mrwogu/logstrip/commit/9e1a02373fa46ae1441bffc864409ac3636c50b1))
+* **sanitize:** no control chars in ANSI pattern, linear blank trim ([c0ce69b](https://github.com/mrwogu/logstrip/commit/c0ce69bb874f390b2741f5d547dacbbc7e6d06a1))
+* **sanitize:** strip all ANSI CSI and OSC sequences, not only colors ([98e20e6](https://github.com/mrwogu/logstrip/commit/98e20e620ac50e50b1384da9fb3c3d2b01332db5))
+* **scoring:** keep unbracketed INFO lines that report a non-zero exit ([f90e12f](https://github.com/mrwogu/logstrip/commit/f90e12f74c300e29827ea3d35608885060d0354c))
+* **scoring:** match passing-test lines in linear time ([7f5f65e](https://github.com/mrwogu/logstrip/commit/7f5f65e6cf256d58cbb05df84d3d24740e7231dc))
+* **scoring:** stop scoring logfmt status=200 as a systemd failure ([6820f2c](https://github.com/mrwogu/logstrip/commit/6820f2cf44f5efd4519814684e8a214d24e5173b))
+* **test:** force LF checkouts so passthrough fixtures stay byte exact ([2f3e27f](https://github.com/mrwogu/logstrip/commit/2f3e27f519295481626222af74115048ac183997))
+
 ## [1.12.0](https://github.com/mrwogu/logstrip/compare/v1.11.0...v1.12.0) (2026-06-11)
 
 
