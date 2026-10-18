@@ -30,7 +30,7 @@ try {
 
 const filter = process.argv[2];
 const entries = (await readdir(fixturesDir))
-  .filter((name) => name.endsWith('.log'))
+  .filter((name) => name.endsWith('.log') && !name.endsWith('.logstrip.log'))
   .filter((name) => (filter === undefined ? true : name.includes(filter)))
   .sort();
 

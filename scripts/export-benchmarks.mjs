@@ -367,7 +367,10 @@ async function measure() {
   } catch {
     throw new Error('dist/ not found - run `npm run build` first');
   }
-  const names = (await readdir(FIXTURES_DIR)).filter((name) => name.endsWith('.log')).sort();
+  // The CI action step writes <fixture>.logstrip.log next to its input; that is output, not a fixture.
+  const names = (await readdir(FIXTURES_DIR))
+    .filter((name) => name.endsWith('.log') && !name.endsWith('.logstrip.log'))
+    .sort();
   const rows = [];
   for (const name of names) {
     const text = await readFile(path.join(FIXTURES_DIR, name), 'utf8');
