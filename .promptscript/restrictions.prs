@@ -16,4 +16,8 @@
   - "Don't break the CLI Unix contract: missing INPUT means read stdin, missing --output means write stdout, stats always go to stderr"
   - "Don't let a parser error escape as a raw stack trace from the CLI - convert to a logstrip: <message> stderr line with a numeric exit code"
   - "Don't weaken regex strictness without adding a fixture-based smoke test that documents the new behavior"
+  - "Don't compress text that is not a log - processLogStream classifies the stream head and passes prose, markdown, source and config through with secret masking only; --force is the explicit override, never the default"
+  - "Don't hand-edit generated agent files (CLAUDE.md, AGENTS.md, OPENCODE.md, .github/copilot-instructions.md, .cursor/, .factory/, .opencode/, .codex/, .claude/commands, .claude/agents, .agents/) - change .promptscript/*.prs and run npx @promptscript/cli compile"
+  - "Don't add a dependabot.yml or an unpinned uses: in .github/workflows - Renovate owns updates and keeps the SHA pins fresh"
+  - "Don't put the docs app dependencies in the root package.json - apps/docs keeps its own lockfile so the zero-dependency CLI install stays small"
 }
