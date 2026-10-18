@@ -119,3 +119,37 @@ describe('timestamp masking lets repeated events fold', () => {
     expect(result.output).toBe('[x2] {"level":50,"time":"[TIME]","msg":"payment failed"}\n');
   });
 });
+
+describe('sanitizeLine durations', () => {
+  it('still masks Kubernetes ages', () => {
+    expect(sanitizeLine('Warning BackOff 38s kubelet Back-off restarting')).toBe(
+      'Warning BackOff [AGO] kubelet Back-off restarting',
+    );
+    expect(sanitizeLine('pod/x   0/1   CrashLoopBackOff   5 (2m36s ago)   8m')).toBe(
+      'pod/x   0/1   CrashLoopBackOff   5 ([AGO] ago)   8m',
+    );
+    expect(sanitizeLine('first line\n38s kubelet')).toBe('first line\n[AGO] kubelet');
+  });
+
+  it('keeps decimal durations intact', () => {
+    expect(sanitizeLine('FAIL    github.com/example/project/orders      0.024s')).toBe(
+      'FAIL    github.com/example/project/orders      0.024s',
+    );
+    expect(sanitizeLine('Duration  2.15s')).toBe('Duration  2.15s');
+  });
+
+  it('keeps durations that follow a preposition or a key', () => {
+    expect(sanitizeLine('Request timed out after 30s while contacting api')).toBe(
+      'Request timed out after 30s while contacting api',
+    );
+    expect(sanitizeLine('retrying in 2s (attempt 3)')).toBe('retrying in 2s (attempt 3)');
+    expect(sanitizeLine('Timeout: 30s')).toBe('Timeout: 30s');
+    expect(sanitizeLine('retry=5s')).toBe('retry=5s');
+    expect(sanitizeLine('took 12s')).toBe('took 12s');
+  });
+
+  it('keeps the seconds part of a spaced minutes-and-seconds duration', () => {
+    expect(sanitizeLine('BUILD FAILED in 1m 12s')).toBe('BUILD FAILED in 1m 12s');
+    expect(sanitizeLine('finished 2h 5m 12s later')).toBe('finished 2h 5m 12s later');
+  });
+});

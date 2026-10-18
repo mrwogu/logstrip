@@ -35,6 +35,11 @@ const EPOCH_LOGFMT_FIELD_PATTERN =
   /\b(time|timestamp|ts)=\d{10,13}(?:\.\d+)?\b/giu;
 const K8S_RELATIVE_DURATION_PATTERN =
   /\b(?:\d+d)?(?:\d+h)?(?:\d+m)?\d+s\b/gu;
+// Text right before a duration that marks it as a measurement worth keeping
+// ("timed out after 30s", "retrying in 2s", "retry=5s", "1m 12s") or as the
+// tail of a decimal ("0.47s"), not a Kubernetes age column.
+const MEASURED_DURATION_PREFIX_PATTERN =
+  /(?:[\d.=]|\d[dhm]\s|\b(?:in|after|for|within|than|every|took|elapsed|timeout|ttl|delay|interval|wait|waiting|waited)[\s:=]+)$/iu;
 const ANSI_ESCAPE_PATTERN = /\u001b\[[0-9;]*m/gu;
 const IPV4_WITH_PORT_PATTERN =
   /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})\b/gu;
@@ -99,6 +104,11 @@ const ALPHANUMERIC_HASH_PATTERN =
   /\b(?=[A-Za-z0-9]*\d)(?=[A-Za-z0-9]*[A-Za-z])[A-Za-z0-9]{24,512}\b/gu;
 const AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/gu;
 const AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
+
+function maskAge(match: string, offset: number, whole: string): string {
+  const before = whole.slice(Math.max(0, offset - 16), offset);
+  return MEASURED_DURATION_PREFIX_PATTERN.test(before) ? match : '[AGO]';
+}
 
 export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
   const uuidReplacement =
@@ -182,7 +192,7 @@ export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
       const sepEnd = match.slice(sepIdx).match(/^[:=]\s*/u)![0].length;
       return `${match.slice(0, sepIdx + sepEnd)}[REDACTED]`;
     })
-    .replace(K8S_RELATIVE_DURATION_PATTERN, '[AGO]');
+    .replace(K8S_RELATIVE_DURATION_PATTERN, maskAge);
   if (result.includes('@')) result = result.replace(EMAIL_PATTERN, '[EMAIL]');
   result = result
     .replace(HEX_HASH_PATTERN, hexHashReplacement)

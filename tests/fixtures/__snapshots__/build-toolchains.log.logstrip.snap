@@ -18,14 +18,14 @@ BUILD FAILED
     |     ^ cannot assign twice to immutable variable
     = help: consider making this binding mutable by adding `mut`
 [TIME] [FATAL] cargo build failed with exit code 101
---- FAIL: TestCheckout (0.[AGO])
+--- FAIL: TestCheckout (0.12s)
 [x2] [TIME] [ERROR] checkout_test.go:42: unexpected payment status "declined", expected "approved"
 [TIME] [ERROR] panic: runtime error: invalid memory address or nil pointer dereference
 [TIME] [ERROR] goroutine 42 [running]:
   github.com/example/checkout.(*Service).Process(0xc0004a2000)
 [... hidden internal library frames ...]
   /repo/internal/checkout/service.go:[NN] +0x2a
-[TIME] [FATAL] FAIL  github.com/example/checkout  0.[AGO]
+[TIME] [FATAL] FAIL  github.com/example/checkout  0.234s
 [TIME] [ERROR] CMake Error at CMakeLists.txt:42 (add_library):
   Cannot find source file: src/payment_gateway.cpp
 [TIME] [ERROR] CMake Error at CMakeLists.txt:42 (add_library):
