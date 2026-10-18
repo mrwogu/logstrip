@@ -779,8 +779,8 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'python-worker-logging.log',
-    minSavingsPercent: 43,
-    expectDeduplication: false,
+    minSavingsPercent: 59,
+    expectDeduplication: true,
     expectInternalStackHidden: true,
     mustContain: [
       'WARNING - Redis connection lost, retrying in 2s',
