@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions
 
-<!-- PromptScript 2026-10-18T11:39:38.220Z | source: .promptscript/project.prs | target: github - do not edit -->
+<!-- PromptScript 2026-10-18T12:00:17.283Z | source: .promptscript/project.prs | target: github - do not edit -->
 
 ## project
 
@@ -17,7 +17,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 ## tech-stack
 
 - **Language:** typescript
-- **Runtime:** Node.js >= 20
+- **Runtime:** Node.js >= 22
 
 ## architecture
 
@@ -115,7 +115,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 
 ### ci
 
-- ci.yml runs on Node 20.x / 22.x / 24.x; keep parser and CLI compatible with all three
+- ci.yml runs on Node 22.x / 24.x (Node 20 is end of life and dropped in 2.0); keep parser and CLI compatible with both
 - The CLI smoke step feeds a printf-built log through node dist/cli/index.js and greps for [x2] [ERROR]
 - The action-smoke-test job downloads the published artifact and runs processLogFile against a printf-built fixture
 - When adding workflow steps avoid indented heredocs - they preserve leading whitespace and break literal grep assertions
@@ -423,7 +423,7 @@ inputs:
 outputs:
   output-path: # path to the compressed log; defaults to <input>.logstrip.log
 runs:
-  using: node20
+  using: node24
   main: dist/action/index.js
 ```
 

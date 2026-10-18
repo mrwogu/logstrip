@@ -3,7 +3,7 @@
 @context {
   project: "logstrip"
   languages: [typescript]
-  runtime: "Node.js >= 20"
+  runtime: "Node.js >= 22"
   packageManager: "npm"
 
   priority: [

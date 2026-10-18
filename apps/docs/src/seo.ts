@@ -55,7 +55,7 @@ export function homeJsonLd(version: string): HeadTag {
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       installUrl: NPM,
       programmingLanguage: 'TypeScript',
-      runtimePlatform: 'Node.js >= 20',
+      runtimePlatform: 'Node.js >= 22',
       license: 'https://opensource.org/licenses/MIT',
       author: {
         '@type': 'Person',

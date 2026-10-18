@@ -56,7 +56,7 @@
   },
   "homepage": "https://mrwogu.github.io/logstrip/",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "bench": "node scripts/benchmark-fixtures.mjs",
@@ -80,9 +80,9 @@
     "@actions/core": "^2.0.3",
     "@actions/github": "^9.1.1",
     "@types/node": "^26.6.5",
-    "@vitest/coverage-v8": "^4.1.12",
+    "@vitest/coverage-v8": "^5.0.5",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.12"
+    "vitest": "^5.0.5"
   }
 }

@@ -36,7 +36,7 @@ You paste a 50k-line CI log into your agent. It chews 200k+ tokens on noise - he
 
 ## Install <a id="install"></a>
 
-Requires Node.js 20 or newer.
+Requires Node.js 22 or newer.
 
 ```bash
 npm install --global logstrip

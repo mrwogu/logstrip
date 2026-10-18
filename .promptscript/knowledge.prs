@@ -215,7 +215,7 @@
     outputs:
       output-path:     # path to the compressed log; defaults to <input>.logstrip.log
     runs:
-      using: node20
+      using: node24
       main: dist/action/index.js
   ```
 

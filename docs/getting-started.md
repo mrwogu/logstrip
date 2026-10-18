@@ -10,7 +10,7 @@ artifact".
 
 ## 1. Install the CLI
 
-LogStrip requires Node.js 20 or newer.
+LogStrip requires Node.js 22 or newer.
 
 ```bash
 npm install --global logstrip
