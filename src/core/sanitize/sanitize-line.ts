@@ -78,6 +78,12 @@ const SLACK_TOKEN_PATTERN =
 const AUTHORIZATION_HEADER_PATTERN =
   /\bAuthorization\s*:\s*\S+(?:\s+\S+)*/giu;
 
+// What may follow a value for it to be the whole value: the end of the line,
+// white space, a closing quote (also the backslash-escaped one of JSON that was
+// logged inside a string), a closing backtick (Markdown inline code) or a
+// closing bracket or separator.
+const SECRET_VALUE_END = String.raw`(?=[\s"',;)}\]\x60]|\\["']|$)`;
+
 // Generic secret fields: KEY=value, key: value, key := value and quoted JSON /
 // dict properties ("key": "value"). The pieces are joined into one pattern
 // with three groups: 1 the name, 2 the quote around the key (if any) and 3 the
@@ -95,14 +101,23 @@ const SECRET_FIELD_PATTERN = new RegExp(
     // The (?![=>]) keeps "token === x" and "token => x" (comparisons and arrow
     // functions) out, and stops the separator from backing off into the value.
     String.raw`(\\?["'])?[ \t]*(?::=|=|:)(?![=>])[ \t]*`,
-    // Values that carry no secret: empty or quoted-empty, a ${...} or $(...)
-    // reference (also inside quotes), null / true / false and a bare number
-    // under four digits.
-    String.raw`(?!(?:\\?["'])?\$[({]|""|''|\\"\\"|(?:null|true|false|\d{1,3})(?![^\s"',;)}\]]))`,
-    // A quoted string (also the backslash-escaped form of JSON that was logged
-    // inside a string) or a bare token that stops at quotes and commas so the
-    // surrounding syntax survives.
-    String.raw`(\\"(?:(?!\\").)*\\"|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"',;]+)`,
+    // Values that carry no secret, when they are the whole value: a reference
+    // to a variable ($NAME, ${NAME}) or a GitHub expression (${{ ... }}), also
+    // inside quotes, but not one with a default or a command (${NAME:-x},
+    // $(cmd)) or with characters after it (${NAME}x); an empty or quoted-empty
+    // value; null, true, false and a bare number under four digits.
+    String.raw`(?!(?:(?:\\?["'])?(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_.]*\}|\$\{\{[^}]{0,200}\}\})|""|''|\\"\\"|null|true|false|\d{1,3})${SECRET_VALUE_END})`,
+    // A quoted string, or a bare token that stops at quotes and commas so the
+    // surrounding syntax survives. After an opening quote there is always a
+    // match: a missing closing quote or an odd escape masks to the end of the
+    // line instead of leaking. The escaped form is JSON logged inside a string.
+    // A ${...} or $(...) body may hold spaces, so it is taken whole (bounded
+    // so that a crafted line cannot make the scan quadratic).
+    String.raw`(\\"(?:(?!\\").)*(?:\\")?`,
+    String.raw`|"(?:[^"\\]|\\[\s\S]|\\$)*"?`,
+    String.raw`|'(?:[^'\\]|\\[\s\S]|\\$)*'?`,
+    String.raw`|\$(?:\((?:[^()]|\([^()]*\)){0,200}\)|\{[^}]{0,200}\})[^\s"',;]*`,
+    String.raw`|[^\s"',;]+)`,
   ].join(''),
   'giu',
 );

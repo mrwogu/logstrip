@@ -524,11 +524,18 @@ A secret field is any key whose last part is `password`, `passwd`, `pwd`,
 is masked whether it is written as `KEY=value`, `key: value`, `key := value` or
 as a quoted JSON or dict property, including JSON that was logged inside a
 string. A JSON property keeps its quotes, so `"password": "hunter2"` becomes
-`"password": "[REDACTED]"` and the line still parses. These are left alone:
+`"password": "[REDACTED]"` and the line still parses. A quote after the key
+always yields a redaction: when the closing quote is missing or an escape is
+odd (`password="hunter2`), the value is masked to the end of the line. These
+are left alone:
 
 - values that carry no secret: an empty or quoted-empty value, `null`, `true`,
-  `false`, a bare number under four digits and a `${...}` or `$(...)` reference
-  such as `token: ${{ secrets.NPM_TOKEN }}` or `DB_PASSWORD=${DB_PASSWORD}`
+  `false`, a bare number under four digits and a reference that is the whole
+  value: `$NAME`, `${NAME}` or a GitHub expression, as in
+  `token: ${{ secrets.NPM_TOKEN }}` or `DB_PASSWORD=${DB_PASSWORD}`. A
+  reference with a default or a command (`${NAME:-hunter2}`, `$(cat secret)`)
+  or with characters after it (`${NAME}extra`) is masked, because the rest of
+  the value may be the secret
 - a JSON object or array under a quoted key (`"auth": {...}`), whose own fields
   are masked on their own
 - a path under `PWD` and `OLDPWD`
