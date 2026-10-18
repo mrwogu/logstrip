@@ -1713,6 +1713,21 @@ describe('logstrip parser', () => {
     expect(isProgressBarLine('Installing 30% FAIL')).toBe(false);
   });
 
+  it('isProgressBarLine detects package transfers that carry no percentage', () => {
+    expect(isProgressBarLine('Downloaded from central: https://repo.maven.apache.org/maven2/a/b/1.0/b-1.0.pom (25 kB at 745 kB/s)')).toBe(true);
+    expect(isProgressBarLine('Downloading from central: https://repo.maven.apache.org/maven2/a/b/1.0/b-1.0.pom')).toBe(true);
+    expect(isProgressBarLine('Download https://repo.maven.apache.org/maven2/a/b/1.0/b-1.0.jar')).toBe(true);
+    expect(isProgressBarLine('  Downloading requests-2.31.0-py3-none-any.whl (62 kB)')).toBe(true);
+    expect(isProgressBarLine('Get:1 http://archive.ubuntu.com/ubuntu jammy/main amd64 libfoo amd64 1.2.3 [123 kB]')).toBe(true);
+    expect(isProgressBarLine('Hit:2 http://archive.ubuntu.com/ubuntu jammy InRelease')).toBe(true);
+    expect(isProgressBarLine('Fetched 45.6 MB in 3s (15.2 MB/s)')).toBe(true);
+    // Failures and unrelated lines are not progress
+    expect(isProgressBarLine('Failed to transfer https://repo.example.com/a.jar (12 kB/s)')).toBe(false);
+    expect(isProgressBarLine('Downloading https://repo.example.com/a.jar: connection refused')).toBe(false);
+    expect(isProgressBarLine('Downloading dependencies for the build')).toBe(false);
+    expect(isProgressBarLine('Err:3 http://archive.ubuntu.com/ubuntu jammy/main libbar 404 Not Found')).toBe(false);
+  });
+
   it('processLogStream drops CI noise lines', async () => {
     const logs = [
       '2026-05-15T10:20:30.123Z',

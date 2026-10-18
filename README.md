@@ -226,7 +226,7 @@ Aho-Corasick automaton) and applies several cuts to every streamed line:
 | **Instance-counter folding** | Folds enumerated counters (`worker [1 \| 2 \| 3]`, `retry …`) into the repeat signature; labels whose numbers carry meaning (error/code/status/exit) are excluded. |
 | **Multiline joining** | Joins indented continuation lines (Python tracebacks, Node stack frames, Java `Caused by:` chains, Go goroutine dumps) with their parent into a single logical line. |
 | **Severity filtering** | Drops lines below a configurable minimum severity (`fatal` / `error` / `warn` / `info` / `debug` / `trace`). |
-| **CI noise filters** | Drops progress bars, timestamp-only lines, K8s `Normal` events, rate-limited repetition messages, and passing-test reports (`PASSED`, `✓`, `--- PASS:`, `ok pkg`, `PASS src/a.test.ts`, idle Gradle tasks) even when the test name mentions an error. |
+| **CI noise filters** | Drops progress bars, timestamp-only lines, K8s `Normal` events, rate-limited repetition messages, package transfers (`Downloaded from central: ... (25 kB at 745 kB/s)`, apt `Get:1 ...`, pip `Downloading ... .whl`), and passing-test reports (`PASSED`, `✓`, `--- PASS:`, `ok pkg`, `PASS src/a.test.ts`, idle Gradle tasks) even when the test name mentions an error. |
 
 Cuts marked _(auto)_ are enabled by default in `auto` mode; disable any of them
 with the matching `--no-*` flag.

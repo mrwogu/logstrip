@@ -896,6 +896,25 @@ const cases: readonly SmokeCase[] = [
     mustNotContain: ['10.40.1.', '16/May/2026'],
     mustDetectSources: [],
   },
+  {
+    fixture: 'maven-downloads-failure.log',
+    minSavingsPercent: 74,
+    expectDeduplication: false,
+    expectInternalStackHidden: false,
+    mustContain: [
+      '[ERROR] /repo/src/main/java/com/acme/checkout/CartService.java:[118,9] cannot find symbol',
+      '[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin',
+      'Failed to transfer https://repo.example.com/internal/acme-sdk-2.4.0.jar (12 kB/s), retrying',
+    ],
+    mustNotContain: [
+      'Downloading from central',
+      'Downloaded from central',
+      'Get:1 http://archive.ubuntu.com',
+      'Fetched 4210 kB',
+      'requests-2.31.0-py3-none-any.whl',
+    ],
+    mustDetectSources: ['maven'],
+  },
 ];
 
 let workDir: string;

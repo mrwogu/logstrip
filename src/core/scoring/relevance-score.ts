@@ -264,6 +264,14 @@ const PROGRESS_INDICATOR_PATTERN =
 
 const PROGRESS_BAR_VISUAL_PATTERN = /[|[]\s*[=#>-]{5,}[>\s]*[|\]]/u;
 
+// Package and artifact transfers that carry no percentage: a transfer rate
+// ("25 kB at 745 kB/s", "(15.2 MB/s)"), Maven/Gradle "Downloading from
+// central: https://...", apt "Get:1 http://... [123 kB]" and pip
+// "Downloading foo-1.0-py3-none-any.whl (12 kB)".
+const TRANSFER_RATE_PATTERN = /\b\d+(?:\.\d+)?\s?(?:[KMGT]i?)?B\/s\b/iu;
+const DOWNLOAD_LINE_PATTERN =
+  /^\s*(?:(?:Downloading|Downloaded|Download)\s+(?:from\s+\S+:\s+)?(?:https?|ftp):\/\/\S+|Downloading\s+\S+\.(?:whl|tar\.gz|zip|tgz)\b|(?:Get|Hit|Ign):\d+\s+https?:\/\/)/u;
+
 const K8S_NORMAL_EVENT_PATTERN =
   /\b(?:type:\s*'?Normal'?|Normal\s+\d+[smhd])\b/iu;
 
@@ -284,6 +292,10 @@ export function isProgressBarLine(line: string): boolean {
   if (PROGRESS_SEPARATOR_PATTERN.test(trimmed)) return true;
   if (PROGRESS_INDICATOR_PATTERN.test(line)) return true;
   if (PROGRESS_BAR_VISUAL_PATTERN.test(line)) return true;
+  if (TRANSFER_RATE_PATTERN.test(line) || DOWNLOAD_LINE_PATTERN.test(line)) {
+    // "Failed to download ... (12 kB/s)" is a failure report, not progress.
+    return !looksLikeDiagnosticLine(line);
+  }
   return false;
 }
 
