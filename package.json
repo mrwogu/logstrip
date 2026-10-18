@@ -75,7 +75,7 @@
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm run typecheck && npm run test:coverage && npm run build && npm run docs:check && npm audit && npm run docs:build"
+    "verify": "npm run typecheck && npm run test:coverage && npm run build && npm run docs:check && npm run docs:bench -- --check && node scripts/export-hero-scenarios.mjs --check && npm audit && npm run docs:build"
   },
   "devDependencies": {
     "@actions/core": "^2.0.3",
