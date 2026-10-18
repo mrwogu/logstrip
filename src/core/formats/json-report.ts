@@ -139,7 +139,7 @@ export async function claimJsonDocument(
   return { doc: { text, value }, replay: replay() };
 }
 
-async function* replayLines(
+export async function* replayLines(
   buffered: readonly string[],
   iterator: AsyncIterator<string>,
 ): AsyncIterable<string> {
