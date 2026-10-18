@@ -24,9 +24,13 @@ export interface Scenario {
 
 const SCENARIOS: Scenario[] = scenarios;
 
+// Anchored and unanchored patterns stay in separate expressions, so an anchor
+// never applies to only one branch of an alternation.
 const ERROR_PATTERN =
-  /\[(?:ERROR|FATAL|CRITICAL)\]|^FAIL\s|AssertionError|npm ERR!|##\[error\]|panic|BackOff|ErrImagePull/i;
-const SCANNER_PATTERN = /"Severity":\s*"(?:CRITICAL|HIGH)"|CVE-|GHSA-|^CRITICAL\s|^HIGH\s/;
+  /\[(?:ERROR|FATAL|CRITICAL)\]|AssertionError|npm ERR!|##\[error\]|panic|BackOff|ErrImagePull/i;
+const FAIL_LINE_PATTERN = /^FAIL\s/i;
+const SCANNER_PATTERN = /"Severity":\s*"(?:CRITICAL|HIGH)"|CVE-|GHSA-/;
+const SEVERITY_LINE_PATTERN = /^(?:CRITICAL|HIGH)\s/;
 const PLACEHOLDER_PATTERN = /\[(?:ID|HASH|IP|TIME|REDACTED|NN)\]/;
 
 /** True for a folded value list such as `[99.99 | 49.50 | 12.00]`. Linear: no backtracking. */
@@ -48,8 +52,12 @@ export function highlightLine(line: string): string {
   if (/hidden internal (?:library|stack) frames/i.test(line)) {
     return `<span class="stk">${esc}</span>`;
   }
-  if (ERROR_PATTERN.test(line)) return `<span class="err">${esc}</span>`;
-  if (SCANNER_PATTERN.test(line)) return `<span class="scan">${esc}</span>`;
+  if (ERROR_PATTERN.test(line) || FAIL_LINE_PATTERN.test(line)) {
+    return `<span class="err">${esc}</span>`;
+  }
+  if (SCANNER_PATTERN.test(line) || SEVERITY_LINE_PATTERN.test(line)) {
+    return `<span class="scan">${esc}</span>`;
+  }
   if (line.includes('[WARN]') || /^\s*❯\s/.test(line)) return `<span class="warn">${esc}</span>`;
   if (/^\s*(?:at|✓)\s/.test(line)) return `<span class="mark">${esc}</span>`;
   if (PLACEHOLDER_PATTERN.test(line) || hasDeltaList(line)) {

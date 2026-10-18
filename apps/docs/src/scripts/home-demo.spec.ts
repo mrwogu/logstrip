@@ -20,6 +20,14 @@ describe('highlightLine', () => {
     expect(highlightLine(`${'['.repeat(5000)} | ${'x'.repeat(5000)}`)).not.toContain('<span');
   });
 
+  it('colors line-start failures and severities, but not the same words mid-line', () => {
+    expect(highlightLine('FAIL tests/a.test.ts')).toContain('class="err"');
+    expect(highlightLine('HIGH axios 1.7.0')).toContain('class="scan"');
+    expect(highlightLine('CRITICAL openssl 3.0.13')).toContain('class="scan"');
+    expect(highlightLine('a test could FAIL here')).toBe('a test could FAIL here');
+    expect(highlightLine('rated HIGH today')).toBe('rated HIGH today');
+  });
+
   it('colors the command and detected-source header lines', () => {
     expect(highlightLine('❯ logstrip raw.log --stats')).toContain('class="det"');
     expect(highlightLine('✓ detected: nginx')).toContain('class="det"');

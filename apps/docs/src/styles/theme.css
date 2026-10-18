@@ -30,8 +30,11 @@
   --sl-color-accent-high: #14482a;
 }
 
+/* The landing page sits inside .sl-markdown-content but styles itself, so the
+   rules below skip anything under .not-content (the same guard Starlight uses). */
+
 /* Tight headings, like the MkDocs site had */
-.sl-markdown-content :is(h1, h2, h3, h4),
+.sl-markdown-content :is(h1, h2, h3, h4):not(:where(.not-content *)),
 h1#_top {
   font-weight: 700;
   letter-spacing: -0.04em;
@@ -102,17 +105,26 @@ h1#_top {
   margin-top: 0;
 }
 
+/* Wide tables (five columns or more, such as the comparison and benchmark
+   tables): smaller type and padding so they fit the content column. */
+.sl-markdown-content table:has(th:nth-child(5)) {
+  font-size: var(--sl-text-sm);
+}
+.sl-markdown-content table:has(th:nth-child(5)) :is(th, td) {
+  padding: 0.5rem 0.6rem;
+}
+
 /* Collapsible blocks (<details> in the Markdown) */
-.sl-markdown-content details {
+.sl-markdown-content details:not(:where(.not-content *)) {
   border: 1px solid var(--sl-color-hairline);
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
 }
-.sl-markdown-content details > summary {
+.sl-markdown-content details:not(:where(.not-content *)) > summary {
   cursor: pointer;
   font-weight: 600;
 }
-.sl-markdown-content details[open] > summary {
+.sl-markdown-content details[open]:not(:where(.not-content *)) > summary {
   margin-bottom: 0.75rem;
 }
 
