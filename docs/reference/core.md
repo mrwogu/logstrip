@@ -31,6 +31,7 @@ interface LogStripResult {
   savingsPercent: number;
   detectedSources?: readonly string[];
   detectedFormat?: string;
+  contentKind?: 'log' | 'text';
   timedOut?: boolean;
   outputPath?: string;
 }
@@ -63,7 +64,111 @@ vote over the first `formatDetectionSampleSize` (default 50) non-blank lines, so
 mixed-format streams resolve to their dominant format. `timedOut` is `true` when
 `processLogStreamWithTimeout` was used and the deadline was reached.
 `truncatedLines` counts lines that exceeded `maxLineLength` and were replaced
-with `[TRUNCATED]`.
+with `[TRUNCATED]`. `contentKind` is `'text'` when the input was copied through
+instead of compressed (see below) and `'log'` otherwise, including for JSON
+documents handled by the report path. It is absent when `timedOut` is `true`
+and the input had not been classified yet.
+
+## Non-log input (`textPassthrough`)
+
+The line scorer keeps diagnostics and drops everything else, which is right
+for a build log and destructive for a README, a YAML file or a source file.
+So `processLogStream`, and everything built on it (`processLogFile`,
+`processLogString`, `createLogStripTransform`, `processLogStreamWithTimeout`),
+reads a bounded sample of the input first, right after the JSON document check,
+and classifies it. Plain text is copied through line by line; anything else
+goes through the compression pipeline untouched by this step.
+
+```ts
+import { processLogString } from 'logstrip';
+
+const copy = await processLogString(readmeText);
+copy.contentKind;                  // 'text'
+copy.savingsPercent;               // 0
+copy.stats.droppedLines;           // 0
+copy.output === readmeText;        // true when the text holds no secrets
+
+const forced = await processLogString(readmeText, { textPassthrough: false });
+forced.contentKind;                // 'log' - compressed like any log
+```
+
+| Option | Type | Default | Behavior |
+| :--- | :--- | :--- | :--- |
+| `textPassthrough` | `boolean` | `true` | Classify the head of the stream and copy plain text (prose, markdown, source code, configuration, data) through instead of compressing it. `false` always runs the log pipeline; the CLI exposes it as `--force`. |
+
+What passthrough does and does not do:
+
+- **Unchanged except for secrets.** Every line is written, in order, with line
+  endings normalized to `\n`. The only edits are credential masking: PEM
+  private key blocks (the key lines are dropped and counted in
+  `stats.droppedLines`), then [`maskSecrets`](#masksecrets), then the custom
+  `sanitizePatterns` of the config. Identifiers, timestamps, IP addresses,
+  emails and prose are left alone, so text without secrets comes out as it went
+  in.
+- **Filters do not apply.** `include`, `exclude`, `severity`, `sampleSize`,
+  `maxTokens`, `maxLineLength` and `collapseBlocks` only shape compressed
+  logs.
+- **Stats.** `inputLines` / `outputLines` and the byte and word counts are
+  filled in, `droppedLines` is `0` (apart from private key lines),
+  `savedTokens` and `savingsPercent` are `0` for text without secrets.
+- **Decisions.** `onDecision` receives `{ kept: true, reason: 'passthrough' }`
+  for every written line, with the masked text in `sanitizedLine`.
+- **Streaming.** Only the sample is buffered, and only until the verdict is
+  known. A stream that already reads like a log is settled after
+  `CONTENT_EARLY_LOG_MIN_LINES` (8) lines, so a real log starts flowing almost
+  at once. Text, and a log with little structure, wait for the full sample:
+  the first `DEFAULT_CONTENT_SAMPLE_LINES` non-blank lines or
+  `DEFAULT_CONTENT_SAMPLE_BYTES` bytes, whichever comes first, which is the
+  worst case. Output then starts and the rest of the input flows line by
+  line. A `signal` aborts passthrough like any other run.
+- **Decided from the head only.** The verdict comes from the sampled lines,
+  not from the whole input. When it is wrong for your input, pass
+  `textPassthrough: false`.
+
+### `classifyContent`
+
+```ts
+import { classifyContent } from 'logstrip';
+
+const { kind, logLines, textLines, sampledLines } = classifyContent(lines);
+// kind: 'log' | 'text'
+```
+
+Scores up to `DEFAULT_CONTENT_SAMPLE_LINES` non-blank lines (and at most
+`DEFAULT_CONTENT_SAMPLE_BYTES` bytes) and returns a `ContentClassification`.
+Each line counts as log-like (timestamp, severity tag, CI marker, stack frame,
+logfmt / JSON-line / syslog record, access-log line, ANSI escape, process id,
+several `key=value` pairs, known tool output), text-like (markdown, prose
+sentence, source code, YAML / INI / JSON configuration, shell or Dockerfile
+syntax, HTML, CSV) or neither. Lines inside a closed markdown fence count as
+text. The sample is `'text'` only when at least `CONTENT_TEXT_MIN_LINES` lines
+are text-like, they make up at least `CONTENT_TEXT_MIN_RATIO` of the sampled
+lines, and log-like lines stay at or below `CONTENT_TEXT_MAX_LOG_RATIO` (a weak
+log signal such as the word `error` counts half). Otherwise the result is
+`'log'`, so unrecognised formats keep being compressed and a log that opens
+with a short prose banner stays a log.
+
+| Constant | Value | Meaning |
+| :--- | :---: | :--- |
+| `DEFAULT_CONTENT_SAMPLE_LINES` | `100` | Non-blank lines scored. |
+| `DEFAULT_CONTENT_SAMPLE_BYTES` | `262144` | Byte cap of the sample (256 KiB). |
+| `CONTENT_LINE_SCAN_LIMIT` | `2000` | Characters of a line that are scored. |
+| `CONTENT_TEXT_MIN_LINES` | `2` | Text-like lines needed for a `'text'` verdict. |
+| `CONTENT_TEXT_MIN_RATIO` | `0.5` | Minimum share of text-like lines. |
+| `CONTENT_TEXT_MAX_LOG_RATIO` | `0.15` | Maximum share of log-like lines. |
+| `CONTENT_EARLY_LOG_MIN_LINES` | `8` | Sampled lines needed before a log-like share settles the verdict early. |
+| `CONTENT_EARLY_LOG_MIN_RATIO` | `0.6` | Log-like share (weak signals at half weight) that settles a log verdict early. |
+
+`claimTextContent(lines, limits?)` is the streaming half: it reads at most one
+sample from an `AsyncIterable<string>` and returns the classification together
+with a `replay` iterable that yields every consumed line again, followed by the
+rest of the stream. It stops reading early with a `'log'` verdict when the log
+count alone rules text out, when more than half of a full sample can no longer
+be text, or when at least `CONTENT_EARLY_LOG_MIN_LINES` lines are sampled and
+`CONTENT_EARLY_LOG_MIN_RATIO` of them is log-like. The last exit can differ from
+the verdict of the full sample for a text file that opens with a log excerpt,
+which is then compressed as before. `ContentSampler` is the incremental scorer
+behind both `classifyContent` and the claim.
 
 ## Aggressiveness
 
@@ -427,6 +532,35 @@ sanitizeLine('request 123e4567-e89b-12d3-a456-426614174000 failed', 6);
 
 `preserveIdSuffix` accepts `0`–`16`; `0` (the default) masks the value entirely
 to `[ID]` / `[HASH]`.
+
+### `maskSecrets`
+
+```ts
+import { maskSecrets } from 'logstrip';
+
+maskSecrets('deploy with ghp_... and password=hunter2');
+// deploy with [REDACTED] and password=[REDACTED]
+```
+
+The credential rules of `sanitizeLine` on their own: GitHub, Slack, Stripe,
+npm, Google, Twilio, SendGrid and AWS keys, JWTs, connection-string passwords,
+`Authorization:` headers, secret field values, AWS account ids in ARNs and the
+high-entropy token fallback. UUIDs, timestamps, IP addresses, emails, hashes
+and ANSI escapes are not touched. Text passthrough uses it so a copied config
+or document does not carry credentials along. `sanitizeLine` applies the same
+rules in the same order as before, so the compressed log output is unchanged.
+The rules recognise common credential shapes; they are a safety net, not a
+guarantee that a file holds no secrets. They also favour masking over fidelity:
+`token: ${{ secrets.NPM_TOKEN }}`, `id-token: write` and a sentence that
+mentions an `Authorization:` header (the rest of the line is masked) are
+masked as well.
+
+Text passthrough also handles PEM private key blocks, with
+`maskPemBlockInText`, a variant of `maskPemBlock` for documents and configs:
+only a header that ends its line opens a block, so a page that merely names
+`-----BEGIN PRIVATE KEY-----` in a sentence or table keeps the rest of its
+content, and a whole key on one line (a JSON string with `\n` escapes) is
+redacted on the spot.
 
 ## `createRepeatSignature`
 

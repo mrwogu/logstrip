@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -166,6 +167,111 @@ const MIXED_CI_PASTE = [
   'RUN   tests/integration/orders.test.ts',
   'FAIL  tests/integration/orders.test.ts (2 failed)',
   '  ● Order Service › should create order',
+].join('\n');
+
+// The same kinds of paste with some noise around them, so they compress.
+const JAVA_STACK_NOISY_PASTE = [
+  '2024-03-12T14:32:00.100 [INFO] checkout started',
+  '2024-03-12T14:32:00.200 [DEBUG] cart loaded',
+  '2024-03-12T14:32:00.300 [DEBUG] prices resolved',
+  'java.lang.NullPointerException',
+  '    at com.example.checkout.CartService.calculateTotal(CartService.java:42)',
+  '    at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:883)',
+  '    at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:900)',
+  '    at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1067)',
+  '2024-03-12T14:32:01.456 [ERROR] Unhandled exception in checkout flow',
+].join('\n');
+
+const NPM_BUILD_NOISY_PASTE = [
+  '2024-01-15 10:23:40.100 [INFO] npm ci started',
+  '2024-01-15 10:23:41.200 [INFO] added 812 packages in 4s',
+  '2024-01-15 10:23:42.300 [DEBUG] running build script',
+  ...NPM_BUILD_PASTE.split('\n'),
+].join('\n');
+
+const MIXED_CI_NOISY_PASTE = [
+  'PASS  tests/unit/auth.test.ts',
+  'PASS  tests/unit/cart.test.ts',
+  'PASS  tests/unit/orders.test.ts',
+  'PASS  tests/unit/users.test.ts',
+  'SKIP  tests/e2e/deploy.test.ts',
+  'FAIL  tests/integration/users.test.ts',
+  'FAIL  tests/integration/orders.test.ts (2 failed)',
+  '  ● Order Service › should create order',
+].join('\n');
+
+const DEEP_STACK_NOISY_PASTE = [
+  '2024-03-12T14:32:00.100 [INFO] job started',
+  '2024-03-12T14:32:00.200 [DEBUG] job step 1',
+  'java.lang.NullPointerException',
+  '    at com.example.A.run(A.java:1)',
+  '    at com.example.B.run(B.java:2)',
+  '    at com.example.C.run(C.java:3)',
+  '    at com.example.D.run(D.java:4)',
+].join('\n');
+
+const PASTE_WITH_INTRO = [
+  'Here is the output of my failing build, please help me understand it.',
+  'Thanks in advance for looking at this.',
+  '2024-01-15 10:23:45.123 [ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed',
+  '2024-01-15 10:23:46.456 [ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed',
+  '2024-01-15 10:23:47.789 [INFO] boot ok',
+  '2024-01-15 10:23:48.012 [DEBUG] cache warm',
+  '2024-01-15 10:23:49.345 [INFO] heartbeat',
+].join('\n');
+
+const THREE_LOG_LINES_OF_FIVE = [
+  'Why does my build fail?',
+  '2024-01-15 10:23:45 [ERROR] line 1',
+  '2024-01-15 10:23:46 [ERROR] line 2',
+  '2024-01-15 10:23:47 [INFO] line 3',
+  'Thanks',
+].join('\n');
+
+const LOGS_IN_A_LONG_QUESTION = [
+  'Hi, I get a weird failure in my build today and I do not know why it happens.',
+  'Here is what I tried so far to fix it and nothing helped at all, sadly.',
+  'I rebuilt the cache and I reinstalled every dependency in the project folder.',
+  'Could you please take a look at the output below and tell me what is wrong?',
+  '2024-01-15 10:23:45 [ERROR] boom 1',
+  '2024-01-15 10:23:46 [ERROR] boom 2',
+  '2024-01-15 10:23:47 [INFO] ok',
+  'The output ends here, thank you very much for your help with this problem.',
+  'I can also share the full config file if that would be useful to you today.',
+  'Best regards from a very tired developer who just wants the build to pass.',
+].join('\n');
+
+const TYPESCRIPT_PASTE = [
+  "import { readFile } from 'node:fs/promises';",
+  '',
+  'export async function load(path: string): Promise<string> {',
+  "  const text = await readFile(path, 'utf8');",
+  '  if (text.length === 0) {',
+  "    throw new Error('empty file');",
+  '  }',
+  '  return text;',
+  '}',
+].join('\n');
+
+const YAML_PASTE = [
+  'name: ci',
+  'on:',
+  '  push:',
+  '    branches: [main]',
+  'jobs:',
+  '  test:',
+  '    runs-on: ubuntu-latest',
+  '    steps:',
+  '      - run: npm test',
+].join('\n');
+
+const UNSTRUCTURED_CHAT = [
+  'alpha',
+  'beta',
+  'gamma',
+  'delta',
+  'epsilon',
+  'zeta',
 ].join('\n');
 
 const SHORT_NON_LOG = 'Hello, how are you today?';
@@ -429,6 +535,95 @@ describe('PreToolUse - compression output', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+// PreToolUse - files that are not logs
+// ═══════════════════════════════════════════════════════════════════════
+
+describe('PreToolUse - files that are not logs', () => {
+  const NOTES = [
+    'meeting notes monday',
+    'talk to the platform team about the deploy pipeline',
+    'ask maria about the budget for next quarter',
+    'remember to renew the domain before friday',
+    'call the dentist',
+    'buy milk and coffee',
+  ].join('\n');
+  const REQUIREMENTS = [
+    'numpy==1.26.4',
+    'pandas>=2.0,<3.0',
+    'requests[socks]==2.31.0',
+    'pytest~=8.0',
+  ].join('\n');
+  const CMAKE_LISTS = [
+    'cmake_minimum_required(VERSION 3.10)',
+    'project(MyApp VERSION 1.0 LANGUAGES CXX)',
+    'set(CMAKE_CXX_STANDARD 17)',
+    'add_executable(myapp src/main.cpp src/util.cpp)',
+    'target_link_libraries(myapp PRIVATE fmt::fmt)',
+  ].join('\n');
+  const MARKDOWN_DOC = [
+    '# Release notes',
+    '',
+    'This release improves the way the parser handles very long input files.',
+    '',
+    '- Faster startup for small inputs.',
+    '- Better handling of repeated errors in watch mode.',
+  ].join('\n');
+
+  it.each([
+    ['notes.txt', NOTES],
+    ['requirements.txt', REQUIREMENTS],
+    ['CMakeLists.txt', CMAKE_LISTS],
+    ['README.txt', MARKDOWN_DOC],
+    ['changes.log', MARKDOWN_DOC],
+    ['output.out', YAML_PASTE],
+  ])('leaves %s alone', async (name, content) => {
+    const filePath = join(workDir, `plain-${name}`);
+    await writeFile(filePath, content);
+
+    const result = await runHook(makePreToolUseInput(filePath));
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+    expect(existsSync(`${filePath}.logstrip.log`)).toBe(false);
+    expect(await readFile(filePath, 'utf8')).toBe(content);
+  });
+
+  it('still compresses a log saved under a text-like name', async () => {
+    const filePath = join(workDir, 'build-output.txt');
+    await writeFile(filePath, CI_LOG_PASTE);
+
+    const result = await runHook(makePreToolUseInput(filePath));
+
+    expect(parseJson<{ permission: string }>(result.stdout)?.permission).toBe('deny');
+    expect(existsSync(`${filePath}.logstrip.log`)).toBe(true);
+  });
+
+  it('only reads the head of a large text file', async () => {
+    const filePath = join(workDir, 'huge-notes.txt');
+    const paragraph = `${NOTES}\n`;
+    await writeFile(filePath, paragraph.repeat(60_000));
+
+    const result = await runHook(makePreToolUseInput(filePath));
+
+    expect(result.stdout.trim()).toBe('');
+    expect(existsSync(`${filePath}.logstrip.log`)).toBe(false);
+    expect(result.durationMs).toBeLessThan(1_000);
+  });
+
+  it('compresses logs with the log pipeline, not the text passthrough', async () => {
+    const filePath = join(workDir, 'pipeline-choice.log');
+    await writeFile(filePath, CI_LOG_PASTE);
+    const spy = vi.spyOn(parser, 'processLogFile');
+
+    await runHook(makePreToolUseInput(filePath));
+
+    expect(spy).toHaveBeenCalledWith(filePath, `${filePath}.logstrip.log`, {
+      textPassthrough: false,
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
 // PreToolUse - compression failure path
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -477,7 +672,7 @@ describe('UserPromptSubmit - positive detection', () => {
   });
 
   it('detects Java stack trace paste (log levels + stacks)', async () => {
-    const result = await runHook(makeUserPromptSubmitInput(JAVA_STACK_PASTE));
+    const result = await runHook(makeUserPromptSubmitInput(JAVA_STACK_NOISY_PASTE));
     expect(result.exitCode).toBe(0);
 
     const json = parseJson<{ decision: string; reason: string }>(
@@ -488,7 +683,7 @@ describe('UserPromptSubmit - positive detection', () => {
   });
 
   it('detects npm build error paste (CI markers)', async () => {
-    const result = await runHook(makeUserPromptSubmitInput(NPM_BUILD_PASTE));
+    const result = await runHook(makeUserPromptSubmitInput(NPM_BUILD_NOISY_PASTE));
     expect(result.exitCode).toBe(0);
 
     const json = parseJson<{ decision: string; reason: string }>(
@@ -499,7 +694,7 @@ describe('UserPromptSubmit - positive detection', () => {
   });
 
   it('detects vitest/jest result paste (FAIL + PASS + SKIP)', async () => {
-    const result = await runHook(makeUserPromptSubmitInput(MIXED_CI_PASTE));
+    const result = await runHook(makeUserPromptSubmitInput(MIXED_CI_NOISY_PASTE));
     expect(result.exitCode).toBe(0);
 
     const json = parseJson<{ decision: string }>(result.stdout);
@@ -700,22 +895,67 @@ describe('UserPromptSubmit - boundary conditions', () => {
     expect(json).not.toBeNull();
   });
 
-  it('awards the deep stack-trace bonus when 3+ stack lines are present', async () => {
-    const deepStackPaste = [
-      'java.lang.NullPointerException',
-      '    at com.example.A.run(A.java:1)',
-      '    at com.example.B.run(B.java:2)',
-      '    at com.example.C.run(C.java:3)',
-      '    at com.example.D.run(D.java:4)',
-    ].join('\n');
-
+  it('blocks a deep stack trace that has noise around it', async () => {
     const result = await runHook(
-      makeUserPromptSubmitInput(deepStackPaste),
+      makeUserPromptSubmitInput(DEEP_STACK_NOISY_PASTE),
     );
     const json = parseJson<{
       hookSpecificOutput: { additionalContext: string };
     }>(result.stdout);
     expect(json).not.toBeNull();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// UserPromptSubmit - classifier and savings gates
+// ═══════════════════════════════════════════════════════════════════════
+
+describe('UserPromptSubmit - classifier and savings gates', () => {
+  async function isBlocked(prompt: string): Promise<boolean> {
+    const result = await runHook(makeUserPromptSubmitInput(prompt));
+    expect(result.exitCode).toBe(0);
+    return parseJson<{ decision?: string }>(result.stdout)?.decision === 'block';
+  }
+
+  it.each([
+    ['a stack trace with nothing to drop', JAVA_STACK_PASTE],
+    ['an npm error paste with nothing to drop', NPM_BUILD_PASTE],
+    ['a test result paste that shrinks by less than 15 percent', MIXED_CI_PASTE],
+  ])('lets %s through', async (_name, prompt) => {
+    expect(await isBlocked(prompt)).toBe(false);
+  });
+
+  it('blocks a log paste that starts with a short introduction', async () => {
+    expect(await isBlocked(PASTE_WITH_INTRO)).toBe(true);
+  });
+
+  it('blocks a prompt in which exactly three of five lines are log lines', async () => {
+    expect(await isBlocked(THREE_LOG_LINES_OF_FIVE)).toBe(true);
+  });
+
+  it('lets a prompt through when log lines are a minority', async () => {
+    expect(await isBlocked(LOGS_IN_A_LONG_QUESTION)).toBe(false);
+  });
+
+  it('lets a prompt through when it has fewer than three log lines', async () => {
+    expect(await isBlocked(SINGLE_HEURISTIC)).toBe(false);
+  });
+
+  it.each([
+    ['source code', TYPESCRIPT_PASTE],
+    ['a YAML file', YAML_PASTE],
+    ['prose', CODE_DISCUSSION],
+    ['lines with no recognizable structure', UNSTRUCTURED_CHAT],
+  ])('lets %s through', async (_name, prompt) => {
+    expect(await isBlocked(prompt)).toBe(false);
+  });
+
+  it('compresses with the log pipeline, not the text passthrough', async () => {
+    const spy = vi.spyOn(parser, 'processLogString');
+
+    await runHook(makeUserPromptSubmitInput(CI_LOG_PASTE));
+
+    expect(spy).toHaveBeenCalledWith(CI_LOG_PASTE, { textPassthrough: false });
   });
 });
 

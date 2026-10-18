@@ -34,6 +34,9 @@ diagnostic context an LLM actually needs.
 
 Arguments:
   INPUT                    Path to the raw log. When omitted, reads from stdin.
+                           Input that is not a log (prose, markdown, source code,
+                           configuration) is copied through unchanged, with
+                           credentials masked, instead of being compressed.
 
 Subcommands:
   hook                     Run as an AI assistant plugin hook. Reads a JSON event
@@ -87,6 +90,9 @@ Options:
                            are compressed semantically - repeated entries
                            grouped, duplicate fields referenced, empty fields
                            pruned - and stay valid JSON.
+      --force              Compress even when the input does not look like a log.
+                           Disables the text passthrough that copies prose,
+                           markdown, code and config files through unchanged.
       --preserve-id-suffix <N> Keep the last N chars of redacted UUIDs/hashes
                            (e.g. [ID:74000]) instead of fully masking. 0-16,
                            0 masks fully. Default: 0.
@@ -105,6 +111,7 @@ Examples:
   logstrip raw.log -o clean.log --json
   logstrip traceback.log -m python -o clean.log
   logstrip build.log --exclude 'Downloading|Extracting' -o clean.log
+  logstrip output.txt --force -o clean.log
   logstrip huge.log --progress --timeout 30 -o clean.log
 `;
 
@@ -140,6 +147,7 @@ export interface CliOptions {
   templateMining: boolean;
   collapseRepeatedBlocks: boolean;
   jsonReport: boolean;
+  force: boolean;
   telemetry: boolean;
   help: boolean;
   version: boolean;
@@ -208,6 +216,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         'no-template-mining': { type: 'boolean', default: false },
         'no-collapse-repeated-blocks': { type: 'boolean', default: false },
         'no-json-report': { type: 'boolean', default: false },
+        force: { type: 'boolean', default: false },
         'max-line-length': { type: 'string' },
         timeout: { type: 'string' },
         progress: { type: 'boolean', default: false },
@@ -390,6 +399,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     templateMining: parsed.values['no-template-mining'] !== true,
     collapseRepeatedBlocks: parsed.values['no-collapse-repeated-blocks'] !== true,
     jsonReport: parsed.values['no-json-report'] !== true,
+    force: parsed.values.force === true,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
     version: parsed.values.version === true,
@@ -410,6 +420,12 @@ export function formatStats(result: LogStripResult): string {
     `  saved tokens    : ${result.savedTokens}`,
     `  savings         : ${result.savingsPercent.toFixed(2)}%`,
   ];
+
+  if (result.contentKind === 'text') {
+    lines.push('  content kind    : text (passed through, secrets masked)');
+  } else if (result.contentKind === 'log') {
+    lines.push('  content kind    : log');
+  }
 
   if (result.outputPath !== undefined) {
     lines.push(`  output path     : ${result.outputPath}`);
@@ -585,6 +601,7 @@ export async function runCli(
       templateMining: options.templateMining,
       collapseRepeatedBlocks: options.collapseRepeatedBlocks,
       jsonReport: options.jsonReport,
+      textPassthrough: options.force ? false : undefined,
     };
     result = await processLogStreamWithTimeout(
       input,
@@ -612,7 +629,11 @@ export async function runCli(
     await endStream(output as Writable);
   }
 
-  try { recordTelemetry(result); } catch { /* non-critical, ignore write failures */ }
+  // Text copied through saves nothing; recording it would only drag down the
+  // average savings of the runs that compressed a log.
+  if (result.contentKind !== 'text') {
+    try { recordTelemetry(result); } catch { /* non-critical, ignore write failures */ }
+  }
 
   if (options.json) {
     await writeAll(io.stdout, `${JSON.stringify(result, null, 2)}\n`);

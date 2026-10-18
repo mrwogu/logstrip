@@ -31,6 +31,7 @@ import {
   renderRepeatGroup,
   type RepeatGroup,
 } from './dedupe/repeat-grouper.js';
+import { claimTextContent } from './detection/content-claim.js';
 import {
   collectDetectedSourceHits,
   createSourceDetectionState,
@@ -80,10 +81,11 @@ import {
   normalizeStackFrameLineCol,
   stackWindowSignature,
 } from './dedupe/stack-fingerprint.js';
-import { sanitizeLine } from './sanitize/sanitize-line.js';
+import { maskSecrets, sanitizeLine } from './sanitize/sanitize-line.js';
 import {
   createPemBlockState,
   maskPemBlock,
+  maskPemBlockInText,
   type PemBlockState,
 } from './sanitize/pem-block.js';
 import { passesSeverityFilter } from './severity/severity-filter.js';
@@ -128,8 +130,16 @@ export {
 } from './formats/format-voter.js';
 export { parseAggressiveness } from './aggressiveness/levels.js';
 export {
+  CONTENT_EARLY_LOG_MIN_LINES,
+  CONTENT_EARLY_LOG_MIN_RATIO,
+  CONTENT_LINE_SCAN_LIMIT,
+  CONTENT_TEXT_MAX_LOG_RATIO,
+  CONTENT_TEXT_MIN_LINES,
+  CONTENT_TEXT_MIN_RATIO,
   CONTEXT_WINDOW_AFTER,
   CONTEXT_WINDOW_BEFORE,
+  DEFAULT_CONTENT_SAMPLE_BYTES,
+  DEFAULT_CONTENT_SAMPLE_LINES,
   DEFAULT_MAX_STACK_FRAMES,
   INTERNAL_STACK_MARKER,
   MAX_REPEAT_DELTA_VALUES,
@@ -146,6 +156,17 @@ export {
   stackWindowSignature,
 } from './dedupe/stack-fingerprint.js';
 export { detectLogSources } from './detection/source-detector.js';
+export {
+  type ContentClassification,
+  type ContentKind,
+  type ContentSampleLimits,
+  ContentSampler,
+  classifyContent,
+} from './detection/content-kind.js';
+export {
+  type TextContentClaim,
+  claimTextContent,
+} from './detection/content-claim.js';
 export {
   type MultilineMode,
   isContinuationLine,
@@ -190,7 +211,7 @@ export {
   claimJsonDocument,
   compressJsonReport,
 } from './formats/json-report.js';
-export { sanitizeLine } from './sanitize/sanitize-line.js';
+export { maskSecrets, sanitizeLine } from './sanitize/sanitize-line.js';
 export {
   ENTROPY_MIN_TOKEN_LENGTH,
   ENTROPY_SECRET_THRESHOLD,
@@ -200,6 +221,7 @@ export {
 export {
   createPemBlockState,
   maskPemBlock,
+  maskPemBlockInText,
   type PemBlockState,
 } from './sanitize/pem-block.js';
 export {
@@ -489,6 +511,23 @@ export async function processLogStream(
       );
     }
     activeLines = claim.replay;
+  }
+
+  // Plain text (README, config, source file): copy it through instead of
+  // letting the line scorer drop most of it. Only the sample is buffered; the
+  // rest of the stream is replayed into whichever path wins.
+  if (options.textPassthrough !== false) {
+    const textClaim = await claimTextContent(activeLines);
+    activeLines = textClaim.replay;
+    if (textClaim.classification.kind === 'text') {
+      return emitPassthrough(
+        activeLines,
+        output,
+        stats,
+        options,
+        customSanitizeRules,
+      );
+    }
   }
 
   const pendingGroups: RepeatGroup[] = [];
@@ -1112,6 +1151,106 @@ export async function processLogStream(
     savingsPercent,
     detectedSources: rankDetectedSources(detectedSourceState),
     detectedFormat,
+    contentKind: 'log',
+  };
+}
+
+interface CustomSanitizeRule {
+  regex: RegExp;
+  replacement: string;
+}
+
+// Text is copied as it is except for credentials: PEM private key blocks,
+// tokens, passwords and connection strings are masked with the same rules the
+// log pipeline uses, followed by the custom sanitize rules of the config.
+// Identifiers, timestamps, addresses and prose are left alone, so a file with
+// no secrets in it comes out byte for byte.
+async function emitPassthrough(
+  lines: AsyncIterable<string>,
+  output: Writable,
+  stats: LogStripStats,
+  options: LogStripOptions,
+  sanitizeRules: readonly CustomSanitizeRule[],
+): Promise<LogStripResult> {
+  const { tokenEstimator } = options;
+  const pemState = createPemBlockState();
+  let inputEstimatedTokens = 0;
+  let outputEstimatedTokens = 0;
+
+  const writeLine = async (line: string): Promise<void> => {
+    if (tokenEstimator !== undefined) {
+      outputEstimatedTokens += estimateLineTokens(tokenEstimator, `${line}\n`);
+    }
+    await writeOutputLine(output, line, stats, line.split('\n').length);
+  };
+
+  for await (const rawLine of lines) {
+    throwIfAborted(options.signal);
+    const line = String(rawLine);
+    const physicalLineCount = line.split('\n').length;
+    stats.inputLines += physicalLineCount;
+    stats.inputWords += countWords(line);
+    stats.inputBytes += Buffer.byteLength(`${line}\n`, 'utf8');
+    if (tokenEstimator !== undefined) {
+      inputEstimatedTokens += estimateLineTokens(tokenEstimator, `${line}\n`);
+    }
+
+    const pemMasked = maskPemBlockInText(line, pemState);
+    if (pemMasked === null) {
+      // Body of a private key: dropped, as in the log pipeline.
+      stats.droppedLines += physicalLineCount;
+      options.onDecision?.({
+        line,
+        kept: false,
+        dropped: true,
+        hardKeep: false,
+        repeated: false,
+        reason: 'custom-ignore',
+      });
+      continue;
+    }
+
+    let masked = maskSecrets(pemMasked);
+    for (const rule of sanitizeRules) {
+      masked = masked.replace(rule.regex, rule.replacement);
+    }
+    options.onDecision?.({
+      line,
+      sanitizedLine: masked,
+      kept: true,
+      dropped: false,
+      hardKeep: false,
+      repeated: false,
+      reason: 'passthrough',
+    });
+    await writeLine(masked);
+  }
+
+  // The input ended inside a private key block.
+  if (pemState.inside) {
+    stats.truncatedLines = Number(stats.truncatedLines) + 1;
+    await writeLine('[PEM block unterminated - input redacted]');
+  }
+
+  const inputTokens =
+    tokenEstimator === undefined
+      ? estimateTokens(stats.inputWords)
+      : inputEstimatedTokens;
+  const outputTokens =
+    tokenEstimator === undefined
+      ? estimateTokens(stats.outputWords)
+      : outputEstimatedTokens;
+  const savedTokens = Math.max(inputTokens - outputTokens, 0);
+  const savingsPercent =
+    inputTokens === 0 ? 0 : Math.round((savedTokens / inputTokens) * 10000) / 100;
+
+  return {
+    stats,
+    inputTokens,
+    outputTokens,
+    savedTokens,
+    savingsPercent,
+    contentKind: 'text',
   };
 }
 
@@ -1166,6 +1305,7 @@ async function emitJsonReport(
     savingsPercent,
     detectedSources: rankDetectedSources(detectedSourceState),
     detectedFormat: 'json',
+    contentKind: 'log',
   };
 }
 
@@ -1465,9 +1605,10 @@ async function writeOutputLine(
   output: Writable,
   line: string,
   stats: LogStripStats,
+  physicalLineCount = 1,
 ): Promise<void> {
   const rendered = `${line}\n`;
-  stats.outputLines += 1;
+  stats.outputLines += physicalLineCount;
   stats.outputWords += countWords(line);
   stats.outputBytes += Buffer.byteLength(rendered, 'utf8');
 

@@ -49,3 +49,24 @@ if (typeof report.savingsPercent !== 'number') {
   console.error('json missing savingsPercent');
   process.exit(1);
 }
+
+// Text that is not a log is copied through unchanged; --force compresses it.
+const notes = [
+  '# Release notes',
+  '',
+  'This release improves the way the parser handles very long input files.',
+  '',
+  '- Faster startup for small inputs.',
+  '- Better handling of repeated errors in watch mode.',
+  '',
+].join('\n');
+const notesRun = run([], { input: notes });
+if (notesRun.stdout !== notes) {
+  console.error('text passthrough changed the input');
+  process.exit(1);
+}
+const forcedRun = run(['--force'], { input: notes });
+if (forcedRun.stdout === notes) {
+  console.error('--force did not compress the text input');
+  process.exit(1);
+}

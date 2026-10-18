@@ -1028,6 +1028,54 @@ describe('smoke: repeated stack traces', () => {
   });
 });
 
+interface TextSmokeCase {
+  fixture: string;
+  // What the log pipeline would cost this file if it were applied anyway.
+  minForcedSavingsPercent: number;
+}
+
+const textCases: readonly TextSmokeCase[] = [
+  { fixture: 'release-notes.md', minForcedSavingsPercent: 30 },
+  { fixture: 'ci-workflow.yml', minForcedSavingsPercent: 35 },
+  { fixture: 'config-loader.ts', minForcedSavingsPercent: 60 },
+];
+
+describe('smoke: non-log text passes through unchanged', () => {
+  for (const testCase of textCases) {
+    describe(`text/${testCase.fixture}`, () => {
+      const inputPath = join(FIXTURES_DIR, 'text', testCase.fixture);
+
+      it('is copied byte for byte and reported as text', async () => {
+        const outputPath = join(workDir, `${testCase.fixture}.copy`);
+        const original = await readFile(inputPath);
+
+        const result = await processLogFile(inputPath, outputPath);
+        const copy = await readFile(outputPath);
+
+        expect(copy.equals(original)).toBe(true);
+        expect(result.contentKind).toBe('text');
+        expect(result.stats.droppedLines).toBe(0);
+        expect(result.stats.outputLines).toBe(result.stats.inputLines);
+        expect(result.stats.outputBytes).toBe(original.length);
+        expect(result.savingsPercent).toBe(0);
+      });
+
+      it('would lose most of its lines in the log pipeline', async () => {
+        const outputPath = join(workDir, `${testCase.fixture}.forced`);
+
+        const result = await processLogFile(inputPath, outputPath, {
+          textPassthrough: false,
+        });
+
+        expect(result.contentKind).toBe('log');
+        expect(result.savingsPercent).toBeGreaterThanOrEqual(
+          testCase.minForcedSavingsPercent,
+        );
+      });
+    });
+  }
+});
+
 describe('smoke: stream resilience', () => {
   it('handles a synthetic 50k-line log without exhausting memory', async () => {
     const inputPath = join(workDir, 'synthetic-large.log');

@@ -17,6 +17,41 @@ Add at least one error or warning line to verify the pipeline:
 [ERROR] smoke test failure
 ```
 
+## My file came out unchanged
+
+If the output has the same number of lines as the input, `savings` is `0%`
+and `--stats` prints `content kind    : text (passed through, secrets masked)`,
+LogStrip did not take the input for a log. It reads the first 100 non-blank
+lines (up to 256 KiB), and when they look like prose, markdown, source code or
+configuration (a README, a YAML file, `notes.txt`) it copies the input through
+instead of compressing it, because the line scorer would drop most of such a
+file.
+
+The text is passed through unchanged except for credentials: tokens,
+passwords, connection-string passwords, `Authorization` headers, cloud keys
+and PEM private key blocks are masked even in text that is copied as it is.
+
+The decision is made from the first sampled lines only. If the input is a log
+that begins with a long stretch of configuration-like or prose-like output, or
+you want a text file compressed anyway, use `--force`:
+
+```bash
+logstrip output.txt --force -o clean.log
+```
+
+From the library, pass `textPassthrough: false`. The `contentKind` field of
+`--json` output (`"text"` or `"log"`) tells you which way a run went.
+
+## Parts of my file were replaced with `[REDACTED]`
+
+Text that LogStrip copies through still has its credentials masked, with the
+same rules the compressor applies to logs. Those rules favour safety over
+fidelity, so besides real secrets they also mask look-alikes such as
+`token: ${{ secrets.NPM_TOKEN }}`, `id-token: write`, an example like
+`password=hunter2`, or a sentence that mentions an `Authorization:` header
+(the rest of that line is masked). The original file is never modified; only
+the copy is. Read the file directly when you need the exact text.
+
 ## The CLI exits with code `2`
 
 Exit code `2` is a usage error. Common causes:

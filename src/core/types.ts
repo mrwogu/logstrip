@@ -1,5 +1,6 @@
 import type { SeverityLevel } from './severity/severity-filter.js';
 import type { LogStripCustomConfig } from './logstrip-config.js';
+import type { ContentKind } from './detection/content-kind.js';
 
 export type StaticAggressiveness = 'low' | 'medium' | 'high' | 'aggressive';
 export type Aggressiveness = StaticAggressiveness | 'auto';
@@ -24,6 +25,7 @@ export type LogStripDecisionReason =
   | 'include-filter'
   | 'internal-stack'
   | 'low-score'
+  | 'passthrough'
   | 'progress'
   | 'sample-limit'
   | 'severity'
@@ -108,6 +110,19 @@ export interface LogStripOptions {
    * than this falls back to the streaming line pipeline. Default: 8 MiB.
    */
   jsonReportMaxBytes?: number;
+  /**
+   * Classify the first lines of the stream and, when they are plain text
+   * (prose, markdown, source code, configuration, data) rather than a log,
+   * copy the input through instead of compressing it: every line is kept and
+   * filters and truncation do not apply. Credentials are still masked (tokens,
+   * passwords, connection strings, PEM private keys, plus the custom sanitize
+   * rules of the config); identifiers, timestamps and prose are not, so text
+   * without secrets comes out unchanged. Line endings are normalized to "\n".
+   * Output starts once the sample is classified: after about 8 lines for a
+   * stream that already reads like a log, after at most 100 non-blank lines
+   * or 256 KiB for text. Default: on; set false to force the log pipeline.
+   */
+  textPassthrough?: boolean;
 }
 
 export interface LogStripStats {
@@ -132,5 +147,11 @@ export interface LogStripResult {
   detectedSources?: readonly string[];
   outputPath?: string;
   detectedFormat?: string;
+  /**
+   * What the input was taken for: 'text' when it was copied through (see
+   * `textPassthrough`), 'log' when it went through the log pipeline.
+   * Absent when processing timed out before the input was classified.
+   */
+  contentKind?: ContentKind;
   timedOut?: boolean;
 }

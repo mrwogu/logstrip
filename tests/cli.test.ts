@@ -1052,3 +1052,233 @@ describe('runCli update notification', () => {
     expect(stderr.value()).not.toContain('update available');
   });
 });
+
+describe('--force and text passthrough', () => {
+  const MARKDOWN = [
+    '# Release notes',
+    '',
+    'This release improves the way the parser handles very long input files.',
+    '',
+    '## Changes',
+    '',
+    '- Faster startup for small inputs.',
+    '- Better handling of repeated errors in `watch` mode.',
+    '',
+    'See [the guide](https://example.com/guide) for the full list.',
+    '',
+  ].join('\n');
+
+  const LOG = [
+    '[INFO] boot ok',
+    '[ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed',
+    '[ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed',
+    '',
+  ].join('\n');
+
+  let counter = 0;
+  let markdownPath: string;
+  let logPath: string;
+
+  beforeEach(async () => {
+    counter += 1;
+    markdownPath = join(workDir, `notes-${counter}.md`);
+    logPath = join(workDir, `build-${counter}.log`);
+    await writeFile(markdownPath, MARKDOWN, 'utf8');
+    await writeFile(logPath, LOG, 'utf8');
+  });
+
+  it('defaults force to false and parses --force', () => {
+    expect(parseCliOptions(['notes.md']).force).toBe(false);
+    expect(parseCliOptions(['notes.md', '--force']).force).toBe(true);
+    expect(parseCliOptions(['--force', 'notes.md'])).toMatchObject({
+      input: 'notes.md',
+      force: true,
+    });
+  });
+
+  it('documents --force and the passthrough in the help text', () => {
+    expect(HELP_TEXT).toContain('--force');
+    expect(HELP_TEXT).toContain('Compress even when the input does not look like a log');
+    expect(HELP_TEXT).toContain('copied through unchanged');
+    expect(HELP_TEXT).toContain('credentials masked');
+  });
+
+  it('copies a text file to stdout unchanged', async () => {
+    const { io, stdout, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli([markdownPath], io);
+
+    expect(code).toBe(0);
+    expect(stdout.value()).toBe(MARKDOWN);
+    expect(stderr.value()).toBe('');
+  });
+
+  it('copies text from stdin to stdout unchanged', async () => {
+    const { io, stdout } = makeIo(bufferReadable(MARKDOWN));
+
+    const code = await runCli([], io);
+
+    expect(code).toBe(0);
+    expect(stdout.value()).toBe(MARKDOWN);
+  });
+
+  it('copies a text file to --output unchanged', async () => {
+    const outputPath = join(workDir, `copy-${counter}.md`);
+    const { io, stdout } = makeIo(new PassThrough());
+
+    const code = await runCli([markdownPath, '-o', outputPath], io);
+
+    expect(code).toBe(0);
+    expect(stdout.value()).toBe('');
+    expect(await readFile(outputPath, 'utf8')).toBe(MARKDOWN);
+  });
+
+  it('masks credentials in passed-through text', async () => {
+    const token = `ghp_${'aB3dE6gH9jK2mN5pQ8sT1vW4yZ7bC0eF3hJ6'}`;
+    const text = MARKDOWN.replace(
+      '## Changes',
+      `## Changes\n\nDeploy with ${token} and password=hunter2hunter2.`,
+    );
+    const { io, stdout } = makeIo(bufferReadable(text));
+
+    const code = await runCli([], io);
+
+    expect(code).toBe(0);
+    expect(stdout.value()).toContain('Deploy with [REDACTED] and password=[REDACTED]\n');
+    expect(stdout.value()).not.toContain(token);
+    expect(stdout.value()).not.toContain('hunter2hunter2');
+  });
+
+  it('prints the content kind with --stats and keeps stats on stderr', async () => {
+    const { io, stdout, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli([markdownPath, '--stats'], io);
+
+    expect(code).toBe(0);
+    expect(stdout.value()).toBe(MARKDOWN);
+    expect(stderr.value()).toContain('content kind    : text (passed through, secrets masked)');
+    expect(stderr.value()).toContain('savings         : 0.00%');
+  });
+
+  it('compresses a text file with --force', async () => {
+    const { io, stdout, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli([markdownPath, '--force', '--stats'], io);
+
+    expect(code).toBe(0);
+    expect(stdout.value()).not.toBe(MARKDOWN);
+    expect(stdout.value().length).toBeLessThan(MARKDOWN.length);
+    expect(stderr.value()).toContain('content kind    : log');
+    expect(stderr.value()).not.toContain('passed through');
+  });
+
+  it('still compresses a log without --force', async () => {
+    const { io, stdout, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli([logPath, '--stats'], io);
+
+    expect(code).toBe(0);
+    expect(stdout.value()).toContain('[x2] [ERROR] request [ID] failed');
+    expect(stderr.value()).toContain('content kind    : log');
+  });
+
+  it('does not record telemetry for text that was passed through', async () => {
+    const { loadTelemetry } = await import('../src/core/telemetry/telemetry-store.js');
+    const before = loadTelemetry().totalRuns;
+
+    const { io } = makeIo(new PassThrough());
+    expect(await runCli([markdownPath], io)).toBe(0);
+
+    expect(loadTelemetry().totalRuns).toBe(before);
+  });
+
+  it('still records telemetry for a log and for text compressed with --force', async () => {
+    const { loadTelemetry } = await import('../src/core/telemetry/telemetry-store.js');
+    const before = loadTelemetry().totalRuns;
+
+    await runCli([logPath], makeIo(new PassThrough()).io);
+    expect(loadTelemetry().totalRuns).toBe(before + 1);
+
+    await runCli([markdownPath, '--force'], makeIo(new PassThrough()).io);
+    expect(loadTelemetry().totalRuns).toBe(before + 2);
+  });
+
+  it('adds contentKind to the --json report', async () => {
+    const outputPath = join(workDir, `report-${counter}.md`);
+    const { io, stdout } = makeIo(new PassThrough());
+
+    const code = await runCli([markdownPath, '-o', outputPath, '--json'], io);
+
+    expect(code).toBe(0);
+    const report = JSON.parse(stdout.value()) as {
+      contentKind: string;
+      savingsPercent: number;
+      outputPath: string;
+    };
+    expect(report).toMatchObject({
+      contentKind: 'text',
+      savingsPercent: 0,
+      outputPath,
+    });
+  });
+
+  it('reports contentKind log in the --json report of a log', async () => {
+    const outputPath = join(workDir, `report-${counter}.log`);
+    const { io, stdout } = makeIo(new PassThrough());
+
+    await runCli([logPath, '-o', outputPath, '--json'], io);
+
+    expect(JSON.parse(stdout.value())).toMatchObject({ contentKind: 'log' });
+  });
+
+  it('keeps exit code 2 for usage errors next to --force', async () => {
+    const { io, stderr } = makeIo(new PassThrough());
+
+    const code = await runCli([markdownPath, '--force', '--json'], io);
+
+    expect(code).toBe(2);
+    expect(stderr.value()).toContain('--json requires --output');
+  });
+});
+
+describe('formatStats content kind', () => {
+  const base = {
+    inputTokens: 10,
+    outputTokens: 10,
+    savedTokens: 0,
+    savingsPercent: 0,
+    stats: {
+      droppedLines: 0,
+      duplicateLines: 0,
+      hiddenInternalStackLines: 0,
+      inputBytes: 10,
+      inputLines: 2,
+      inputWords: 4,
+      outputBytes: 10,
+      outputLines: 2,
+      outputWords: 4,
+    },
+  };
+
+  it('says when the input was passed through with its secrets masked', () => {
+    const text = formatStats({ ...base, contentKind: 'text' });
+
+    expect(text).toContain('  content kind    : text (passed through, secrets masked)\n');
+  });
+
+  it('says when the input was treated as a log', () => {
+    const text = formatStats({ ...base, contentKind: 'log' });
+
+    expect(text).toContain('  content kind    : log\n');
+  });
+
+  it('omits the line when the kind is unknown', () => {
+    expect(formatStats(base)).not.toContain('content kind');
+  });
+
+  it('puts the content kind before the output path', () => {
+    const text = formatStats({ ...base, contentKind: 'text', outputPath: '/tmp/out.md' });
+
+    expect(text.indexOf('content kind')).toBeLessThan(text.indexOf('output path'));
+  });
+});
