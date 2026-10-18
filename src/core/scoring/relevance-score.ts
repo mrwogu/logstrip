@@ -73,6 +73,11 @@ const CONTAINER_FAILURE_PATTERN =
 const INTERNAL_STACK_PATTERN =
   /(?:node_modules[\\/]|node:internal|internal[\\/]modules|bootstrap_node|[\\/]usr[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]go[\\/]src[\\/]runtime[\\/]|site-packages[\\/]|dist-packages[\\/]|\.venv[\\/]|java\.base[\\/]|jdk\.internal|org\.springframework\.|[\\/]pkg[\\/]mod[\\/]|\.cargo[\\/]registry[\\/]|[\\/]gems[\\/]|vendor[\\/]bundle[\\/]|[\\/]rustc[\\/]|\bat System\.)/iu;
 
+// A non-zero exit code or signal is a failure report even when the line has
+// no error keyword ("INFO service exited with code 137").
+const NONZERO_EXIT_PATTERN =
+  /\bexit(?:ed|s)?\b.{0,24}?\b[1-9]\d{0,2}\b|\b(?:exit[ _]?code|exit[ _]?status|signal)[\s:=]+[1-9]\d{0,2}\b/iu;
+
 const LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/iu;
 const AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\s*\]/iu;
 const AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
@@ -82,13 +87,16 @@ const AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
  * INFO/DEBUG/TRACE/VERBOSE tags, routine Apache notices, and unbracketed
  * header levels (Spring, logback, Python logging, logfmt, glog). A line with
  * an unbracketed noise level is kept when its text still reads as a
- * diagnostic, so "INFO ... connection refused" is never dropped.
+ * diagnostic or reports a non-zero exit, so "INFO ... connection refused" and
+ * "INFO service exited with code 137" are never dropped.
  */
 export function isIgnoredLogLine(line: string): boolean {
   return (
     IGNORED_LOG_TAG_PATTERN.test(line) ||
     APACHE_ROUTINE_NOTICE_PATTERN.test(line) ||
-    (detectHeaderLogLevel(line) === 'noise' && !looksLikeDiagnosticLine(line))
+    (detectHeaderLogLevel(line) === 'noise' &&
+      !looksLikeDiagnosticLine(line) &&
+      !NONZERO_EXIT_PATTERN.test(line))
   );
 }
 

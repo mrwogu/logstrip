@@ -106,6 +106,15 @@ describe('header levels in scoring', () => {
     expect(scoreLineRelevance(line, 'high')).toBeGreaterThanOrEqual(40);
   });
 
+  it('keeps an INFO line that reports a non-zero exit', () => {
+    expect(isIgnoredLogLine('2026-05-16T10:18:07.141Z  INFO 181 --- [app] [main] c.a.Foo : worker exited with code 137')).toBe(false);
+    expect(isIgnoredLogLine('time=x level=info msg="process exited" code=1')).toBe(false);
+    expect(isIgnoredLogLine('INFO  build step finished, exit status: 2')).toBe(false);
+    expect(isIgnoredLogLine('INFO  child received signal 15')).toBe(false);
+    expect(isIgnoredLogLine('INFO  worker exited with code 0')).toBe(true);
+    expect(isIgnoredLogLine('INFO  exited after 2026 checks')).toBe(true);
+  });
+
   it('treats padded bracket tags like their compact forms', () => {
     expect(isIgnoredLogLine('2026-05-16 10:24:31,044 [main] [INFO ] c.a.Foo - started')).toBe(true);
     expect(isIgnoredLogLine('[2026-05-16T10:24:31,044][DEBUG ][o.e.n.Node] [node-1] initialized')).toBe(true);
