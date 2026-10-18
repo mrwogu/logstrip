@@ -86,7 +86,7 @@ Make sure the previous step writes the file in the workspace and that
 ```yaml
 - run: npm test > raw_logs.txt 2>&1 || true
 
-- uses: mrwogu/logstrip@v1
+- uses: mrwogu/logstrip@v2
   with:
     log-path: raw_logs.txt
 ```

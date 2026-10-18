@@ -27,7 +27,7 @@ If you can call shell from your workflow, prefer the CLI directly:
 ## Usage
 
 ```yaml
-- uses: mrwogu/logstrip@v1
+- uses: mrwogu/logstrip@v2
   id: logstrip
   with:
     log-path: raw_logs.txt

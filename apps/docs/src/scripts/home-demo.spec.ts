@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import scenarios from './hero-scenarios.json';
-import { highlightLine, splitMetric } from './home-demo';
+import { formatTally, highlightLine, nextScenario, splitMetric, sweepDelay, tallyOf } from './home-demo';
 
 describe('highlightLine', () => {
   it('colors errors, repeats, markers and sanitized values', () => {
@@ -51,6 +51,46 @@ describe('splitMetric', () => {
 
   it('returns null when there is no number to animate', () => {
     expect(splitMetric('n/a')).toBeNull();
+  });
+});
+
+describe('tallyOf', () => {
+  it('counts dropped, folded and kept lines', () => {
+    expect(tallyOf([['d'], ['g', 0], ['k', 2], ['k', 3], ['d']])).toEqual({
+      dropped: 2,
+      folded: 1,
+      kept: 2,
+    });
+    expect(formatTally({ dropped: 2, folded: 1, kept: 2 })).toBe('dropped 2 · folded 1 · kept 2');
+  });
+
+  it('adds up to the raw line count of every scenario', () => {
+    for (const scenario of scenarios) {
+      const { dropped, folded, kept } = tallyOf(scenario.fates);
+      expect(dropped + folded + kept).toBe(scenario.raw.length);
+      expect(kept).toBeLessThanOrEqual(scenario.clean.length);
+    }
+  });
+});
+
+describe('sweepDelay', () => {
+  it('fires a line when the scan line reaches it', () => {
+    expect(sweepDelay(0, 320, 1500)).toBe(0);
+    expect(sweepDelay(160, 320, 1500)).toBe(750);
+    expect(sweepDelay(320, 320, 1500)).toBe(1500);
+  });
+
+  it('clamps lines scrolled above the screen and lines below it', () => {
+    expect(sweepDelay(-40, 320, 1500)).toBe(0);
+    expect(sweepDelay(9000, 320, 1500)).toBe(1500);
+    expect(sweepDelay(10, 0, 1500)).toBe(0);
+  });
+});
+
+describe('nextScenario', () => {
+  it('walks the list and wraps around', () => {
+    expect(nextScenario(['a', 'b', 'c'], 'a')).toBe('b');
+    expect(nextScenario(['a', 'b', 'c'], 'c')).toBe('a');
   });
 });
 

@@ -1,4 +1,59 @@
+# LogStrip documentation - https://mrwogu.github.io/logstrip/
+#
+# GitHub Pages serves this project under /logstrip/, so this file lands at
+# /logstrip/robots.txt. Crawlers only read the origin root
+# (https://mrwogu.github.io/robots.txt), which this repository does not own,
+# so nothing below restricts or grants anything. It is kept for people and
+# tools that look here, and it states the intent: everything is public and
+# AI crawlers are welcome. What crawlers do see is the robots meta tag and
+# the sitemap link in the head of every page. The same content is available
+# as plain Markdown for agents at /logstrip/llms.txt and /logstrip/llms-full.txt,
+# and every page has a Markdown twin at <page>/index.md.
+
 User-agent: *
+Allow: /
+
+# AI search and answer engines
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckAssistBot
+Allow: /
+
+User-agent: CCBot
 Allow: /
 
 Sitemap: https://mrwogu.github.io/logstrip/sitemap-index.xml
