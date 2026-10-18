@@ -1,298 +1,309 @@
 <div class="home-page not-content">
-  <section class="logstrip-hero">
-    <div class="logstrip-hero__inner">
-      <div class="logstrip-hero__copy">
-        <p class="logstrip-kicker">cli compression for agentic pipelines</p>
+  <section class="hp-hero" aria-labelledby="hp-title">
+    <div class="hp-hero__copy">
+      <p class="hp-kicker">cli compression for agentic pipelines</p>
 
-        <h1>smaller logs. cleaner agents.</h1>
-        <span class="logstrip-sr-only">LogStrip - log compression CLI for AI agents.</span>
+      <h1 id="hp-title" class="hp-hero__title">
+        <span class="hp-sr">LogStrip: </span>send agents the failure, not the log.
+      </h1>
 
-        <p class="logstrip-lede">
-          A zero-dependency CLI that turns chaotic server logs, build pipelines, scanner reports,
-          and container workloads into compact, high-signal context that AI agents can actually
-          reason about - secrets masked, JSON kept valid, output trimmed to your token budget.
-        </p>
+      <p class="hp-hero__lede">
+        LogStrip cuts CI, server and scanner logs down to the lines an agent needs: errors, the
+        first occurrence of each event, context and your stack frames. No model, no network, the
+        same output every time.
+      </p>
 
-        <div class="logstrip-actions">
-          <a class="logstrip-button" href="{{base}}/getting-started/">install the cli</a>
-          <a class="logstrip-button logstrip-button--ghost" href="{{base}}/guides/plugins/"
-            >agent plugins</a
-          >
-        </div>
-
-        <div class="logstrip-badges">
-          <a href="https://www.npmjs.com/package/logstrip"
-            ><img src="https://img.shields.io/npm/v/logstrip" alt="npm version"
-          /></a>
-          <a href="https://www.npmjs.com/package/logstrip"
-            ><img src="https://img.shields.io/npm/dm/logstrip" alt="npm downloads per month"
-          /></a>
-        </div>
+      <div class="hp-cmd">
+        <code>npx -y logstrip raw.log --stats</code>
+        <button type="button" class="hp-copy" data-copy="npx -y logstrip raw.log --stats">
+          copy
+        </button>
       </div>
 
-      <div
-        class="logstrip-demo logstrip-demo--toggle"
-        data-logstrip-compare
-        aria-label="Interactive raw-to-LogStrip terminal comparison"
-      >
-        <div class="logstrip-demo__bar">
-          <span class="logstrip-demo__dot"></span>
-          <span class="logstrip-demo__dot"></span>
-          <span class="logstrip-demo__dot"></span>
-          <span class="logstrip-demo__title">raw.log → logstrip.log</span>
-        </div>
-        <div class="logstrip-demo__fallback">
-          <pre>
+      <div class="hp-actions">
+        <a class="hp-button" href="{{base}}/getting-started/">install the cli</a>
+        <a class="hp-button hp-button--ghost" href="{{base}}/benchmarks/">see the benchmarks</a>
+      </div>
+
+      <ul class="hp-facts">
+        <li>offline</li>
+        <li>no model</li>
+        <li>deterministic</li>
+        <li>zero dependencies</li>
+        <li>MIT</li>
+      </ul>
+    </div>
+
+    <div
+      class="hp-demo"
+      data-logstrip-compare
+      aria-label="Interactive raw-to-LogStrip terminal comparison"
+    >
+      <div class="hp-demo__bar">
+        <span class="hp-demo__dot"></span>
+        <span class="hp-demo__dot"></span>
+        <span class="hp-demo__dot"></span>
+        <span class="hp-demo__title">raw.log - logstrip.log</span>
+      </div>
+      <div class="hp-demo__fallback">
+        <pre>
 [INFO] boot ok
 [ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed
 [ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed</pre>
-          <pre>[x2] [ERROR] request [ID] failed</pre>
-        </div>
+        <pre>[x2] [ERROR] request [ID] failed</pre>
       </div>
     </div>
   </section>
 
-  <div class="logstrip-ecosystem-marquee" data-logstrip-reveal>
-    <span class="logstrip-kicker">705+ detected ecosystems</span>
-
-    <h2>your stack, covered</h2>
-
-    <div class="logstrip-ecosystem-marquee__rows"><!-- marquee --></div>
-
-    <p class="logstrip-sources-banner__more">
-      <a href="{{base}}/reference/sources/">view all 705+ sources →</a> ·
-      <a href="{{base}}/reference/cli/#custom-configuration-logstripyml">add your own</a>
-    </p>
-  </div>
-
-  <div class="logstrip-grid logstrip-grid--three">
-    <div class="logstrip-card" data-logstrip-reveal data-delay="1">
-      <span class="logstrip-metric">npm i -g logstrip</span>
-      <h3>one install away</h3>
-      <p>Installs one CLI: <code>logstrip</code>. Zero runtime dependencies on the hot path.</p>
-    </div>
-
-    <div class="logstrip-card" data-logstrip-reveal data-delay="2">
-      <span class="logstrip-metric">stream</span>
-      <h3>gigabyte-safe</h3>
+  <section class="hp-section" id="problem" aria-labelledby="hp-problem-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-problem-title">agents pay for every line.</h2>
       <p>
-        Built on Node streams and <code>readline</code>, so multi-gigabyte logs never have to fit
-        in memory.
+        A failing job prints hundreds of lines. Your agent reads all of them, and each token costs
+        money and attention. Most lines are boot messages, health checks, passing tests and the
+        same stack trace again. The few that explain the failure sit somewhere in the middle.
+      </p>
+      <p>
+        Cutting by hand means writing a new <code>grep</code> for every tool. Pasting it all means
+        paying for the noise.
       </p>
     </div>
 
-    <div class="logstrip-card" data-logstrip-reveal data-delay="3">
-      <span class="logstrip-metric">100/100</span>
-      <h3>coverage gate</h3>
-      <p>
-        Statement, branch, function, and line coverage are pinned to 100% across the parser, CLI,
-        and Action.
-      </p>
-    </div>
-
-    <div class="logstrip-card" data-logstrip-reveal data-delay="4">
-      <span class="logstrip-metric">unix</span>
-      <h3>pipe-native</h3>
-      <p>
-        <code>cat raw.log | logstrip &gt; clean.log</code>. Stats on stderr, JSON on stdout (with
-        <code>--output</code>), exit codes 0/1/2.
-      </p>
-    </div>
-
-    <div class="logstrip-card" data-logstrip-reveal data-delay="5">
-      <span class="logstrip-metric">--max-tokens</span>
-      <h3>fits any context window</h3>
-      <p>
-        Budget mode keeps the highest-scoring lines under a hard token cap, so output always fits
-        the context you have left.
-      </p>
-    </div>
-
-    <div class="logstrip-card" data-logstrip-reveal data-delay="6">
-      <span class="logstrip-metric">[REDACTED]</span>
-      <h3>safe to paste</h3>
-      <p>
-        Stripe, AWS, GitHub, JWT and PEM credentials are masked - with a Shannon-entropy fallback
-        for tokens no vendor pattern knows.
-      </p>
-    </div>
-  </div>
-
-  <section class="logstrip-engine" data-logstrip-reveal>
-    <p class="logstrip-kicker">hybrid context engine</p>
-
-    <h2>advanced detection, not regex-only filtering</h2>
-
-    <p class="logstrip-engine__intro">
-      LogStrip scores each sanitized line, keeps nearby context, dampens repeated spam, folds
-      near-identical diagnostics with volatile values, prunes downstream cascades, and hides
-      internal framework frames: compact incident narrative, not a noisy transcript. In the default
-      <code>auto</code> mode every booster below runs automatically - no flags required.
-    </p>
-
-    <div class="logstrip-engine__grid">
-      <div class="logstrip-engine__step">
-        <span>01</span><strong>Score signals</strong> from log level, JSON severity, container
-        failures, scanner findings, package managers, diagnostic keywords (including non-English
-        and CJK terms), and stack frames.
-      </div>
-      <div class="logstrip-engine__step">
-        <span>02</span><strong>Promote context</strong> with a before/after window so setup lines
-        near the failure survive even when they are not errors themselves - sized adaptively by
-        error density in <code>auto</code> mode (wider for isolated errors, tighter for clustered
-        ones).
-      </div>
-      <div class="logstrip-engine__step">
-        <span>03</span><strong>Dampen repeats</strong> with TF-IDF-style frequency tracking, then
-        fold adjacent diagnostic variants - and repeated multi-line stack windows - into
-        <code>[xN]</code> summaries.
-      </div>
-      <div class="logstrip-engine__step">
-        <span>04</span><strong>Summarize deltas</strong> by listing only differing
-        <code>key=value</code> values when repeated events share the same shape, including
-        enumerated instance counters like <code>worker [1 | 2 | 3]</code>.
-      </div>
-      <div class="logstrip-engine__step">
-        <span>05</span><strong>Prune cascades</strong> by dropping downstream restatements
-        (<code>aborting due to previous errors</code>,
-        <code>skipped because the upstream job failed</code>) so the originating failure stands
-        out.
-      </div>
-      <div class="logstrip-engine__step">
-        <span>06</span><strong>Collapse internals</strong> by replacing low-value framework/runtime
-        stack frames with one marker while preserving app frames.
-      </div>
-      <div class="logstrip-engine__step">
-        <span>07</span><strong>Detect sources and format</strong> across 700+ ecosystems with a
-        single-pass Aho-Corasick automaton, majority-vote the dominant format over the first 50
-        lines, and re-elect it when the stream drifts mid-log so agents always know what they are
-        reading.
-      </div>
-      <div class="logstrip-engine__step">
-        <span>08</span><strong>Mask secrets</strong> with vendor patterns (Stripe, AWS, GitHub,
-        npm, JWT, PEM blocks) plus a Shannon-entropy fallback, so unknown credentials still leave as
-        <code>[REDACTED]</code> before the log ever reaches an LLM.
-      </div>
-      <div class="logstrip-engine__step">
-        <span>09</span><strong>Compress JSON reports</strong> by detecting structured documents
-        (test reports, scanner exports) and re-shaping them semantically - repeated entries
-        grouped, duplicate fields referenced, empty fields pruned - while the output stays valid
-        JSON.
-      </div>
-      <div class="logstrip-engine__step">
-        <span>10</span><strong>Fit the token budget</strong> with <code>--max-tokens N</code>:
-        output is trimmed to the highest-scoring lines, so even a multi-gigabyte incident log fits
-        whatever context window is left.
-      </div>
-    </div>
+    <figure class="hp-log">
+      <pre class="hp-log__body" tabindex="0" aria-label="The first 12 lines of a raw Jest log"><code><span class="hp-ln"><span class="hp-ln__no">1</span><span class="hp-ln__text">[INFO] 2026-05-15T08:01:00.000Z jest worker booted pid=4011 jobId=ae9c1d2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f</span></span>
+<span class="hp-ln"><span class="hp-ln__no">2</span><span class="hp-ln__text">[INFO] 2026-05-15T08:01:00.001Z runner using 4 workers</span></span>
+<span class="hp-ln"><span class="hp-ln__no">3</span><span class="hp-ln__text">[DEBUG] 2026-05-15T08:01:00.002Z transformer cache hit src/index.ts hash=9f8e7d6c5b4a39281706f5e4d3c2b1a0</span></span>
+<span class="hp-ln"><span class="hp-ln__no">4</span><span class="hp-ln__text">[DEBUG] 2026-05-15T08:01:00.003Z transformer cache hit src/api.ts hash=8e7d6c5b4a39281706f5e4d3c2b1a0f9</span></span>
+<span class="hp-ln"><span class="hp-ln__no">5</span><span class="hp-ln__text">[DEBUG] 2026-05-15T08:01:00.004Z transformer cache hit src/db.ts hash=7d6c5b4a39281706f5e4d3c2b1a0f9e8</span></span>
+<span class="hp-ln"><span class="hp-ln__no">6</span><span class="hp-ln__text">[INFO] 2026-05-15T08:01:00.500Z PASS src/api.test.ts (123ms)</span></span>
+<span class="hp-ln"><span class="hp-ln__no">7</span><span class="hp-ln__text">[INFO] 2026-05-15T08:01:00.600Z PASS src/util.test.ts (87ms)</span></span>
+<span class="hp-ln"><span class="hp-ln__no">8</span><span class="hp-ln__text">[INFO] 2026-05-15T08:01:00.700Z FAIL src/payments.test.ts (412ms)</span></span>
+<span class="hp-ln hp-ln--lit"><span class="hp-ln__no">9</span><span class="hp-ln__text">[ERROR] TypeError: Cannot read properties of undefined (reading 'amount') at request d1b3a8f7-2e4c-4b9a-9d2e-1c4a5b6c7d8e</span></span>
+<span class="hp-ln hp-ln--lit"><span class="hp-ln__no">10</span><span class="hp-ln__text">    at Payments.charge (/repo/src/payments.ts:42:18)</span></span>
+<span class="hp-ln hp-ln--lit"><span class="hp-ln__no">11</span><span class="hp-ln__text">    at Object.&lt;anonymous&gt; (/repo/src/payments.test.ts:31:25)</span></span>
+<span class="hp-ln"><span class="hp-ln__no">12</span><span class="hp-ln__text">    at Promise.then.completed (/repo/node_modules/jest-circus/build/utils.js:298:28)</span></span>
+<span class="hp-ln hp-ln--gap"><span class="hp-ln__no"></span><span class="hp-ln__text">... {{jest-more-lines}} more lines</span></span></code></pre>
+      <figcaption>
+        From <code>jest-noisy.log</code>, one of our test fixtures: {{jest-lines-in}} lines,
+        {{jest-tokens-in}} tokens. LogStrip keeps the lit lines and a marker for the library
+        frames. Output: {{jest-lines-out}} lines, {{jest-tokens-out}} tokens.
+      </figcaption>
+    </figure>
   </section>
 
-  <section class="logstrip-section">
-    <h2>why LogStrip exists</h2>
-
-    <p>
-      DevOps, SysOps, and GitOps teams often paste entire raw logs into AI agents during incident
-      response. LLMs are bad at high-noise dumps.
-      <span class="logstrip-accent-shift">LogStrip eases that pain and reduces token costs.</span>
-    </p>
-
-    <div class="logstrip-grid">
-      <div class="logstrip-card" data-logstrip-reveal data-delay="1">
-        <span class="logstrip-metric">problem</span>
-        <h3>too much noise</h3>
-        <p>Raw logs mix signal with thousands of low-value lines and repeated frames.</p>
-      </div>
-
-      <div class="logstrip-card" data-logstrip-reveal data-delay="2">
-        <span class="logstrip-metric">impact</span>
-        <h3>weaker ai answers</h3>
-        <p>Large noisy prompts dilute root-cause context and inflate LLM spend.</p>
-      </div>
-
-      <div class="logstrip-card" data-logstrip-reveal data-delay="3">
-        <span class="logstrip-metric">outcome</span>
-        <h3>compact signal</h3>
-        <p>LogStrip produces deterministic, AI-ready logs that are cheaper to analyze.</p>
-      </div>
+  <section class="hp-section" id="proof" aria-labelledby="hp-proof-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-proof-title">measured, not promised.</h2>
+      <p>
+        Each bar is one test fixture. The solid part is what LogStrip keeps. The hatched part is
+        what it strips. Tokens are LogStrip's own estimate, words times 1.3.
+      </p>
+      <p class="hp-note">
+        These are small logs that we wrote, not production traffic. Run
+        <code>logstrip --stats</code> on one of yours before you trust any number here.
+      </p>
+      <a class="hp-textlink" href="{{base}}/benchmarks/">all {{fixtures}} fixtures and the method</a>
     </div>
-
-    <h3 class="logstrip-subheading">why teams keep it in every pipeline</h3>
-
-    <div class="logstrip-grid">
-      <div class="logstrip-card" data-logstrip-reveal data-delay="1">
-        <span class="logstrip-metric">ops-first</span>
-        <p>Built for incident workflows where raw logs hit AI assistants under pressure.</p>
-      </div>
-      <div class="logstrip-card" data-logstrip-reveal data-delay="2">
-        <span class="logstrip-metric">700+</span>
-        <p>Automatic source awareness across CI, runtimes, scanners, infra, and cloud logs.</p>
-      </div>
-      <div class="logstrip-card" data-logstrip-reveal data-delay="3">
-        <span class="logstrip-metric">deterministic</span>
-        <p>
-          Snapshot-tested output, fixtures spanning CI, runtimes, scanners and crashes, locked
-          behind a <strong>100/100/100/100</strong> coverage gate.
-        </p>
-      </div>
-      <div class="logstrip-card" data-logstrip-reveal data-delay="4">
-        <span class="logstrip-metric">cheaper prompts</span>
-        <p>Lower token usage per incident while keeping root-cause context intact.</p>
-      </div>
-    </div>
+    <!-- proof -->
   </section>
 
-  <div class="logstrip-agents-strip" data-logstrip-reveal>
-    <span class="logstrip-agents-strip__label"
-      >plugins that auto-intercept raw log pastes in every listed agent</span
-    >
-    <div class="logstrip-agents-strip__logos">
-      <a class="logstrip-agent-logo" title="Claude Code" href="{{base}}/guides/plugins/#claude-code"
-        ><img src="{{base}}/assets/images/logo-claude-code.svg" alt="Claude Code"
-      /></a>
-      <a class="logstrip-agent-logo" title="Droid" href="{{base}}/guides/plugins/#factory-droid"
-        ><img src="{{base}}/assets/images/logo-droid.png" alt="Droid"
-      /></a>
-      <a class="logstrip-agent-logo" title="Copilot" href="{{base}}/guides/plugins/#github-copilot"
-        ><img src="{{base}}/assets/images/logo-copilot.svg" alt="Copilot"
-      /></a>
-      <a class="logstrip-agent-logo" title="Cursor" href="{{base}}/guides/plugins/#cursor"
-        ><img src="{{base}}/assets/images/logo-cursor.svg" alt="Cursor"
-      /></a>
-      <a class="logstrip-agent-logo" title="Codex" href="{{base}}/guides/plugins/#codex"
-        ><img src="{{base}}/assets/images/logo-codex.png" alt="Codex"
-      /></a>
-      <a class="logstrip-agent-logo" title="OpenCode" href="{{base}}/guides/plugins/#opencode"
-        ><img src="{{base}}/assets/images/logo-opencode.png" alt="OpenCode"
-      /></a>
+  <section class="hp-section hp-section--wide" id="how" aria-labelledby="hp-how-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-how-title">five stages, one pass.</h2>
+      <p>
+        LogStrip reads the log line by line and never holds all of it in memory. Each line goes
+        through the same stages, so the same input gives the same output.
+      </p>
     </div>
-    <a class="logstrip-button" href="{{base}}/guides/plugins/">install for your agent</a>
-  </div>
-
-  <section class="logstrip-section">
-    <h2>cli in one line</h2>
-
-    <pre class="logstrip-code"><code>npx -y logstrip raw.log -o clean.log --stats</code></pre>
-
-    <p>
-      Writes the compressed log to <code>clean.log</code> and a stats block to
-      <code>stderr</code>. Stdin/stdout, file I/O, JSON reports and a GitHub Action wrapper are all
-      covered in <a href="{{base}}/getting-started/">Getting Started</a>.
-    </p>
-  </section>
-
-  <section class="logstrip-section">
-    <h2>next steps</h2>
-
-    <ul class="logstrip-links">
-      <li><a href="{{base}}/getting-started/">Getting Started</a> - install, pipe, script</li>
-      <li><a href="{{base}}/reference/cli/">CLI Reference</a> - every flag and exit code</li>
-      <li><a href="{{base}}/reference/core/">Core TypeScript API</a> - embed the parser</li>
-      <li><a href="{{base}}/reference/action/">GitHub Action</a> - optional workflow wrapper</li>
+    <!-- pipeline -->
+    <ol class="hp-stages">
       <li>
-        <a href="{{base}}/guides/plugins/">Plugin Installation</a> - Claude, Copilot, Cursor,
-        Codex, Droid, OpenCode
+        <strong>classify.</strong> Samples the start of the stream. Prose, markdown, source and
+        config pass through with secrets masked. Logs continue.
       </li>
-      <li><a href="{{base}}/examples/">Workflow Examples</a> - real CI recipes</li>
-    </ul>
+      <li>
+        <strong>sanitize.</strong> Masks tokens, keys and passwords. Replaces ids, timestamps and
+        addresses with placeholders, so repeats can fold.
+      </li>
+      <li>
+        <strong>score.</strong> Rates each line by level, keywords, stack frames and scanner
+        findings. Keeps the context around a failure and drops the routine.
+      </li>
+      <li>
+        <strong>dedupe.</strong> Folds repeats into <code>[x3]</code>, hides internal library
+        frames and refers back to blocks that already appeared.
+      </li>
+      <li>
+        <strong>budget.</strong> With <code>--max-tokens N</code>, keeps the highest scoring lines
+        that fit, in their original order.
+      </li>
+    </ol>
+    <p class="hp-more">
+      <a class="hp-textlink" href="{{base}}/guides/compression-flow/">the full flow, step by step</a>
+    </p>
+  </section>
+
+  <section class="hp-section" id="different" aria-labelledby="hp-different-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-different-title">not a model, on purpose.</h2>
+      <p>
+        Prompt compressors in the LLMLingua family run a language model to drop low-information
+        tokens. That suits prose. A log needs whole lines, frames you can follow and the same
+        answer every time.
+      </p>
+      <p class="hp-note">
+        This describes the approach in general. We have not benchmarked other tools, and we say
+        where the answer depends.
+      </p>
+    </div>
+
+    <div class="hp-compare">
+      <table class="hp-table">
+        <caption class="hp-sr">LogStrip compared with model-based prompt compressors</caption>
+        <thead>
+          <tr>
+            <th scope="col"><span class="hp-sr">Question</span></th>
+            <th scope="col">model-based compressors</th>
+            <th scope="col">logstrip</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">needs a model</th>
+            <td data-label="model-based compressors">yes</td>
+            <td data-label="logstrip">no</td>
+          </tr>
+          <tr>
+            <th scope="row">same input, same output</th>
+            <td data-label="model-based compressors">depends on model, hardware and settings</td>
+            <td data-label="logstrip">yes, pinned by snapshot tests</td>
+          </tr>
+          <tr>
+            <th scope="row">lines stay whole</th>
+            <td data-label="model-based compressors">not guaranteed, tokens are removed inside lines</td>
+            <td data-label="logstrip">yes: kept, folded or marked</td>
+          </tr>
+          <tr>
+            <th scope="row">repeats</th>
+            <td data-label="model-based compressors">removed, no count</td>
+            <td data-label="logstrip"><code>[x412]</code> and the values that differed</td>
+          </tr>
+          <tr>
+            <th scope="row">prose and documents</th>
+            <td data-label="model-based compressors">what they are built for</td>
+            <td data-label="logstrip">passed through untouched</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="hp-more">
+        <a class="hp-textlink" href="{{base}}/why-logstrip/">why logs are not prose</a>
+        <a class="hp-textlink" href="{{base}}/compare/">compare with grep, platforms and more</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="hp-section hp-section--wide" id="use" aria-labelledby="hp-use-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-use-title">built for three jobs.</h2>
+    </div>
+
+    <div class="hp-uses">
+      <article class="hp-use">
+        <h3>ci pipelines</h3>
+        <p>Compress the log in the step before the one that reads it.</p>
+        <pre class="hp-code" tabindex="0"><code>npm test &gt; raw.log 2&gt;&amp;1 || true
+logstrip raw.log -o clean.log --stats</code></pre>
+        <p class="hp-use__links">
+          <a class="hp-textlink" href="{{base}}/examples/">ci recipes</a>
+          <a class="hp-textlink" href="{{base}}/reference/action/">github action</a>
+        </p>
+      </article>
+
+      <article class="hp-use">
+        <h3>agent hooks</h3>
+        <p>
+          Plugins teach the agent to run it. Hooks compress a log when the agent reads it or you
+          paste it.
+        </p>
+        <pre class="hp-code" tabindex="0"><code>npm i -g logstrip</code></pre>
+        <p class="hp-use__links">
+          <a class="hp-textlink" href="{{base}}/guides/plugins/">set up your agent</a>
+        </p>
+      </article>
+
+      <article class="hp-use">
+        <h3>incident triage</h3>
+        <p>Pipe what you pulled straight into a size your model can afford.</p>
+        <pre class="hp-code" tabindex="0"><code>kubectl logs deploy/checkout --since=1h \
+  | logstrip --max-tokens 4000</code></pre>
+        <p class="hp-use__links">
+          <a class="hp-textlink" href="{{base}}/reference/cli/">cli reference</a>
+          <a class="hp-textlink" href="{{base}}/examples/k8s/">kubernetes recipe</a>
+        </p>
+      </article>
+    </div>
+
+    <div class="hp-agents">
+      <p>Plugins ship for six agents. Five of them also get a hook that compresses logs without being asked.</p>
+      <ul aria-label="Supported agents">
+        <li><a href="{{base}}/guides/plugins/#claude-code">Claude Code</a></li>
+        <li><a href="{{base}}/guides/plugins/#factory-droid">Factory Droid</a></li>
+        <li><a href="{{base}}/guides/plugins/#github-copilot">GitHub Copilot</a></li>
+        <li><a href="{{base}}/guides/plugins/#cursor">Cursor</a></li>
+        <li><a href="{{base}}/guides/plugins/#codex">Codex</a></li>
+        <li><a href="{{base}}/guides/plugins/#opencode">OpenCode</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="hp-section hp-section--wide hp-sources" id="sources" aria-labelledby="hp-sources-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-sources-title">705+ sources, named in the output.</h2>
+      <p>
+        LogStrip recognises the tools that wrote a log and lists them, so an agent knows what it is
+        reading.
+      </p>
+    </div>
+    <div class="hp-marquee" aria-label="Examples of detected log sources">
+      <!-- marquee -->
+    </div>
+    <p class="hp-more">
+      <a class="hp-textlink" href="{{base}}/reference/sources/">all 705+ sources</a>
+      <a class="hp-textlink" href="{{base}}/reference/cli/#custom-configuration-logstripyml">add your own</a>
+    </p>
+  </section>
+
+  <section class="hp-section" id="install" aria-labelledby="hp-install-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-install-title">install in one command.</h2>
+      <p>Needs Node.js 22+. No account, no model, no config file.</p>
+    </div>
+
+    <div class="hp-install">
+      <div class="hp-cmd">
+        <code>npm install --global logstrip</code>
+        <button type="button" class="hp-copy" data-copy="npm install --global logstrip">copy</button>
+      </div>
+      <p>Or run it once without installing:</p>
+      <div class="hp-cmd">
+        <code>npx -y logstrip raw.log -o clean.log --stats</code>
+        <button type="button" class="hp-copy" data-copy="npx -y logstrip raw.log -o clean.log --stats">copy</button>
+      </div>
+      <ul class="hp-links">
+        <li><a href="{{base}}/getting-started/">Getting Started</a> - file, pipe or script</li>
+        <li><a href="{{base}}/reference/cli/">CLI Reference</a> - every flag and exit code</li>
+        <li><a href="{{base}}/reference/core/">Core API</a> - embed the parser in Node</li>
+        <li><a href="{{base}}/reference/action/">GitHub Action</a> - for a one-step workflow, the CLI is preferred</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="hp-section" id="faq" aria-labelledby="hp-faq-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-faq-title">questions.</h2>
+    </div>
+    <div class="hp-faq">
+      <!-- faq -->
+    </div>
   </section>
 </div>

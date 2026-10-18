@@ -1,4 +1,4 @@
-// The ecosystem marquee on the landing page: three rows of tool pills that
+// The sources marquee on the landing page: three rows of tool pills that
 // scroll sideways. Built at build time, so it needs no JavaScript.
 import { escapeHtml } from './html';
 
@@ -71,17 +71,24 @@ export function marqueeRows(pills: readonly string[]): MarqueeRow[] {
   ].filter((row) => row.pills.length > 0);
 }
 
-/** Row markup. Each track holds its pills twice so the loop has no gap. */
+/**
+ * Row markup. Each track holds its pills twice so the loop has no gap. The
+ * second copy is marked, so reduced-motion styles can hide it and show one
+ * static, wrapped list instead.
+ */
 export function marqueeHtml(pills: readonly string[]): string {
+  const pill = (name: string, copy: boolean): string =>
+    `<span class="hp-pill${copy ? ' hp-pill--copy' : ''}">${escapeHtml(name)}</span>`;
   return marqueeRows(pills)
     .map((row) => {
-      const items = [...row.pills, ...row.pills]
-        .map((name) => `<span class="logstrip-tool-pill">${escapeHtml(name)}</span>`)
-        .join('');
-      const modifier = row.reverse ? ' logstrip-ecosystem-marquee__row--reverse' : '';
+      const items = [
+        ...row.pills.map((name) => pill(name, false)),
+        ...row.pills.map((name) => pill(name, true)),
+      ].join('');
+      const modifier = row.reverse ? ' hp-marquee__row--reverse' : '';
       return (
-        `<div class="logstrip-ecosystem-marquee__row${modifier}" aria-hidden="true">` +
-        `<div class="logstrip-ecosystem-marquee__track" style="animation-duration: ${row.seconds}s">${items}</div>` +
+        `<div class="hp-marquee__row${modifier}" aria-hidden="true">` +
+        `<div class="hp-marquee__track" style="animation-duration: ${row.seconds}s">${items}</div>` +
         '</div>'
       );
     })

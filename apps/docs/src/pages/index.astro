@@ -4,15 +4,36 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 // lines and turn quotes into smart quotes.
 import home from '../components/home.html?raw';
 import pkg from '../../../../package.json';
+import benchmarks from '../data/benchmarks.json';
 import '../styles/home.css';
+import type { BenchmarkDocument } from '../benchmarks';
+import { proofHtml } from '../benchmarks';
+import { faqHtml, homeFaq } from '../faq';
 import { ECOSYSTEM_PILLS, marqueeHtml } from '../home-marquee';
-import { homeJsonLd } from '../seo';
+import { homeValues, renderHome } from '../home';
+import { pipelineHtml } from '../home-pipeline';
+import { faqJsonLd, homeJsonLd } from '../seo';
 import { BASE, SITE_DESCRIPTION } from '../site.mjs';
 
-// The page is plain HTML, so links and images get the base path here.
-const html = home
-  .replaceAll('{{base}}', BASE)
-  .replace('<!-- marquee -->', marqueeHtml(ECOSYSTEM_PILLS));
+// The numbers on this page come from data/benchmarks.json (npm run docs:bench),
+// the same file that fills docs/benchmarks.md.
+const doc = benchmarks as BenchmarkDocument;
+const faq = homeFaq(doc.totals);
+const jest = doc.fixtures.find((row) => row.id === 'jest-noisy');
+
+const html = renderHome(home, {
+  base: BASE,
+  values: homeValues(doc),
+  blocks: {
+    marquee: marqueeHtml(ECOSYSTEM_PILLS),
+    proof: proofHtml(doc),
+    pipeline: pipelineHtml({
+      inputLines: jest?.inputLines ?? 0,
+      outputLines: jest?.outputLines ?? 0,
+    }),
+    faq: faqHtml(faq),
+  },
+});
 ---
 
 <StarlightPage
@@ -26,12 +47,15 @@ const html = home
     head: [
       { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
       homeJsonLd(pkg.version),
+      faqJsonLd(faq),
     ],
   }}
 >
   <Fragment set:html={html} />
   <script>
     import { initHeroDemo } from '../scripts/home-demo';
+    import { initCopyButtons } from '../scripts/home-copy';
     initHeroDemo(import.meta.env.BASE_URL);
+    initCopyButtons();
   </script>
 </StarlightPage>

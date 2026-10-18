@@ -5,8 +5,8 @@
 // destiny during the morph animation: ['k', cleanIdx] survives as
 // clean[cleanIdx], ['g', leaderIdx] collapses into the raw leader line,
 // ['d'] is dropped. The final state is always the exact CLI output
-// (cleanPre), so the morph is presentation only. Regenerate with the
-// commands recorded in each scenario's `cmd` field if parser output changes.
+// (cleanPre), so the morph is presentation only. Regenerate the file with
+// `npm run build && node scripts/export-hero-scenarios.mjs` after parser changes.
 import { escapeHtml } from '../html';
 import scenarios from './hero-scenarios.json';
 
@@ -24,11 +24,23 @@ export interface Scenario {
 
 const SCENARIOS: Scenario[] = scenarios;
 
+const ERROR_PATTERN =
+  /\[(?:ERROR|FATAL|CRITICAL)\]|^FAIL\s|AssertionError|npm ERR!|##\[error\]|panic|BackOff|ErrImagePull/i;
+const SCANNER_PATTERN = /"Severity":\s*"(?:CRITICAL|HIGH)"|CVE-|GHSA-|^CRITICAL\s|^HIGH\s/;
+const PLACEHOLDER_PATTERN = /\[(?:ID|HASH|IP|TIME|REDACTED|NN)\]/;
+
+/** True for a folded value list such as `[99.99 | 49.50 | 12.00]`. Linear: no backtracking. */
+function hasDeltaList(line: string): boolean {
+  const pipe = line.indexOf(' | ');
+  return pipe > 0 && line.lastIndexOf('[', pipe) !== -1 && line.indexOf(']', pipe) !== -1;
+}
+
 /** Wraps a clean-output line in a span that colors it by what it is. */
 export function highlightLine(line: string): string {
   const esc = escapeHtml(line);
-  if (/^❯ /.test(line)) return `<span class="det">${esc}</span>`;
-  if (/^✓ detected:/i.test(line)) return `<span class="det">${esc}</span>`;
+  if (line.startsWith('❯ ') || /^✓ detected:/i.test(line)) {
+    return `<span class="det">${esc}</span>`;
+  }
   if (/^\[x\d+\]/.test(line)) {
     return `<span class="x">${esc.replace(/^(\[x\d+\])/, '<span class="dup">$1</span>')}</span>`;
   }
@@ -36,19 +48,11 @@ export function highlightLine(line: string): string {
   if (/hidden internal (?:library|stack) frames/i.test(line)) {
     return `<span class="stk">${esc}</span>`;
   }
-  if (
-    /\[(?:ERROR|FATAL|CRITICAL)\]|^FAIL\s|AssertionError|npm ERR!|##\[error\]|panic|BackOff|ErrImagePull/i.test(
-      line
-    )
-  ) {
-    return `<span class="err">${esc}</span>`;
-  }
-  if (/"Severity":\s*"(?:CRITICAL|HIGH)"|CVE-|GHSA-|^CRITICAL\s|^HIGH\s/.test(line)) {
-    return `<span class="scan">${esc}</span>`;
-  }
-  if (/\[(?:WARN)\]|^\s*❯\s/i.test(line)) return `<span class="warn">${esc}</span>`;
-  if (/^\s*at\s|^\s*✓\s/.test(line)) return `<span class="mark">${esc}</span>`;
-  if (/\[ID\]|\[HASH\]|\[IP\]|\[TIME\]|\[REDACTED\]|\[NN\]|\[[^\]]+\s\|\s[^\]]+\]/.test(line)) {
+  if (ERROR_PATTERN.test(line)) return `<span class="err">${esc}</span>`;
+  if (SCANNER_PATTERN.test(line)) return `<span class="scan">${esc}</span>`;
+  if (line.includes('[WARN]') || /^\s*❯\s/.test(line)) return `<span class="warn">${esc}</span>`;
+  if (/^\s*(?:at|✓)\s/.test(line)) return `<span class="mark">${esc}</span>`;
+  if (PLACEHOLDER_PATTERN.test(line) || hasDeltaList(line)) {
     return `<span class="san">${esc}</span>`;
   }
   return esc;
@@ -58,18 +62,83 @@ export function highlightLine(line: string): string {
 export function splitMetric(
   text: string
 ): { prefix: string; value: number; decimals: number; suffix: string } | null {
-  const match = text.match(/-?\d+(?:\.\d+)?/);
-  if (!match || match.index === undefined) return null;
+  const match = /-?\d+(?:\.\d+)?/.exec(text);
+  if (match?.index === undefined) return null;
   return {
     prefix: text.slice(0, match.index),
-    value: parseFloat(match[0]),
+    value: Number.parseFloat(match[0]),
     decimals: (match[0].split('.')[1] ?? '').length,
     suffix: text.slice(match.index + match[0].length),
   };
 }
 
-function query<T extends Element>(root: ParentNode, selector: string): T | null {
-  return root.querySelector<T>(selector);
+interface DemoElements {
+  title: HTMLElement | null;
+  tabs: HTMLElement[];
+  rawBtn: HTMLElement;
+  cleanBtn: HTMLElement;
+  pill: HTMLElement;
+  hint: HTMLElement | null;
+  screen: HTMLElement;
+  metrics: HTMLElement | null;
+  rawPre: HTMLElement;
+  cleanPre: HTMLElement;
+  agentCard: HTMLElement | null;
+}
+
+function demoMarkup(logoUrl: string): string {
+  const tabs = SCENARIOS.map(
+    (s, i) =>
+      `<button class="hp-demo__tab${i === 0 ? ' is-active' : ''}" type="button" role="tab" aria-selected="${i === 0}" data-logstrip-tab="${s.id}">${escapeHtml(s.label)}</button>`
+  ).join('');
+  return `
+    <div class="hp-demo__bar">
+      <span class="hp-demo__dot"></span>
+      <span class="hp-demo__dot"></span>
+      <span class="hp-demo__dot"></span>
+      <span class="hp-demo__title" data-logstrip-title></span>
+    </div>
+    <div class="hp-demo__tabs" role="tablist" aria-label="Demo scenarios">${tabs}</div>
+    <div class="hp-demo__toggle">
+      <span class="hp-toggle__hint" data-logstrip-hint>try me &darr;</span>
+      <div class="hp-toggle__row">
+        <button class="hp-toggle__side hp-toggle__side--raw is-active" data-logstrip-raw-btn type="button">raw</button>
+        <button class="hp-toggle__pill" data-logstrip-pill type="button" aria-label="Switch between raw and LogStrip output">
+          <span class="hp-toggle__knob"></span>
+        </button>
+        <button class="hp-toggle__side hp-toggle__side--clean" data-logstrip-clean-btn type="button"><img class="hp-toggle__logo" src="${logoUrl}" alt="" width="235" height="256">logstrip</button>
+      </div>
+    </div>
+    <div class="hp-demo__screen" data-logstrip-screen>
+      <pre class="hp-demo__pre hp-demo__pre--raw" data-logstrip-raw-pre tabindex="0"></pre>
+      <pre class="hp-demo__pre hp-demo__pre--clean" data-logstrip-clean-pre></pre>
+      <div class="hp-demo__agent" data-logstrip-agent aria-label="Agent-ready summary"></div>
+    </div>
+    <div class="hp-demo__metrics" data-logstrip-metrics></div>`;
+}
+
+function findElements(root: HTMLElement): DemoElements | null {
+  const one = <T extends HTMLElement>(selector: string): T | null => root.querySelector<T>(selector);
+  const rawBtn = one('[data-logstrip-raw-btn]');
+  const cleanBtn = one('[data-logstrip-clean-btn]');
+  const pill = one('[data-logstrip-pill]');
+  const screen = one('[data-logstrip-screen]');
+  const rawPre = one('[data-logstrip-raw-pre]');
+  const cleanPre = one('[data-logstrip-clean-pre]');
+  if (!rawBtn || !cleanBtn || !pill || !screen || !rawPre || !cleanPre) return null;
+  return {
+    title: one('[data-logstrip-title]'),
+    tabs: Array.from(root.querySelectorAll<HTMLElement>('[data-logstrip-tab]')),
+    rawBtn,
+    cleanBtn,
+    pill,
+    hint: one('[data-logstrip-hint]'),
+    screen,
+    metrics: one('[data-logstrip-metrics]'),
+    rawPre,
+    cleanPre,
+    agentCard: one('[data-logstrip-agent]'),
+  };
 }
 
 function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
@@ -77,75 +146,37 @@ function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
   root.dataset.logstripCompareReady = 'true';
 
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  root.innerHTML = `
-    <div class="logstrip-demo__bar">
-      <span class="logstrip-demo__dot"></span>
-      <span class="logstrip-demo__dot"></span>
-      <span class="logstrip-demo__dot"></span>
-      <span class="logstrip-demo__title" data-logstrip-title></span>
-    </div>
-    <div class="logstrip-demo__tabs" role="tablist" aria-label="Demo scenarios">
-      ${SCENARIOS.map((s, i) => `<button class="logstrip-demo__tab${i === 0 ? ' is-active' : ''}" type="button" role="tab" aria-selected="${i === 0}" data-logstrip-tab="${s.id}">${escapeHtml(s.label)}</button>`).join('')}
-    </div>
-    <div class="logstrip-demo__toggle" data-logstrip-toggle>
-      <span class="logstrip-toggle__hint" data-logstrip-hint>try me <span class="logstrip-toggle__arrow">↓</span></span>
-      <div class="logstrip-toggle__row">
-        <button class="logstrip-toggle__side logstrip-toggle__side--raw is-active" data-logstrip-raw-btn type="button">raw</button>
-        <button class="logstrip-toggle__pill" data-logstrip-pill type="button" aria-label="Switch between raw and LogStrip output">
-          <span class="logstrip-toggle__knob"></span>
-        </button>
-        <button class="logstrip-toggle__side logstrip-toggle__side--clean" data-logstrip-clean-btn type="button"><img class="logstrip-toggle__icon logstrip-toggle__icon--logo" src="${logoUrl}" alt="" width="235" height="256">logstrip</button>
-      </div>
-    </div>
-    <div class="logstrip-demo__screen" data-logstrip-screen>
-      <pre class="logstrip-demo__pre logstrip-demo__pre--raw" data-logstrip-raw-pre></pre>
-      <pre class="logstrip-demo__pre logstrip-demo__pre--clean" data-logstrip-clean-pre></pre>
-      <div class="logstrip-demo__agent-card" data-logstrip-agent aria-label="Agent-ready summary"></div>
-    </div>
-    <div class="logstrip-demo__metrics" data-logstrip-metrics></div>`;
-
-  const title = query<HTMLElement>(root, '[data-logstrip-title]');
-  const tabs = Array.from(root.querySelectorAll<HTMLElement>('[data-logstrip-tab]'));
-  const rawBtn = query<HTMLElement>(root, '[data-logstrip-raw-btn]');
-  const cleanBtn = query<HTMLElement>(root, '[data-logstrip-clean-btn]');
-  const pill = query<HTMLElement>(root, '[data-logstrip-pill]');
-  const hint = query<HTMLElement>(root, '[data-logstrip-hint]');
-  const screen = query<HTMLElement>(root, '[data-logstrip-screen]');
-  const metrics = query<HTMLElement>(root, '[data-logstrip-metrics]');
-  const rawPre = query<HTMLElement>(root, '[data-logstrip-raw-pre]');
-  const cleanPre = query<HTMLElement>(root, '[data-logstrip-clean-pre]');
-  const agentCard = query<HTMLElement>(root, '[data-logstrip-agent]');
-
-  if (!rawBtn || !cleanBtn || !pill || !screen || !rawPre || !cleanPre) return;
+  root.innerHTML = demoMarkup(logoUrl);
+  const els = findElements(root);
+  if (!els) return;
 
   let mode: 'raw' | 'clean' | 'morphing' = 'raw';
   let current = SCENARIOS[0];
   let morphTimers: ReturnType<typeof setTimeout>[] = [];
 
-  function clearMorph(): void {
+  const clearMorph = (): void => {
     morphTimers.forEach(clearTimeout);
     morphTimers = [];
-  }
+  };
 
-  function schedule(fn: () => void, ms: number): void {
+  const schedule = (fn: () => void, ms: number): void => {
     morphTimers.push(setTimeout(fn, ms));
-  }
+  };
 
-  function renderRaw(scenario: Scenario): void {
-    rawPre!.innerHTML = scenario.raw
-      .map((line) => `<span class="logstrip-demo__ln">${escapeHtml(line) || ' '}</span>`)
+  const renderRaw = (scenario: Scenario): void => {
+    els.rawPre.innerHTML = scenario.raw
+      .map((line) => `<span class="hp-demo__ln">${escapeHtml(line) || ' '}</span>`)
       .join('');
-  }
+  };
 
-  function setControls(clean: boolean): void {
-    rawBtn!.classList.toggle('is-active', !clean);
-    cleanBtn!.classList.toggle('is-active', clean);
-    pill!.classList.toggle('is-clean', clean);
-    hint?.classList.toggle('is-hidden', clean);
-  }
+  const setControls = (clean: boolean): void => {
+    els.rawBtn.classList.toggle('is-active', !clean);
+    els.cleanBtn.classList.toggle('is-active', clean);
+    els.pill.classList.toggle('is-clean', clean);
+    els.hint?.classList.toggle('is-hidden', clean);
+  };
 
-  function animateMetric(el: HTMLElement): void {
+  const animateMetric = (el: HTMLElement): void => {
     const finalText = el.dataset.logstripFinal ?? '';
     const parts = splitMetric(finalText);
     if (!parts || prefersReduced) {
@@ -154,29 +185,28 @@ function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
     }
     const startTime = performance.now();
     const duration = 900;
-    function frame(now: number): void {
-      const p = Math.min(1, (now - startTime) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      el.textContent =
-        parts!.prefix + (parts!.value * eased).toFixed(parts!.decimals) + parts!.suffix;
-      if (p < 1) requestAnimationFrame(frame);
+    const frame = (now: number): void => {
+      const progress = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = parts.prefix + (parts.value * eased).toFixed(parts.decimals) + parts.suffix;
+      if (progress < 1) requestAnimationFrame(frame);
       else el.textContent = finalText;
-    }
+    };
     requestAnimationFrame(frame);
-  }
+  };
 
-  function finishClean(): void {
+  const finishClean = (): void => {
     mode = 'clean';
-    screen!.dataset.logstripMode = 'clean';
-    metrics?.classList.add('is-visible');
-    metrics?.querySelectorAll<HTMLElement>('strong').forEach(animateMetric);
-  }
+    els.screen.dataset.logstripMode = 'clean';
+    els.metrics?.classList.add('is-visible');
+    els.metrics?.querySelectorAll<HTMLElement>('strong').forEach(animateMetric);
+  };
 
-  function startMorph(): void {
+  const startMorph = (): void => {
     mode = 'morphing';
     setControls(true);
-    metrics?.classList.remove('is-visible');
-    const spans = rawPre!.children;
+    els.metrics?.classList.remove('is-visible');
+    const spans = els.rawPre.children;
     for (let i = 0; i < spans.length; i++) {
       const span = spans[i] as HTMLElement;
       const fate = current.fates[i] ?? ['d'];
@@ -195,9 +225,9 @@ function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
       }
     }
     schedule(finishClean, 1800);
-  }
+  };
 
-  function setMode(next: 'raw' | 'clean'): void {
+  const setMode = (next: 'raw' | 'clean'): void => {
     if (next === 'clean') {
       if (mode !== 'raw') return;
       if (prefersReduced) {
@@ -206,71 +236,72 @@ function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
       } else {
         startMorph();
       }
-    } else {
-      clearMorph();
-      mode = 'raw';
-      renderRaw(current);
-      screen!.dataset.logstripMode = 'raw';
-      setControls(false);
-      metrics?.classList.remove('is-visible');
+      return;
     }
-  }
+    clearMorph();
+    mode = 'raw';
+    renderRaw(current);
+    els.screen.dataset.logstripMode = 'raw';
+    setControls(false);
+    els.metrics?.classList.remove('is-visible');
+  };
 
-  function setScenario(scenario: Scenario): void {
+  const setScenario = (scenario: Scenario): void => {
     clearMorph();
     current = scenario;
-    if (title) title.textContent = scenario.title;
-    cleanPre!.innerHTML = scenario.clean.map(highlightLine).join('\n');
-    if (agentCard) {
-      agentCard.innerHTML =
-        '<span class="logstrip-demo__agent-kicker">what the agent sees</span>' +
+    if (els.title) els.title.textContent = scenario.title;
+    els.cleanPre.innerHTML = scenario.clean.map(highlightLine).join('\n');
+    if (els.agentCard) {
+      els.agentCard.innerHTML =
+        '<span class="hp-demo__agent-kicker">what the agent sees</span>' +
         scenario.agent
           .map(
             ([label, value]) =>
-              `<div class="logstrip-demo__agent-row"><b>${escapeHtml(label)}</b><span>${escapeHtml(value)}</span></div>`
+              `<div class="hp-demo__agent-row"><b>${escapeHtml(label)}</b><span>${escapeHtml(value)}</span></div>`
           )
           .join('');
     }
-    if (metrics) {
-      metrics.innerHTML = scenario.metrics
+    if (els.metrics) {
+      els.metrics.innerHTML = scenario.metrics
         .map(
           ([value, label]) =>
             `<span><strong data-logstrip-final="${escapeHtml(value)}">${escapeHtml(value)}</strong> ${escapeHtml(label)}</span>`
         )
         .join('');
     }
-    tabs.forEach((tab) => {
+    els.tabs.forEach((tab) => {
       const active = tab.dataset.logstripTab === scenario.id;
       tab.classList.toggle('is-active', active);
       tab.setAttribute('aria-selected', String(active));
     });
     mode = 'morphing'; // force setMode('raw') to do a full reset
     setMode('raw');
-  }
+  };
 
-  tabs.forEach((tab) => {
+  els.tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       const scenario = SCENARIOS.find((s) => s.id === tab.dataset.logstripTab);
       if (scenario) setScenario(scenario);
     });
   });
 
-  rawBtn.addEventListener('click', () => setMode('raw'));
-  cleanBtn.addEventListener('click', () => setMode('clean'));
-  pill.addEventListener('click', () => setMode(mode === 'raw' ? 'clean' : 'raw'));
+  els.rawBtn.addEventListener('click', () => setMode('raw'));
+  els.cleanBtn.addEventListener('click', () => setMode('clean'));
+  els.pill.addEventListener('click', () => setMode(mode === 'raw' ? 'clean' : 'raw'));
 
   setScenario(SCENARIOS[0]);
+  if (prefersReduced) return;
 
-  // Pulse the switch a few times to invite a click
+  // Pulse the switch a few times to invite a click, then stop.
   let pulseCount = 0;
   const pulseInterval = setInterval(() => {
     pulseCount++;
-    if (pulseCount > 6 || mode !== 'raw') {
+    if (pulseCount > 4 || mode !== 'raw') {
       clearInterval(pulseInterval);
       return;
     }
-    pill.classList.add('is-pulsing');
-    setTimeout(() => pill.classList.remove('is-pulsing'), 600);
+    els.pill.classList.add('is-pulsing');
+    setTimeout(() => els.pill.classList.remove('is-pulsing'), 600);
   }, 2400);
 }
 

@@ -23,8 +23,15 @@ describe('marqueeHtml', () => {
   it('repeats each row twice for a seamless loop and escapes names', () => {
     const html = marqueeHtml(['A&B']);
 
-    expect(html.match(/logstrip-tool-pill">A&amp;B</g)).toHaveLength(2);
+    expect(html.match(/hp-pill(?: hp-pill--copy)?">A&amp;B</g)).toHaveLength(2);
     expect(html).toContain('aria-hidden="true"');
     expect(html).not.toContain('--reverse');
+  });
+
+  it('marks only the second copy, so reduced motion can hide it', () => {
+    const html = marqueeHtml(['a', 'b']);
+
+    expect(html.match(/hp-pill hp-pill--copy"/g)).toHaveLength(2);
+    expect(html.match(/<span class="hp-pill">/g)).toHaveLength(2);
   });
 });

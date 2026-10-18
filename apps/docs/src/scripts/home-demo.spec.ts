@@ -13,6 +13,18 @@ describe('highlightLine', () => {
     expect(highlightLine('  at app (file.ts:1:2)')).toContain('class="mark"');
   });
 
+  it('colors a folded value list without scanning the whole line twice', () => {
+    expect(highlightLine('amount=[99.99 | 49.50 | 12.00]')).toContain('class="san"');
+    expect(highlightLine('a | b without brackets')).toBe('a | b without brackets');
+    // Many opening brackets and no closing one: answered in one pass, not quadratic time.
+    expect(highlightLine(`${'['.repeat(5000)} | ${'x'.repeat(5000)}`)).not.toContain('<span');
+  });
+
+  it('colors the command and detected-source header lines', () => {
+    expect(highlightLine('❯ logstrip raw.log --stats')).toContain('class="det"');
+    expect(highlightLine('✓ detected: nginx')).toContain('class="det"');
+  });
+
   it('escapes markup and leaves plain lines unwrapped', () => {
     expect(highlightLine('a <b> & c')).toBe('a &lt;b&gt; &amp; c');
   });
@@ -35,6 +47,13 @@ describe('splitMetric', () => {
 });
 
 describe('hero scenarios', () => {
+  it('starts every clean output with the command and the detected sources', () => {
+    for (const scenario of scenarios) {
+      expect(scenario.clean[0]).toBe(`❯ ${scenario.cmd}`);
+      expect(scenario.clean[1]).toMatch(/^✓ detected: /);
+    }
+  });
+
   it('has one fate per raw line and only points at existing clean lines', () => {
     for (const scenario of scenarios) {
       expect(scenario.fates).toHaveLength(scenario.raw.length);
