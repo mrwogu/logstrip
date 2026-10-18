@@ -64,6 +64,35 @@ jobs:
           # Credentials stay: later steps push the release tags.
           persist-credentials: true
 
+      # A hand-picked tag must be a real release of this repository: a strict
+      # vX.Y.Z name, its commit on main (or a dist/ build commit right on top
+      # of one), and the version package.json carries.
+      - name: Validate the tag
+        if: ${{ steps.plan.outputs.publish == 'true' }}
+        env:
+          TAG_NAME: ${{ steps.plan.outputs.tag }}
+        run: |
+          case "$TAG_NAME" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::not a release tag: $TAG_NAME"; exit 1 ;;
+          esac
+          if ! printf '%s' "$TAG_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::not a release tag: $TAG_NAME"; exit 1
+          fi
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$TAG_NAME" origin/main; then
+            if ! git merge-base --is-ancestor "${TAG_NAME}^" origin/main; then
+              echo "::error::$TAG_NAME is not on main"; exit 1
+            fi
+            if git diff --name-only "${TAG_NAME}^" "$TAG_NAME" | grep -v '^dist/' | grep -q .; then
+              echo "::error::$TAG_NAME carries changes outside dist/ that are not on main"; exit 1
+            fi
+          fi
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "v$VERSION" != "$TAG_NAME" ]; then
+            echo "::error::package.json is $VERSION but the tag is $TAG_NAME"; exit 1
+          fi
+
       - name: Setup Node.js for npm
         if: ${{ steps.plan.outputs.publish == 'true' }}
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -103,17 +132,25 @@ jobs:
           git tag -f "${TAG_NAME}" HEAD
           git push origin "refs/tags/${TAG_NAME}" --force
 
+      - name: Publish to npm
+        if: ${{ steps.plan.outputs.publish == 'true' }}
+        run: npm publish
+
+      # The floating vN tag follows the newest vN.x.y release only, so a
+      # re-publish of an older patch never rolls action users back.
       - name: Update major action tag
         if: ${{ steps.plan.outputs.publish == 'true' }}
         env:
           TAG_NAME: ${{ steps.plan.outputs.tag }}
         run: |
           MAJOR_TAG=$(node -e "const tag = process.env.TAG_NAME; const match = /^v(\\d+)\\./.exec(tag); if (!match) process.exit(1); console.log('v' + match[1]);")
+          git fetch --quiet --tags origin
+          NEWEST=$(git tag -l "${MAJOR_TAG}.*" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          if [ "$NEWEST" != "$TAG_NAME" ]; then
+            echo "$MAJOR_TAG stays on $NEWEST, $TAG_NAME is older"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -f "$MAJOR_TAG" HEAD
           git push origin "refs/tags/$MAJOR_TAG" --force
-
-      - name: Publish to npm
-        if: ${{ steps.plan.outputs.publish == 'true' }}
-        run: npm publish
