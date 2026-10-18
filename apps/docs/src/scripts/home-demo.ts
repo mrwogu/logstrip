@@ -126,7 +126,7 @@ export function formatTally(tally: Tally): string {
  * all go when the sweep ends.
  */
 export function sweepDelay(top: number, height: number, duration: number): number {
-  if (!(height > 0)) return 0;
+  if (height <= 0) return 0;
   const share = Math.min(1, Math.max(0, top / height));
   return Math.round(share * duration);
 }
