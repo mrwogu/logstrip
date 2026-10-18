@@ -79,6 +79,71 @@ const ALPHANUMERIC_HASH_PATTERN =
 const AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/gu;
 const AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
 
+// ---- Credential masking ----
+//
+// Shared by the log pipeline (sanitizeLine) and by text passthrough, which
+// must not copy credentials out of a config, env dump or document. The rules
+// are split in two because sanitizeLine runs the hash and email masks between
+// them: the vendor patterns have to see tokens before the hash rules can
+// consume them, while the AWS keys and the entropy fallback run on whatever
+// the hash rules left behind. maskSecrets applies both halves in that order.
+
+function maskVendorSecrets(line: string): string {
+  let result = line;
+  if (result.includes('://')) {
+    result = result.replace(CONNECTION_STRING_PATTERN, (match, pwd: string) =>
+      match.replace(pwd, '[REDACTED]'),
+    );
+  }
+  if (result.includes('gh')) result = result.replace(GITHUB_TOKEN_PATTERN, '[REDACTED]');
+  if (result.includes('eyJ')) result = result.replace(JWT_TOKEN_PATTERN, '[JWT]');
+  if (result.includes('xox')) result = result.replace(SLACK_TOKEN_PATTERN, '[REDACTED]');
+  if (result.includes('_live_') || result.includes('_test_')) {
+    result = result.replace(STRIPE_KEY_PATTERN, '[REDACTED]');
+  }
+  if (result.includes('npm_')) result = result.replace(NPM_TOKEN_PATTERN, '[REDACTED]');
+  if (result.includes('AIza')) result = result.replace(GOOGLE_API_KEY_PATTERN, '[REDACTED]');
+  if (result.includes('SK') || result.includes('AC')) {
+    result = result.replace(TWILIO_KEY_PATTERN, '[REDACTED]');
+  }
+  if (result.includes('SG.')) result = result.replace(SENDGRID_KEY_PATTERN, '[REDACTED]');
+  if (result.includes('uthorization')) {
+    result = result.replace(AUTHORIZATION_HEADER_PATTERN, 'Authorization: [REDACTED]');
+  }
+  result = result.replace(SECRET_FIELD_PATTERN, (match) => {
+    const sepIdx = match.search(/[:=]\s*/u);
+    const sepEnd = match.slice(sepIdx).match(/^[:=]\s*/u)![0].length;
+    return `${match.slice(0, sepIdx + sepEnd)}[REDACTED]`;
+  });
+  return result;
+}
+
+function maskLateSecrets(line: string): string {
+  let result = line;
+  if (result.includes('AKIA') || result.includes('ABIA') || result.includes('ASIA')) {
+    result = result.replace(AWS_ACCESS_KEY_PATTERN, '[REDACTED]');
+  }
+  if (result.includes('arn:aws:')) {
+    result = result.replace(AWS_ARN_ACCOUNT_PATTERN, (match, accountId: string) =>
+      match.replace(accountId, '[ACCOUNT]'),
+    );
+  }
+  // High-entropy fallback for credentials no vendor pattern recognizes.
+  result = maskHighEntropyTokens(result);
+  return result;
+}
+
+/**
+ * Mask credentials in one line: GitHub, Slack, Stripe, npm, Google, Twilio,
+ * SendGrid and AWS keys, JWTs, connection-string passwords, Authorization
+ * headers, password/token/secret fields, AWS account ids and any other
+ * high-entropy token. Identifiers, timestamps, IPs and emails stay as they
+ * are. PEM private key blocks span lines and are handled by maskPemBlock.
+ */
+export function maskSecrets(line: string): string {
+  return maskLateSecrets(maskVendorSecrets(line));
+}
+
 export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
   const uuidReplacement =
     preserveIdSuffix > 0
@@ -123,47 +188,13 @@ export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
     result = result.replace(IPV6_PATTERN, '[IPV6]');
   }
   // Secrets (before hex/hash to avoid those patterns consuming tokens)
-  if (result.includes('://')) {
-    result = result.replace(CONNECTION_STRING_PATTERN, (match, pwd: string) =>
-      match.replace(pwd, '[REDACTED]'),
-    );
-  }
-  if (result.includes('gh')) result = result.replace(GITHUB_TOKEN_PATTERN, '[REDACTED]');
-  if (result.includes('eyJ')) result = result.replace(JWT_TOKEN_PATTERN, '[JWT]');
-  if (result.includes('xox')) result = result.replace(SLACK_TOKEN_PATTERN, '[REDACTED]');
-  if (result.includes('_live_') || result.includes('_test_')) {
-    result = result.replace(STRIPE_KEY_PATTERN, '[REDACTED]');
-  }
-  if (result.includes('npm_')) result = result.replace(NPM_TOKEN_PATTERN, '[REDACTED]');
-  if (result.includes('AIza')) result = result.replace(GOOGLE_API_KEY_PATTERN, '[REDACTED]');
-  if (result.includes('SK') || result.includes('AC')) {
-    result = result.replace(TWILIO_KEY_PATTERN, '[REDACTED]');
-  }
-  if (result.includes('SG.')) result = result.replace(SENDGRID_KEY_PATTERN, '[REDACTED]');
-  if (result.includes('uthorization')) {
-    result = result.replace(AUTHORIZATION_HEADER_PATTERN, 'Authorization: [REDACTED]');
-  }
-  result = result
-    .replace(SECRET_FIELD_PATTERN, (match) => {
-      const sepIdx = match.search(/[:=]\s*/u);
-      const sepEnd = match.slice(sepIdx).match(/^[:=]\s*/u)![0].length;
-      return `${match.slice(0, sepIdx + sepEnd)}[REDACTED]`;
-    })
-    .replace(K8S_RELATIVE_DURATION_PATTERN, '[AGO]');
+  result = maskVendorSecrets(result);
+  result = result.replace(K8S_RELATIVE_DURATION_PATTERN, '[AGO]');
   if (result.includes('@')) result = result.replace(EMAIL_PATTERN, '[EMAIL]');
   result = result
     .replace(HEX_HASH_PATTERN, hexHashReplacement)
     .replace(ALPHANUMERIC_HASH_PATTERN, alnumHashReplacement);
-  if (result.includes('AKIA') || result.includes('ABIA') || result.includes('ASIA')) {
-    result = result.replace(AWS_ACCESS_KEY_PATTERN, '[REDACTED]');
-  }
-  if (result.includes('arn:aws:')) {
-    result = result.replace(AWS_ARN_ACCOUNT_PATTERN, (match, accountId: string) =>
-      match.replace(accountId, '[ACCOUNT]'),
-    );
-  }
-  // High-entropy fallback for credentials no vendor pattern recognizes.
-  result = maskHighEntropyTokens(result);
+  result = maskLateSecrets(result);
   result = result.replace(/[ \t]+$/u, '');
 
   // HTTP status code grouping
