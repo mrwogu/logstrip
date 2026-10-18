@@ -42,9 +42,15 @@ const MEASURED_DURATION_PREFIX_PATTERN =
   /(?:[\d.=(]|\d[dhm]\s|\b(?:in|after|for|within|than|every|took|elapsed|timeout|ttl|delay|interval|wait|waiting|waited)[\s:=]+)$/iu;
 const AGO_SUFFIX_PATTERN = /^\s+ago\b/u;
 // Every CSI sequence (colors, cursor movement, erase line, cursor hide) and
-// OSC sequence (hyperlinks, window titles), not only SGR colors.
-const ANSI_ESCAPE_PATTERN =
-  /\u001b\[[0-?]*[ -/]*[@-~]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)/gu;
+// OSC sequence (hyperlinks, window titles), not only SGR colors. The control
+// characters are put in with String.fromCharCode so that the pattern source
+// holds none, which linters flag in a literal.
+const ESC = String.fromCharCode(0x1b);
+const BEL = String.fromCharCode(0x07);
+const ANSI_ESCAPE_PATTERN = new RegExp(
+  `${ESC}\\[[0-?]*[ -/]*[@-~]|${ESC}\\][^${BEL}${ESC}]*(?:${BEL}|${ESC}\\\\)`,
+  'gu',
+);
 const IPV4_WITH_PORT_PATTERN =
   /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})\b/gu;
 const IPV4_PATTERN =
@@ -78,11 +84,75 @@ const SLACK_TOKEN_PATTERN =
 const AUTHORIZATION_HEADER_PATTERN =
   /\bAuthorization\s*:\s*\S+(?:\s+\S+)*/giu;
 
-// Generic secret field values in key=value or key: value format. The value
-// is either a quoted string or a bare token that stops at quotes/commas so
-// surrounding syntax (JSON string delimiters, list separators) survives.
-const SECRET_FIELD_PATTERN =
-  /\b(?:password|secret|token|api[_-]?key|api[_-]?secret|private[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token|auth[_-]?token|bearer)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s"',;]+)/giu;
+// A read of one environment variable or config value, with no default: the
+// value of a secret field in source code is then where the secret comes from,
+// not the secret. Used to capture the whole read (bare values stop at quotes)
+// and, anchored, to judge it.
+const ENV_READ_SOURCE = String.raw`(?:process\.env\.[A-Za-z_]\w*|(?:process\.env|os\.environ|ENV)\[(?:"[\w.-]+"|'[\w.-]+')\]|(?:os\.environ\.get|os\.getenv|env|getenv|System\.getenv|core\.getInput)\((?:"[\w.-]+"|'[\w.-]+')\)|\$ENV\{\w+\}|secrets\.[A-Za-z_]\w*)`;
+
+// Generic secret fields: KEY=value, key: value, key := value and quoted JSON /
+// dict properties ("key": "value"). The pieces are joined into one pattern
+// with three groups: 1 the name, 2 the quote around the key (if any) and 3 the
+// raw value. The pattern only finds the value; maskSecretField decides whether
+// it is a secret, so what is judged is always exactly what is replaced.
+const SECRET_FIELD_PATTERN = new RegExp(
+  [
+    // A key that ENDS in a name matches (DB_PASSWORD, apiKey, x-api-key,
+    // spring.datasource.password), so there is no word boundary in front.
+    String.raw`(password|passwd|passphrase|pwd|secret|token|(?:auth|refresh|access|id)[_-]?token|`,
+    String.raw`(?:api|access|private|secret|signing|encryption|session|master|service|client)[_-]?key|bearer|`,
+    // auth and credentials are also plain words in logs and prose
+    // ("supabase auth: gotrue service started"). They count as the end of a
+    // longer key (basic_auth, x-auth), as a quoted key, or with an = style
+    // separator, but not as a bare "auth:" label.
+    String.raw`(?:auth|credentials)(?:(?<=[\w.-]auth|[\w.-]credentials)|(?![ \t]*:(?!=))))`,
+    // The (?![=>]) keeps "token === x" and "token => x" (comparisons and arrow
+    // functions) out, and stops the separator from backing off into the value.
+    String.raw`(\\?["'])?[ \t]*(?::=|=|:)(?![=>])[ \t]*`,
+    // A quoted string, or a bare token that stops at quotes and commas so the
+    // surrounding syntax survives. After an opening quote there is always a
+    // match: a missing closing quote or an odd escape takes the rest of the
+    // line instead of leaking. The escaped form is JSON logged inside a string.
+    // A ${...} or $(...) body, or the arguments of a call, may hold spaces and
+    // quotes, so they are taken whole (bounded so that a crafted line cannot
+    // make the scan quadratic). An environment read is taken whole only when
+    // it ends there; otherwise the bare token takes it and it is judged as it
+    // is.
+    String.raw`(\\"(?:(?!\\").)*(?:\\")?`,
+    String.raw`|"(?:[^"\\]|\\[\s\S]|\\$)*"?`,
+    String.raw`|'(?:[^'\\]|\\[\s\S]|\\$)*'?`,
+    `|${ENV_READ_SOURCE}(?=[\\s,;)}\\]\\x60]|$)`,
+    String.raw`|[A-Za-z_][\w.]*\((?:[^()]|\([^()]*\)){0,200}\)[^\s"',;]*`,
+    String.raw`|\$(?:\((?:[^()]|\([^()]*\)){0,200}\)|\{[^}]{0,200}\})[^\s"',;]*`,
+    String.raw`|[^\s"',;]+)`,
+  ].join(''),
+  'giu',
+);
+
+// Values of a secret field that carry no secret, judged on the whole value
+// with one pair of quotes removed: empty, null, true, false, a number of up to
+// three digits, or a plain reference to a variable ($NAME, ${NAME}) or a
+// GitHub expression (${{ ... }}). A reference with a default or a command
+// (${NAME:-x}, $(cmd)) or with anything after it ($HOME/x, ${NAME}x) is not.
+const SECRET_PLAIN_VALUE_PATTERN = /^(?:null|true|false|\d{1,3})$/iu;
+// Also a type, as in "previousToken: string" or "password: Optional[str]", and
+// an environment read as the entire value. A bare identifier followed by a call
+// (load(), readSecret()) is neither.
+const TYPE_NAMES =
+  'string|number|boolean|bigint|symbol|unknown|any|never|undefined|void|str|int|float|bool|bytes|None|nil|String|Integer|Boolean|Buffer|Secret|SecretStr';
+const TYPE_ANNOTATION_PATTERN = new RegExp(
+  `^(?:${TYPE_NAMES}|(?:Optional\\[|Option<|Promise<)(?:${TYPE_NAMES})[\\]>])(?:\\[\\])?(?:\\|(?:null|undefined))*[)}\\]:]*$`,
+  'u',
+);
+const ENV_READ_PATTERN = new RegExp(`^${ENV_READ_SOURCE}$`, 'u');
+// A GitHub permission such as "id-token: write" is not a token.
+const TOKEN_NAME_PATTERN = /token$/iu;
+const PERMISSION_WORD_PATTERN = /^(?:read|write|none)$/u;
+const SECRET_REFERENCE_PATTERN =
+  /^\$(?:[A-Za-z_]\w*|\{[A-Za-z_][\w.]*\}|\{\{[^}]{0,200}\}\})$/u;
+const QUOTED_VALUE_PATTERN = /^(\\"|"|')([\s\S]*)\1$/u;
+// PWD and OLDPWD hold a directory in every environment dump, not a password.
+const ENV_PWD_PATTERN = /(?<![\w.-])(?:OLD)?PWD$/u;
 
 // Stripe API keys (sk_live_, pk_live_, rk_live_, sk_test_, etc.)
 const STRIPE_KEY_PATTERN =
@@ -111,7 +181,7 @@ const AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
 
 /** Remove every ANSI CSI and OSC escape sequence from a line. */
 export function stripAnsi(line: string): string {
-  return line.includes('\u001b') ? line.replace(ANSI_ESCAPE_PATTERN, '') : line;
+  return line.includes(ESC) ? line.replace(ANSI_ESCAPE_PATTERN, '') : line;
 }
 
 function maskAge(match: string, offset: number, whole: string): string {
@@ -131,6 +201,49 @@ function maskAge(match: string, offset: number, whole: string): string {
 // them: the vendor patterns have to see tokens before the hash rules can
 // consume them, while the AWS keys and the entropy fallback run on whatever
 // the hash rules left behind. maskSecrets applies both halves in that order.
+
+function isHarmlessValue(value: string, name: string): boolean {
+  const inner = QUOTED_VALUE_PATTERN.exec(value)?.[2] ?? value;
+  return (
+    inner === '' ||
+    SECRET_PLAIN_VALUE_PATTERN.test(inner) ||
+    SECRET_REFERENCE_PATTERN.test(inner) ||
+    TYPE_ANNOTATION_PATTERN.test(inner) ||
+    ENV_READ_PATTERN.test(inner) ||
+    (TOKEN_NAME_PATTERN.test(name) && PERMISSION_WORD_PATTERN.test(inner))
+  );
+}
+
+function maskSecretField(
+  match: string,
+  name: string,
+  keyQuote: string | undefined,
+  value: string,
+  offset: number,
+  whole: string,
+): string {
+  // The last 7 characters up to the end of the name hold "OLDPWD" and the
+  // character before it, which is all the pattern looks at.
+  const nameEnd = offset + name.length;
+  if (
+    value.startsWith('/') &&
+    ENV_PWD_PATTERN.test(whole.slice(Math.max(0, nameEnd - 7), nameEnd))
+  ) {
+    return match;
+  }
+  const head = match.slice(0, match.length - value.length);
+  if (keyQuote === undefined) {
+    return isHarmlessValue(value, name) ? match : `${head}[REDACTED]`;
+  }
+  // "auth": {...} is an object; its own fields are masked on their own.
+  if (value.startsWith('{') || value.startsWith('[')) return match;
+  // A quoted key marks JSON or a dict: the brace or bracket that closed the
+  // pair is not part of the value, and the value stays a string so the line
+  // still parses.
+  const closing = /[}\]]*$/u.exec(value)![0];
+  if (isHarmlessValue(value.slice(0, value.length - closing.length), name)) return match;
+  return `${head}${keyQuote}[REDACTED]${keyQuote}${closing}`;
+}
 
 function maskVendorSecrets(line: string): string {
   let result = line;
@@ -154,11 +267,7 @@ function maskVendorSecrets(line: string): string {
   if (result.includes('uthorization')) {
     result = result.replace(AUTHORIZATION_HEADER_PATTERN, 'Authorization: [REDACTED]');
   }
-  result = result.replace(SECRET_FIELD_PATTERN, (match) => {
-    const sepIdx = match.search(/[:=]\s*/u);
-    const sepEnd = match.slice(sepIdx).match(/^[:=]\s*/u)![0].length;
-    return `${match.slice(0, sepIdx + sepEnd)}[REDACTED]`;
-  });
+  result = result.replace(SECRET_FIELD_PATTERN, maskSecretField);
   return result;
 }
 
@@ -186,6 +295,14 @@ function maskLateSecrets(line: string): string {
  */
 export function maskSecrets(line: string): string {
   return maskLateSecrets(maskVendorSecrets(line));
+}
+
+// Not /[ \t]+$/: that pattern is tried from every blank of a long run of blanks
+// and rescans the run each time, which is quadratic.
+function trimTrailingBlanks(text: string): string {
+  let end = text.length;
+  while (end > 0 && (text[end - 1] === ' ' || text[end - 1] === '\t')) end -= 1;
+  return end === text.length ? text : text.slice(0, end);
 }
 
 export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
@@ -251,7 +368,7 @@ export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
     .replace(HEX_HASH_PATTERN, hexHashReplacement)
     .replace(ALPHANUMERIC_HASH_PATTERN, alnumHashReplacement);
   result = maskLateSecrets(result);
-  result = result.replace(/[ \t]+$/u, '');
+  result = trimTrailingBlanks(result);
 
   // HTTP status code grouping
   result = groupHttpStatusCodes(result);

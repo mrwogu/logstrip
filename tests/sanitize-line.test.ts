@@ -2,89 +2,97 @@ import { describe, expect, it } from 'vitest';
 import { processLogString } from '../src/core/logstrip-parser';
 import { sanitizeLine } from '../src/core/sanitize/sanitize-line';
 
+type SanitizeGroup = readonly [
+  name: string,
+  rows: ReadonlyArray<readonly [input: string, expected: string]>,
+];
+
+function expectSanitized(rows: SanitizeGroup[1]): void {
+  for (const [input, expected] of rows) expect(sanitizeLine(input), input).toBe(expected);
+}
+
+const TIMESTAMP_SHAPES: readonly SanitizeGroup[] = [
+  [
+    'masks comma-fraction timestamps from Python logging and log4j',
+    [
+      ['2026-05-16 10:24:31,044 - app.worker - INFO - started', '[TIME] - app.worker - INFO - started'],
+      ['2026-05-16 10:24:31,044 [main] WARN c.a.Foo - slow', '[TIME] [main] WARN c.a.Foo - slow'],
+    ],
+  ],
+  [
+    'absorbs a trailing zone word or offset into the timestamp',
+    [
+      ['2026-05-16 10:24:31.044 UTC [1234] ERROR:  boom', '[TIME] [1234] ERROR:  boom'],
+      ['2026-05-16 10:24:31 GMT done', '[TIME] done'],
+      ['[2026-05-16 10:24:31 +0000] [7] ready', '[[TIME]] [7] ready'],
+      ['2026-05-16 10:24:31 -04:00 ready', '[TIME] ready'],
+    ],
+  ],
+  [
+    'masks syslog and date(1) style month-name timestamps',
+    [
+      ['May 16 10:24:31 host kernel: Out of memory', '[TIME] host kernel: Out of memory'],
+      ['May  6 10:24:31 host sshd[4411]: Failed password', '[TIME] host sshd[4411]: Failed password'],
+      ['Sat May 16 10:24:31 deploy failed', '[TIME] deploy failed'],
+    ],
+  ],
+  [
+    'masks day-month-year timestamps from Tomcat, PHP and Redis',
+    [
+      ['16-May-2026 10:24:31.011 SEVERE [main] boom', '[TIME] SEVERE [main] boom'],
+      ['[16-May-2026 10:24:31 UTC] PHP Fatal error: boom', '[[TIME]] PHP Fatal error: boom'],
+      ['1:M 16 May 2026 10:24:31.011 # Warning: no config', '1:M [TIME] # Warning: no config'],
+    ],
+  ],
+  [
+    'masks Go log package timestamps with microseconds',
+    [
+      ['2026/05/16 10:24:31.044123 server.go:42: listening', '[TIME] server.go:42: listening'],
+    ],
+  ],
+  [
+    'masks bare time of day with optional fraction',
+    [
+      ['10:24:31.011 [main] DEBUG c.a.Foo - hi', '[TIME] [main] DEBUG c.a.Foo - hi'],
+      ['[10:24:31] ERROR something broke', '[[TIME]] ERROR something broke'],
+      ['retry at 10:24:31, then stop', 'retry at [TIME], then stop'],
+    ],
+  ],
+  [
+    'leaves digit runs, MAC addresses and IPv6 groups alone',
+    [
+      ['version 1.10:24:31 weird', 'version 1.10:24:31 weird'],
+      ['mac 00:11:22:33:44:55 on eth0', 'mac [IPV6] on eth0'],
+      ['addr 2001:0db8:0000:0042:0000:8a2e:0370:7334 up', 'addr [IPV6] up'],
+      ['ratio 1:10:24:31', 'ratio 1:10:24:31'],
+    ],
+  ],
+  [
+    'masks numeric epoch values under time-like JSON keys',
+    [
+      ['{"level":30,"time":1715855071123,"pid":1,"msg":"hi"}', '{"level":30,"time":"[TIME]","pid":1,"msg":"hi"}'],
+      ['{"ts": 1715855071.123456 }', '{"ts": "[TIME]" }'],
+      ['{"@timestamp":1715855071}', '{"@timestamp":"[TIME]"}'],
+    ],
+  ],
+  [
+    'keeps numeric JSON values under other keys',
+    [
+      ['{"requestId":1715855071123,"time":42}', '{"requestId":1715855071123,"time":42}'],
+    ],
+  ],
+  [
+    'masks numeric epoch values under time-like logfmt keys',
+    [
+      ['ts=1715855071 level=error msg="boom"', 'ts=[TIME] level=error msg="boom"'],
+      ['time=1715855071.5 level=warn', 'time=[TIME] level=warn'],
+      ['retries=1715855071 level=warn', 'retries=1715855071 level=warn'],
+    ],
+  ],
+];
+
 describe('sanitizeLine timestamp shapes', () => {
-  it('masks comma-fraction timestamps from Python logging and log4j', () => {
-    expect(sanitizeLine('2026-05-16 10:24:31,044 - app.worker - INFO - started')).toBe(
-      '[TIME] - app.worker - INFO - started',
-    );
-    expect(sanitizeLine('2026-05-16 10:24:31,044 [main] WARN c.a.Foo - slow')).toBe(
-      '[TIME] [main] WARN c.a.Foo - slow',
-    );
-  });
-
-  it('absorbs a trailing zone word or offset into the timestamp', () => {
-    expect(sanitizeLine('2026-05-16 10:24:31.044 UTC [1234] ERROR:  boom')).toBe(
-      '[TIME] [1234] ERROR:  boom',
-    );
-    expect(sanitizeLine('2026-05-16 10:24:31 GMT done')).toBe('[TIME] done');
-    expect(sanitizeLine('[2026-05-16 10:24:31 +0000] [7] ready')).toBe('[[TIME]] [7] ready');
-    expect(sanitizeLine('2026-05-16 10:24:31 -04:00 ready')).toBe('[TIME] ready');
-  });
-
-  it('masks syslog and date(1) style month-name timestamps', () => {
-    expect(sanitizeLine('May 16 10:24:31 host kernel: Out of memory')).toBe(
-      '[TIME] host kernel: Out of memory',
-    );
-    expect(sanitizeLine('May  6 10:24:31 host sshd[4411]: Failed password')).toBe(
-      '[TIME] host sshd[4411]: Failed password',
-    );
-    expect(sanitizeLine('Sat May 16 10:24:31 deploy failed')).toBe('[TIME] deploy failed');
-  });
-
-  it('masks day-month-year timestamps from Tomcat, PHP and Redis', () => {
-    expect(sanitizeLine('16-May-2026 10:24:31.011 SEVERE [main] boom')).toBe(
-      '[TIME] SEVERE [main] boom',
-    );
-    expect(sanitizeLine('[16-May-2026 10:24:31 UTC] PHP Fatal error: boom')).toBe(
-      '[[TIME]] PHP Fatal error: boom',
-    );
-    expect(sanitizeLine('1:M 16 May 2026 10:24:31.011 # Warning: no config')).toBe(
-      '1:M [TIME] # Warning: no config',
-    );
-  });
-
-  it('masks Go log package timestamps with microseconds', () => {
-    expect(sanitizeLine('2026/05/16 10:24:31.044123 server.go:42: listening')).toBe(
-      '[TIME] server.go:42: listening',
-    );
-  });
-
-  it('masks bare time of day with optional fraction', () => {
-    expect(sanitizeLine('10:24:31.011 [main] DEBUG c.a.Foo - hi')).toBe(
-      '[TIME] [main] DEBUG c.a.Foo - hi',
-    );
-    expect(sanitizeLine('[10:24:31] ERROR something broke')).toBe('[[TIME]] ERROR something broke');
-    expect(sanitizeLine('retry at 10:24:31, then stop')).toBe('retry at [TIME], then stop');
-  });
-
-  it('leaves digit runs, MAC addresses and IPv6 groups alone', () => {
-    expect(sanitizeLine('version 1.10:24:31 weird')).toBe('version 1.10:24:31 weird');
-    expect(sanitizeLine('mac 00:11:22:33:44:55 on eth0')).toBe('mac [IPV6] on eth0');
-    expect(sanitizeLine('addr 2001:0db8:0000:0042:0000:8a2e:0370:7334 up')).toBe('addr [IPV6] up');
-    expect(sanitizeLine('ratio 1:10:24:31')).toBe('ratio 1:10:24:31');
-  });
-
-  it('masks numeric epoch values under time-like JSON keys', () => {
-    expect(sanitizeLine('{"level":30,"time":1715855071123,"pid":1,"msg":"hi"}')).toBe(
-      '{"level":30,"time":"[TIME]","pid":1,"msg":"hi"}',
-    );
-    expect(sanitizeLine('{"ts": 1715855071.123456 }')).toBe('{"ts": "[TIME]" }');
-    expect(sanitizeLine('{"@timestamp":1715855071}')).toBe('{"@timestamp":"[TIME]"}');
-  });
-
-  it('keeps numeric JSON values under other keys', () => {
-    expect(sanitizeLine('{"requestId":1715855071123,"time":42}')).toBe(
-      '{"requestId":1715855071123,"time":42}',
-    );
-  });
-
-  it('masks numeric epoch values under time-like logfmt keys', () => {
-    expect(sanitizeLine('ts=1715855071 level=error msg="boom"')).toBe(
-      'ts=[TIME] level=error msg="boom"',
-    );
-    expect(sanitizeLine('time=1715855071.5 level=warn')).toBe('time=[TIME] level=warn');
-    expect(sanitizeLine('retries=1715855071 level=warn')).toBe('retries=1715855071 level=warn');
-  });
+  it.each(TIMESTAMP_SHAPES)('%s', (_name, rows) => expectSanitized(rows));
 });
 
 describe('timestamp masking lets repeated events fold', () => {
@@ -120,67 +128,120 @@ describe('timestamp masking lets repeated events fold', () => {
   });
 });
 
+const DURATIONS: readonly SanitizeGroup[] = [
+  [
+    'still masks Kubernetes ages',
+    [
+      ['Warning BackOff 38s kubelet Back-off restarting', 'Warning BackOff [AGO] kubelet Back-off restarting'],
+      ['pod/x   0/1   CrashLoopBackOff   5 (2m36s ago)   8m', 'pod/x   0/1   CrashLoopBackOff   5 ([AGO] ago)   8m'],
+      ['first line\n38s kubelet', 'first line\n[AGO] kubelet'],
+    ],
+  ],
+  [
+    'keeps decimal durations intact',
+    [
+      ['FAIL    github.com/example/project/orders      0.024s', 'FAIL    github.com/example/project/orders      0.024s'],
+      ['Duration  2.15s', 'Duration  2.15s'],
+    ],
+  ],
+  [
+    'keeps durations that follow a preposition or a key',
+    [
+      ['Request timed out after 30s while contacting api', 'Request timed out after 30s while contacting api'],
+      ['retrying in 2s (attempt 3)', 'retrying in 2s (attempt 3)'],
+      ['Timeout: 30s', 'Timeout: 30s'],
+      ['retry=5s', 'retry=5s'],
+      ['took 12s', 'took 12s'],
+    ],
+  ],
+  [
+    'keeps test runner durations in parentheses but still masks "(... ago)" ages',
+    [
+      ['15 passing (1s)', '15 passing (1s)'],
+      ['Time: 3.2s (took 3s)', 'Time: 3.2s (took 3s)'],
+      ['pod/x   0/1   CrashLoopBackOff   5 (2m36s ago)   8m', 'pod/x   0/1   CrashLoopBackOff   5 ([AGO] ago)   8m'],
+      ['restarted (38s ago)', 'restarted ([AGO] ago)'],
+    ],
+  ],
+  [
+    'keeps the seconds part of a spaced minutes-and-seconds duration',
+    [
+      ['BUILD FAILED in 1m 12s', 'BUILD FAILED in 1m 12s'],
+      ['finished 2h 5m 12s later', 'finished 2h 5m 12s later'],
+    ],
+  ],
+];
+
 describe('sanitizeLine durations', () => {
-  it('still masks Kubernetes ages', () => {
-    expect(sanitizeLine('Warning BackOff 38s kubelet Back-off restarting')).toBe(
-      'Warning BackOff [AGO] kubelet Back-off restarting',
-    );
-    expect(sanitizeLine('pod/x   0/1   CrashLoopBackOff   5 (2m36s ago)   8m')).toBe(
-      'pod/x   0/1   CrashLoopBackOff   5 ([AGO] ago)   8m',
-    );
-    expect(sanitizeLine('first line\n38s kubelet')).toBe('first line\n[AGO] kubelet');
-  });
-
-  it('keeps decimal durations intact', () => {
-    expect(sanitizeLine('FAIL    github.com/example/project/orders      0.024s')).toBe(
-      'FAIL    github.com/example/project/orders      0.024s',
-    );
-    expect(sanitizeLine('Duration  2.15s')).toBe('Duration  2.15s');
-  });
-
-  it('keeps durations that follow a preposition or a key', () => {
-    expect(sanitizeLine('Request timed out after 30s while contacting api')).toBe(
-      'Request timed out after 30s while contacting api',
-    );
-    expect(sanitizeLine('retrying in 2s (attempt 3)')).toBe('retrying in 2s (attempt 3)');
-    expect(sanitizeLine('Timeout: 30s')).toBe('Timeout: 30s');
-    expect(sanitizeLine('retry=5s')).toBe('retry=5s');
-    expect(sanitizeLine('took 12s')).toBe('took 12s');
-  });
-
-  it('keeps test runner durations in parentheses but still masks "(... ago)" ages', () => {
-    expect(sanitizeLine('15 passing (1s)')).toBe('15 passing (1s)');
-    expect(sanitizeLine('Time: 3.2s (took 3s)')).toBe('Time: 3.2s (took 3s)');
-    expect(sanitizeLine('pod/x   0/1   CrashLoopBackOff   5 (2m36s ago)   8m')).toBe(
-      'pod/x   0/1   CrashLoopBackOff   5 ([AGO] ago)   8m',
-    );
-    expect(sanitizeLine('restarted (38s ago)')).toBe('restarted ([AGO] ago)');
-  });
-
-  it('keeps the seconds part of a spaced minutes-and-seconds duration', () => {
-    expect(sanitizeLine('BUILD FAILED in 1m 12s')).toBe('BUILD FAILED in 1m 12s');
-    expect(sanitizeLine('finished 2h 5m 12s later')).toBe('finished 2h 5m 12s later');
-  });
+  it.each(DURATIONS)('%s', (_name, rows) => expectSanitized(rows));
 });
 
+const ANSI_SEQUENCES: readonly SanitizeGroup[] = [
+  [
+    'removes color sequences',
+    [
+      ['\u001b[31mred\u001b[0m text', 'red text'],
+    ],
+  ],
+  [
+    'removes cursor movement and erase-line sequences',
+    [
+      ['\u001b[2K\u001b[1Gnpm ERR! code E404', 'npm ERR! code E404'],
+      ['\u001b[?25lspinner\u001b[?25h', 'spinner'],
+    ],
+  ],
+  [
+    'removes OSC hyperlinks and window titles',
+    [
+      ['\u001b]8;;https://example.com\u0007link text\u001b]8;;\u0007 error here', 'link text error here'],
+      ['\u001b]0;build title\u001b\\done', 'done'],
+    ],
+  ],
+  [
+    'keeps lone escape characters that are not sequences',
+    [
+      ['odd \u001b byte', 'odd \u001b byte'],
+    ],
+  ],
+];
+
 describe('sanitizeLine ANSI sequences', () => {
-  it('removes color sequences', () => {
-    expect(sanitizeLine('\u001b[31mred\u001b[0m text')).toBe('red text');
+  it.each(ANSI_SEQUENCES)('%s', (_name, rows) => expectSanitized(rows));
+});
+
+describe('sanitizeLine secret fields', () => {
+  it.each([
+    [
+      'with the other masks in one line',
+      'DB_HOST=10.0.0.5 DB_PASSWORD=hunter2 at 10:24:31',
+      'DB_HOST=[IP] DB_PASSWORD=[REDACTED] at [TIME]',
+    ],
+    [
+      'in a pino line with an epoch time',
+      '{"level":50,"time":1715855071123,"client_secret":"abc123def"}',
+      '{"level":50,"time":"[TIME]","client_secret":"[REDACTED]"}',
+    ],
+    [
+      'in a request body that was logged as a string',
+      '{"msg":"body {\\"api_key\\":\\"abc123def\\"}"}',
+      '{"msg":"body {\\"api_key\\":\\"[REDACTED]\\"}"}',
+    ],
+    [
+      'after a vendor token that was already masked',
+      'NPM_TOKEN=npm_aB3dE6gH9jK2mN5pQ8sT1vW4yZ7bC0eF3hJ6',
+      'NPM_TOKEN=[REDACTED]',
+    ],
+  ])('masks the value %s', (_name, input, expected) => {
+    expect(sanitizeLine(input)).toBe(expected);
   });
 
-  it('removes cursor movement and erase-line sequences', () => {
-    expect(sanitizeLine('\u001b[2K\u001b[1Gnpm ERR! code E404')).toBe('npm ERR! code E404');
-    expect(sanitizeLine('\u001b[?25lspinner\u001b[?25h')).toBe('spinner');
-  });
+  it('lets events that differ only in the secret fold', async () => {
+    const lines = [
+      '[ERROR] login failed {"user":"bob","password":"hunter2"}',
+      '[ERROR] login failed {"user":"bob","password":"letmein99"}',
+    ];
+    const result = await processLogString(`${lines.join('\n')}\n`);
 
-  it('removes OSC hyperlinks and window titles', () => {
-    expect(
-      sanitizeLine('\u001b]8;;https://example.com\u0007link text\u001b]8;;\u0007 error here'),
-    ).toBe('link text error here');
-    expect(sanitizeLine('\u001b]0;build title\u001b\\done')).toBe('done');
-  });
-
-  it('keeps lone escape characters that are not sequences', () => {
-    expect(sanitizeLine('odd \u001b byte')).toBe('odd \u001b byte');
+    expect(result.output).toBe('[x2] [ERROR] login failed {"user":"bob","password":"[REDACTED]"}\n');
   });
 });

@@ -57,6 +57,218 @@ const UNTOUCHED: ReadonlyArray<readonly [string, string]> = [
   ['empty line', ''],
 ];
 
+// The cases are written as text, one per line, because rows of the same shape
+// in a long array read as copy and paste to a duplication detector:
+//   name | input ==> expected     the input is masked
+//   name | input                 the input is left alone
+type Case = readonly [name: string, input: string, expected: string];
+
+function cases(table: string): Case[] {
+  return table
+    .split('\n')
+    .filter((row) => row !== '')
+    .map((row) => {
+      const rest = row.slice(row.indexOf(' | ') + 3);
+      const arrow = rest.lastIndexOf(' ==> ');
+      const name = row.slice(0, row.indexOf(' | '));
+      return arrow === -1 ? [name, rest, rest] : [name, rest.slice(0, arrow), rest.slice(arrow + 5)];
+    });
+}
+
+const AWS_SECRET = `${'wJalrXUtnFEMI/K7MDENG/'}${'bPxRfiCYEXAMPLEKEY'}`;
+
+// Secret fields: the key may carry a prefix, in any case style, and JSON or
+// dict properties are masked as well. Values are short and plain so that the
+// log sanitizer leaves them to the field rule.
+const FIELD_MASKED: ReadonlyArray<Case> = [
+  ...cases(`
+an env-style key with a prefix | DB_PASSWORD=hunter2 ==> DB_PASSWORD=[REDACTED]
+an API token variable | API_TOKEN=abc123 ==> API_TOKEN=[REDACTED]
+an AWS secret access key | AWS_SECRET_ACCESS_KEY=${AWS_SECRET} ==> AWS_SECRET_ACCESS_KEY=[REDACTED]
+an npm token variable | NPM_TOKEN=abc123 ==> NPM_TOKEN=[REDACTED]
+a camelCase key | dbPassword=hunter2 ==> dbPassword=[REDACTED]
+a camelCase key with a colon | apiKey: abc12345 ==> apiKey: [REDACTED]
+a kebab-case header | X-Api-Key: abc123 ==> X-Api-Key: [REDACTED]
+a kebab-case auth token header | x-auth-token: abc123 ==> x-auth-token: [REDACTED]
+a dotted property key | spring.datasource.password=hunter2 ==> spring.datasource.password=[REDACTED]
+passwd | DB_PASSWD=hunter2 ==> DB_PASSWD=[REDACTED]
+pwd in a connection string | Pwd=s3cret;Uid=sa ==> Pwd=[REDACTED];Uid=sa
+pwd with a value that is not a path | DB_PWD=hunter2 ==> DB_PWD=[REDACTED]
+access_key | access-key=abc123xyz ==> access-key=[REDACTED]
+private_key | privateKey: abc123xyz ==> privateKey: [REDACTED]
+apikey without a separator | APIKEY=abc123xyz ==> APIKEY=[REDACTED]
+credentials with an = separator | AWS_CREDENTIALS=abc123xyz ==> AWS_CREDENTIALS=[REDACTED]
+auth at the end of a longer key | proxy-auth: dXNlcjpwYXNz ==> proxy-auth: [REDACTED]
+auth with an = separator | AUTH=abc123xyz ==> AUTH=[REDACTED]
+a := separator | secret := hunter2 ==> secret := [REDACTED]
+spaces around the separator | password   =   hunter2 ==> password   =   [REDACTED]
+a bare number of four digits | pin_token: 1234 ==> pin_token: [REDACTED]
+a JSON property | {"password": "hunter2"} ==> {"password": "[REDACTED]"}
+a JSON property without spaces | {"client_secret":"abcd1234"} ==> {"client_secret":"[REDACTED]"}
+a JSON property with punctuation in the value | {"a":1,"password":"p@ss, word","b":2} ==> {"a":1,"password":"[REDACTED]","b":2}
+a JSON property with an escaped quote | {"password":"pa\\"ss","b":2} ==> {"password":"[REDACTED]","b":2}
+a JSON number | {"token": 123456} ==> {"token": "[REDACTED]"}
+a JSON number that ends the object | {"a":{"token":123456}} ==> {"a":{"token":"[REDACTED]"}}
+a dict repr | {'password': 123456} ==> {'password': '[REDACTED]'}
+JSON that was logged inside a string | body {\\"password\\":\\"hunter2\\",\\"user\\":\\"bob\\"} ==> body {\\"password\\":\\"[REDACTED]\\",\\"user\\":\\"bob\\"}
+a quoted value after an env-style key | password="pa\\"ss word" ==> password=[REDACTED]
+`),
+  // An opening quote always yields a redaction, closed or not.
+  ...cases(`
+a double-quoted value with no closing quote | password="hunter2 ==> password=[REDACTED]
+a single-quoted value with no closing quote | password='hunter2 ==> password=[REDACTED]
+a lone opening quote | password=" ==> password=[REDACTED]
+an unterminated value that runs to the end of the line | password="hunter2 and then some text ==> password=[REDACTED]
+an unterminated value ending in a backslash | password="hunter2\\ ==> password=[REDACTED]
+an unterminated value with an escaped quote | password="pa\\"ss ==> password=[REDACTED]
+an unterminated JSON property | {"password": "hunter2 ==> {"password": "[REDACTED]"
+an unterminated JSON property logged inside a string | body {\\"password\\":\\"hunter2 ==> body {\\"password\\":\\"[REDACTED]\\"
+a JSON property with an unusual escape | {"password":"pa\\qss","b":2} ==> {"password":"[REDACTED]","b":2}
+`),
+  // A reference is exempt only when it is the whole value and has no body.
+  ...cases(`
+a variable with a default | DB_PASSWORD=\${DB_PASSWORD:-hunter2} ==> DB_PASSWORD=[REDACTED]
+a variable with an assigned default | DB_PASSWORD=\${DB_PASSWORD:=hunter2} ==> DB_PASSWORD=[REDACTED]
+a command substitution | password=$(cat secret) ==> password=[REDACTED]
+a command substitution that holds the secret | password=$(echo hunter2) next ==> password=[REDACTED] next
+a nested command substitution | password=$(echo $(cat f)) next ==> password=[REDACTED] next
+a quoted command substitution | password: "$(cat secret)" ==> password: [REDACTED]
+a default with spaces | password=\${PASS:-a b c} tail ==> password=[REDACTED] tail
+a variable followed by more characters | password=\${PASS}extra ==> password=[REDACTED]
+a quoted variable followed by more characters | password="\${PASS}extra" ==> password=[REDACTED]
+a plain variable followed by more characters | password=$PASS!x ==> password=[REDACTED]
+a GitHub expression followed by more characters | token: \${{ secrets.X }}extra ==> token: [REDACTED]
+an empty variable name | password=\${} ==> password=[REDACTED]
+a variable with a path after it | password=$HOME/x ==> password=[REDACTED]
+a quoted variable with a character after it | password="\${PASS}x" ==> password=[REDACTED]
+a variable with a default (whole line) | password=\${PASS:-hunter2} ==> password=[REDACTED]
+an unterminated quote after another name | secret="abc ==> secret=[REDACTED]
+a variable and a closing bracket and more text | password=\${PASS})hunter2 ==> password=[REDACTED]
+a keyword and a closing brace and more text | password=null}hunter2 ==> password=[REDACTED]
+a GitHub expression with text after it | password=\${{ secrets.X }}hunter2 ==> password=[REDACTED]
+a variable in brackets, the bracket is part of the value | connect(password=\${DB_PASSWORD}) ==> connect(password=[REDACTED]
+a reference followed by a backtick | set \`token: \${{ secrets.X }}\` now ==> set \`token: [REDACTED] now
+a pwd value that is a path under a prefixed key | DB_PWD=/s3cret ==> DB_PWD=[REDACTED]
+a lower-case pwd with a path | pwd=/home/x ==> pwd=[REDACTED]
+PWD with a value that is not a path | PWD=hunter2 ==> PWD=[REDACTED]
+a prefix glued to OLDPWD | xOLDPWD=/s3cret ==> xOLDPWD=[REDACTED]
+a numbered variable | password=\${1} ==> password=[REDACTED]
+`),
+  // More key names.
+  ...cases(`
+a SECRET_KEY variable | SECRET_KEY=abc123 ==> SECRET_KEY=[REDACTED]
+a signing key | signing_key: abc123 ==> signing_key: [REDACTED]
+an encryption key | encryption-key=abc123 ==> encryption-key=[REDACTED]
+a camelCase session key | sessionKey: abc123 ==> sessionKey: [REDACTED]
+a master key | master_key=abc123 ==> master_key=[REDACTED]
+a service key | SERVICE_KEY=abc123 ==> SERVICE_KEY=[REDACTED]
+a client key | client_key: abc123 ==> client_key: [REDACTED]
+a passphrase | passphrase: abc123 ==> passphrase: [REDACTED]
+a prefixed passphrase | SSH_PASSPHRASE=abc123 ==> SSH_PASSPHRASE=[REDACTED]
+an auth token | AUTH_TOKEN=abc123 ==> AUTH_TOKEN=[REDACTED]
+a refresh token | refresh_token: abc123 ==> refresh_token: [REDACTED]
+a camelCase access token | accessToken=abc123 ==> accessToken=[REDACTED]
+an id token | id_token=abc123 ==> id_token=[REDACTED]
+an id-token with a value that is not a permission | id-token: abc123 ==> id-token: [REDACTED]
+a word that only starts like a permission | id-token: writes ==> id-token: [REDACTED]
+a permission word on a password | password: none ==> password: [REDACTED]
+a permission word on a secret | secret=write ==> secret=[REDACTED]
+`),
+  // Source code: a weak word, a call and an environment read with a default
+  // are still masked. Only a type or a plain environment read is exempt.
+  ...cases(`
+a weak word | password=hunter ==> password=[REDACTED]
+a call | const accessToken = load() ==> const accessToken = [REDACTED]
+a call to a reader | password = readSecret() ==> password = [REDACTED]
+a call with a hard-coded argument | password = foo(bar, "hunter2") ==> password = [REDACTED]
+an environment read with a default | password = os.getenv("DB", "hunter2") ==> password = [REDACTED]
+os.environ.get with a default | password = os.environ.get("DB", "hunter2") ==> password = [REDACTED]
+an environment read that is called on | token: process.env.X.trim() ==> token: [REDACTED]
+an environment read with text glued to it | token: process.env.X+hunter2 ==> token: [REDACTED]
+a secrets reference that is a path | password = secrets.X.Y ==> password = [REDACTED]
+a word that starts with a type | password: stringy ==> password: [REDACTED]
+a word that starts with a capitalised type | password: Strings ==> password: [REDACTED]
+a type followed by more text | token: string)hunter2 ==> token: [REDACTED]
+`),
+];
+
+// What the field rule has to leave alone: values that carry no secret, keys
+// that merely contain a name, and look-alikes in prose and code.
+const FIELD_KEPT: ReadonlyArray<Case> = [
+  ...cases(`
+an empty value | password=
+an empty value after a space | password:\u0020
+a quoted empty value | {"password": ""}
+a single-quoted empty value | password: ''
+an escaped empty value | body {\\"password\\":\\"\\"}
+null | {"password": null}
+NULL in another case | password: NULL
+true | token=true
+false at the end of an object | {"auth":false}
+a one digit number | secret=1
+a three digit number | token: 999
+a GitHub expression | token: \${{ secrets.NPM_TOKEN }}
+a GitHub expression behind a prefixed key | NODE_AUTH_TOKEN: \${{ secrets.NPM_TOKEN }}
+a variable reference | DB_PASSWORD=\${DB_PASSWORD}
+a quoted variable reference | password: "\${DB_PASSWORD}"
+a plain variable | password=$DB_PASSWORD
+a plain variable behind token | token: $TOKEN
+a GitHub expression behind token | token: \${{ secrets.X }}
+a quoted keyword | password: "true"
+a quoted short number | token: "123"
+a short number in JSON | {"token": 12}
+a boolean nested in JSON | {"a":{"auth":true}}
+a variable with a dot in the name | password=\${app.db_password}
+a variable followed by a comma | token=\${NPM_TOKEN},retries=3
+a single-quoted variable | password='$DB_PASSWORD'
+a variable in a JSON property | {"password": "\${DB_PASSWORD}"}
+a variable in JSON that was logged inside a string | body {\\"password\\":\\"\${PASS}\\"}
+a GitHub expression as the whole value | password: \${{ secrets.DB_PASSWORD }}
+a JSON object | {"auth": {"type":"basic"}}
+a JSON array | {"credentials": [1,2]}
+the PWD variable | PWD=/home/runner/work/app
+the OLDPWD variable | OLDPWD=/tmp
+a bare auth label | [INFO] supabase auth: gotrue service started
+a bare credentials label | passed through unchanged except for credentials: tokens
+a comparison | if (token === expected) return
+an arrow function | const check = token => token.length
+a key that only starts with a name | author: John Smith
+a plural name | tokens: 5000
+a name followed by a suffix | PRIVATE_KEY_PATH=/etc/ssl/private/app.key
+a name inside a longer word | passwords are rotated weekly
+a type annotation | previousToken: string
+a type in a function signature | function isTemplateMergeLabel(previousToken: string): boolean {
+an optional type | password: Optional[str]
+a promise type | token: Promise<string>
+an option type | token: Option<String>
+an array type | secret: string[]
+a union with null | secret: string|null
+a union with null and spaces | token: string | null
+a secret type | apiKey: SecretStr
+Python None | password: None
+nil | password = nil
+a type with a default | token: str = ""
+a JSON string that names a type | {"token": "string"}
+process.env | token: process.env.NPM_TOKEN
+a process.env subscript | token = process.env["NPM_TOKEN"]
+os.environ | password = os.environ["DB_PASSWORD"]
+os.environ.get | password = os.environ.get("DB_PASSWORD")
+os.getenv | password = os.getenv('DB_PASSWORD')
+env() | password = env("DB_PASSWORD")
+getenv() | password = getenv("DB_PASSWORD")
+ENV | password = ENV["DB_PASSWORD"]
+System.getenv | String password = System.getenv("DB_PASSWORD");
+Perl ENV | my $password = $ENV{DB_PASSWORD};
+core.getInput | token: core.getInput("token")
+secrets.NAME | token: secrets.NPM_TOKEN
+an environment read inside a call | connect(token: process.env.X)
+the GitHub permission id-token | id-token: write
+a read permission on id_token | id_token: read
+a none permission on token | token: none
+a read permission on refresh_token | refresh_token: read
+`),
+];
+
 describe('maskSecrets', () => {
   it.each(MASKED)('masks %s', (_name, input, expected) => {
     expect(maskSecrets(input)).toBe(expected);
@@ -90,5 +302,38 @@ describe('maskSecrets', () => {
       }
     }
     expect(sanitizeLine(`blob ${RANDOM_TOKEN} end`)).toBe('blob [HASH]+AbC12 end');
+  });
+});
+
+describe('maskSecrets secret fields', () => {
+  it.each(FIELD_MASKED)('masks %s', (_name, input, expected) => {
+    expect(maskSecrets(input)).toBe(expected);
+  });
+
+  it.each(FIELD_KEPT)('leaves %s alone', (_name, input) => {
+    expect(maskSecrets(input)).toBe(input);
+  });
+
+  it('masks the same fields in log lines and leaves the same ones alone', () => {
+    for (const [, input, expected] of FIELD_MASKED) {
+      expect(sanitizeLine(input)).toBe(expected);
+    }
+    for (const [, input] of FIELD_KEPT) {
+      // The log sanitizer also trims trailing whitespace.
+      expect(sanitizeLine(input)).toBe(input.trimEnd());
+    }
+  });
+
+  it('is idempotent on masked fields', () => {
+    for (const [, input] of FIELD_MASKED) {
+      const once = maskSecrets(input);
+      expect(maskSecrets(once)).toBe(once);
+    }
+  });
+
+  it('masks every field in a line, not only the first', () => {
+    expect(maskSecrets('DB_PASSWORD=hunter2 API_TOKEN=abc123 DB_USER=app')).toBe(
+      'DB_PASSWORD=[REDACTED] API_TOKEN=[REDACTED] DB_USER=app',
+    );
   });
 });

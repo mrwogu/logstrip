@@ -509,13 +509,59 @@ The sanitizer replaces:
 | Slack tokens (`xoxb-...`, `xoxp-...`) | `[REDACTED]` |
 | Connection strings (`postgres://user:pass@`) | password → `[REDACTED]` |
 | `Authorization:` headers | `Authorization: [REDACTED]` |
-| Secret field values (`password=`, `token=`, `api_key=`, etc.) | value → `[REDACTED]` |
+| Secret fields (`password=`, `DB_PASSWORD=`, `apiKey:`, `"client_secret": "..."`, see below) | value → `[REDACTED]` |
 | AWS access keys (`AKIA...`) | `[REDACTED]` |
 | AWS ARN account IDs | `[ACCOUNT]` |
 | long hexadecimal or alphanumeric hashes | `[HASH]` |
 | HTTP status codes | `[2xx]`, `[4xx]`, `[5xx]`, etc. |
 | Kubernetes ages (`38s`, `2m34s`, `5 (2m36s ago)`) | `[AGO]` |
 | ANSI escape sequences (colors, cursor movement, erase line, OSC hyperlinks) | removed |
+
+A secret field is any key whose last part is `password`, `passwd`,
+`passphrase`, `pwd`, `secret`, `token` (so also `auth_token`, `refresh_token`,
+`access_token` and `id_token`), `auth`, `credentials`, `bearer` or a key such
+as `api_key`, `access_key`, `private_key`, `secret_key`, `signing_key`,
+`encryption_key`, `session_key`, `master_key`, `service_key` or `client_key`,
+in any case style (`DB_PASSWORD`, `dbPassword`,
+`x-api-key`, `spring.datasource.password`, `AWS_SECRET_ACCESS_KEY`). Its value
+is masked whether it is written as `KEY=value`, `key: value`, `key := value` or
+as a quoted JSON or dict property, including JSON that was logged inside a
+string. A JSON property keeps its quotes, so `"password": "hunter2"` becomes
+`"password": "[REDACTED]"` and the line still parses. A quote after the key
+always yields a redaction: when the closing quote is missing or an escape is
+odd (`password="hunter2`), the value is masked to the end of the line. These
+are left alone:
+
+- values that carry no secret: an empty or quoted-empty value, `null`, `true`,
+  `false`, a bare number under four digits and a reference that is the whole
+  value, with one pair of quotes removed: `$NAME`, `${NAME}` or a GitHub
+  expression, as in `token: ${{ secrets.NPM_TOKEN }}` or
+  `DB_PASSWORD=${DB_PASSWORD}`. A reference with a default or a command
+  (`${NAME:-hunter2}`, `$(cat secret)`) or with anything after it
+  (`$HOME/x`, `${NAME}extra`, `connect(password=${NAME})`) is masked, because
+  the rest of the value may be the secret
+- a type as the whole value, which is what source code has instead of a secret:
+  `string`, `number`, `boolean`, `bigint`, `symbol`, `unknown`, `any`, `never`,
+  `undefined`, `void`, `str`, `int`, `float`, `bool`, `bytes`, `None`, `nil`,
+  `String`, `Integer`, `Boolean`, `Buffer`, `Secret` and `SecretStr`, also as
+  `Optional[...]`, `Option<...>`, `Promise<...>`, followed by `[]` or as
+  `T|null` and `T|undefined`, as in `previousToken: string`
+- a read of one environment variable or config value as the whole value, with
+  no default: `process.env.X`, `process.env["X"]`, `os.environ["X"]`,
+  `os.environ.get("X")`, `os.getenv("X")`, `env("X")`, `getenv("X")`,
+  `ENV["X"]`, `System.getenv("X")`, `$ENV{X}`, `core.getInput("x")` and
+  `secrets.X`. A call with another argument (`os.getenv("X", "hunter2")`), a
+  bare identifier followed by a call (`load()`, `readSecret()`) and a bare
+  word such as `password=hunter` are masked
+- the words `read`, `write` and `none` after a token name, because a GitHub
+  permission such as `id-token: write` is not a token (`password: none` is
+  still masked)
+- a JSON object or array under a quoted key (`"auth": {...}`), whose own fields
+  are masked on their own
+- a path under the environment variables `PWD` and `OLDPWD`
+- a bare `auth:` or `credentials:` label such as `supabase auth: gotrue started`;
+  `auth` and `credentials` count at the end of a longer key (`basic_auth`,
+  `x-auth`), as a quoted key or with `=`
 
 Durations that are measurements stay readable: `0.47s`, `timed out after 30s`,
 `retrying in 2s`, `timeout=30s` and `1m 12s` are kept, so a configured timeout
@@ -551,9 +597,9 @@ or document does not carry credentials along. `sanitizeLine` applies the same
 rules in the same order as before, so the compressed log output is unchanged.
 The rules recognise common credential shapes; they are a safety net, not a
 guarantee that a file holds no secrets. They also favour masking over fidelity:
-`token: ${{ secrets.NPM_TOKEN }}`, `id-token: write` and a sentence that
-mentions an `Authorization:` header (the rest of the line is masked) are
-masked as well.
+an assignment in source code such as `const accessToken = load()` and a
+sentence that mentions an `Authorization:` header (the rest of the line is
+masked) are masked as well.
 
 Text passthrough also handles PEM private key blocks, with
 `maskPemBlockInText`, a variant of `maskPemBlock` for documents and configs:

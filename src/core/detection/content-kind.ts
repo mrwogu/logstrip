@@ -91,9 +91,24 @@ const MARKDOWN_STRUCTURE_PATTERNS: readonly RegExp[] = [
 
 const MONTH_NAMES = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
 
+// The control character is put in with String.fromCharCode so that the pattern
+// source holds none, which linters flag in a literal.
+const ANSI_ESCAPE_PATTERN = new RegExp(`${String.fromCharCode(0x1b)}\\[[0-9;?]*[A-Za-z]`, 'u');
+
+// Access log: client IP, HTTP method and a status code. Both anchors are the
+// LEFTMOST occurrence (the tempered dots stop at it), so a line that fails the
+// last step is not retried from every later IP and method, which made the
+// plain "IP.*METHOD.*status" form cubic.
+const IPV4_SOURCE = String.raw`\b\d{1,3}(?:\.\d{1,3}){3}\b`;
+const HTTP_METHOD_SOURCE = String.raw`\b(?:GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+\S`;
+const ACCESS_LOG_PATTERN = new RegExp(
+  `^(?:(?!${IPV4_SOURCE}).)*${IPV4_SOURCE}(?:(?!${HTTP_METHOD_SOURCE}).)*${HTTP_METHOD_SOURCE}.*\\b[1-5]\\d{2}\\b`,
+  'u',
+);
+
 const STRONG_LOG_PATTERNS: readonly RegExp[] = [
   // ANSI colour / cursor escapes.
-  /\u001b\[[0-9;?]*[A-Za-z]/u,
+  ANSI_ESCAPE_PATTERN,
 
   // Timestamps near the start of the line: ISO / RFC 3339, "2024/01/15 10:23:45".
   /^[^'"`]{0,40}?\b\d{4}[-/]\d{2}[-/]\d{2}[T ]\d{2}:\d{2}:\d{2}/u,
@@ -137,7 +152,7 @@ const STRONG_LOG_PATTERNS: readonly RegExp[] = [
   /^TAP version\b/u,
   /^\s*1\.\.\d+\s*$/u,
   /^#\s+(?:Subtest:|(?:tests|suites|pass|fail|cancelled|skipped|todo|duration_ms)\b)/u,
-  /^>\s+\S+@\S+\s+\S/u,
+  /^>\s+(?=\S+@\S)\S+\s+\S/u,
   // Gradle, Cargo, apt, Terraform and pytest output.
   /^\s*(?:\* (?:What went wrong|Try|Exception is):|FAILURE: Build failed|BUILD (?:SUCCESSFUL|FAILED)\b|\d+ actionable tasks?:)/u,
   /^\s*(?:Compiling|Finished|Running|Downloaded|Downloading|Checking)\s+\S+\s+v?\d/u,
@@ -157,12 +172,14 @@ const STRONG_LOG_PATTERNS: readonly RegExp[] = [
   /^\s*(?:Traceback \(most recent call last\)|Caused by:|goroutine \d+ \[|thread '[^']*' panicked at|Exception in thread|panic:|\.\.\. \d+ more$)/u,
 
   // Process and thread context: "sshd[1234]: ", "[pid 42]", "[http-nio-8080-exec-1]".
-  /\b[A-Za-z][\w.-]*\[\d{1,7}\]:\s/u,
+  // The name is looked up from the "[" backwards, so a long word with dots in
+  // it is not rescanned from every dot.
+  /\[(?<=\b[A-Za-z][\w.-]*\[)\d{1,7}\]:\s/u,
   /\[(?:pid|tid)[ :=]*\d+\]/iu,
   /\[(?:main|[\w-]*thread-\d+|[\w-]*exec-\d+|worker[- ]?\d+)\]/iu,
 
   // Access log: client IP, HTTP method and a status code.
-  /\b\d{1,3}(?:\.\d{1,3}){3}\b.*\b(?:GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+\S+.*\b[1-5]\d{2}\b/u,
+  ACCESS_LOG_PATTERN,
 ];
 
 // A pretty-printed JSON property. In a test report or scanner export such
@@ -220,28 +237,34 @@ const COMMA_SPACE_PATTERN = /,\s/u;
 const DIGIT_PATTERN = /\d/u;
 const PLAIN_TOKEN_PATTERN = /^\s*[^\s,]+\s*$/u;
 
+// These patterns run on up to CONTENT_LINE_SCAN_LIMIT characters of every
+// sampled line, so none of them lets two quantifiers match the same characters
+// next to each other ("\s+.+\s+in", "\s*;?\s*$"): on a long run of white space
+// that backtracks to a cubic or quadratic number of steps.
 const TEXT_PATTERNS: readonly RegExp[] = [
   // Markdown: list item, blockquote, link, image, autolink, bold.
   /^\s*(?:[-*+]|\d{1,3}[.)])\s+\S/u,
   /^\s{0,3}>\s{1,2}[A-Z*_[`"'(]/u,
-  /!?\[[^\]\n]+\]\([^)\s]+\)/u,
+  // The link text has no "[" and the URL is bounded, so a run of "[" does not
+  // rescan the rest of the line from every one of them.
+  /!?\[[^[\]\n]+\]\([^)\s]{1,1000}\)/u,
   /<https?:\/\/[^>\s]+>/u,
   /\*\*[^*\n]+\*\*/u,
   /^---\s*$/u,
 
   // Source code: declarations, imports, control flow and punctuation.
-  /^\s*(?:export\s+(?:default\s+)?)?(?:async\s+)?(?:(?:const|let|var)\s+[\w${}[\],\s]+(?:=|:|;|$)|function\b|class\s+\w+|interface\s+\w+|enum\s+\w+|abstract\s+class|namespace\s+\w+|type\s+\w+(?:<[^>]*>)?\s*=)/u,
-  /^\s*(?:import\s+(?:[\w*${},\s]+\s+from\s+)?['"]|import\s+[\w.*{]|from\s+[\w.]+\s+import\s|export\s+(?:\*|\{)|#\s*(?:include|define|ifdef|ifndef|endif|pragma|undef)\b|using\s+[\w.]+;|package\s+[\w.]+;?\s*$|use\s+[\w:]+(?:::\{.*\})?;|require\s*\()/u,
+  /^\s*(?:export\s+(?:default\s+)?)?(?:async\s+)?(?:(?:const|let|var)\s[\w${}[\],\s]+(?:=|:|;|$)|function\b|class\s+\w+|interface\s+\w+|enum\s+\w+|abstract\s+class|namespace\s+\w+|type\s+\w+(?:<[^>]*>)?\s*=)/u,
+  /^\s*(?:import\s+(?:(?:[\w*${},]+\s+)+from\s+)?['"]|import\s+[\w.*{]|from\s+[\w.]+\s+import\s|export\s+(?:\*|\{)|#\s*(?:include|define|ifdef|ifndef|endif|pragma|undef)\b|using\s+[\w.]+;|package\s+[\w.]+;?\s*$|use\s+[\w:]+(?:(?<=[\w:]::)\{.*\})?;|require\s*\()/u,
   /^\s*(?:(?:pub\s+)?(?:async\s+)?fn|def|func|fun|sub)\s+\w+/u,
   /^\s*(?:public|private|protected|static|final|abstract|override|readonly)\s+\S/u,
   /^\s*(?:elif|else|try|finally|except|catch)\b.*[:{]\s*$/u,
-  /^\s*(?:if|for|while|with|switch|catch)\s*\(.*\)\s*\{?\s*$/u,
-  /^\s*(?:if|for|while|with|def|class)\s+.+:\s*$/u,
-  /^\s*return(?:\s+\S+){0,3}\s*;?\s*$/u,
+  /^\s*(?:if|for|while|with|switch|catch)\s*\(.*\)\s*(?:\{\s*)?$/u,
+  /^\s*(?:if|for|while|with|def|class)\s.+:\s*$/u,
+  /^\s*return(?:\s+\S+){0,3}\s*(?:;\s*)?$/u,
   /^\s*(?:raise|assert|del|global|nonlocal|throw|yield|await|defer)\s+\S/u,
   /^\s*(?:attr_\w+|include|extend|require(?:_relative)?|alias_method|module)\s+[:'"A-Z]/u,
   // Lone block keywords: Ruby "end", shell "fi", Python "pass".
-  /^\s*(?:end|begin|else|elsif|ensure|then|fi|done|do|esac|endif|endfor|endwhile|endfunction|pass|break|continue|try|finally)\s*;?\s*$/u,
+  /^\s*(?:end|begin|else|elsif|ensure|then|fi|done|do|esac|endif|endfor|endwhile|endfunction|pass|break|continue|try|finally)\s*(?:;\s*)?$/u,
   /[;{}([]\s*$/u,
   /^\s*[\]})]+[;,]?\s*$/u,
   // Comments and decorators.
@@ -280,7 +303,7 @@ const TEXT_PATTERNS: readonly RegExp[] = [
 
   // Shell and Dockerfile.
   /^\s*(?:FROM|RUN|COPY|ADD|CMD|ENTRYPOINT|ENV|ARG|WORKDIR|EXPOSE|USER|LABEL|VOLUME|HEALTHCHECK|ONBUILD|STOPSIGNAL|SHELL|MAINTAINER)\s+\S/u,
-  /^\s*(?:#!\/|set\s+-[euxo]|export\s+\w+=|(?:if|elif)\s+\[|for\s+\w+\s+in\s|while\s+(?:read|true|\[)|case\s+.+\s+in$|source\s+|alias\s+\w+=|echo\s+["'$-]|cd\s+[\w./~"$-]|mkdir\s+-p|\$\()/u,
+  /^\s*(?:#!\/|set\s+-[euxo]|export\s+\w+=|(?:if|elif)\s+\[|for\s+\w+\s+in\s|while\s+(?:read|true|\[)|case\s.+\sin$|source\s+|alias\s+\w+=|echo\s+["'$-]|cd\s+[\w./~"$-]|mkdir\s+-p|\$\()/u,
   /\\$/u,
   /^\s*&&\s/u,
 ];

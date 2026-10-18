@@ -46,10 +46,21 @@ From the library, pass `textPassthrough: false`. The `contentKind` field of
 
 Text that LogStrip copies through still has its credentials masked, with the
 same rules the compressor applies to logs. Those rules favour safety over
-fidelity, so besides real secrets they also mask look-alikes such as
-`token: ${{ secrets.NPM_TOKEN }}`, `id-token: write`, an example like
-`password=hunter2`, or a sentence that mentions an `Authorization:` header
-(the rest of that line is masked). The original file is never modified; only
+fidelity, so besides real secrets they also mask look-alikes such as an
+example like `password=hunter2`, or a sentence that mentions an
+`Authorization:` header (the rest of that line is masked). Any key that ends
+in `password`, `secret`, `token`, `api_key`, `auth` and similar names counts,
+so `DB_PASSWORD=...`, `apiKey: ...` and `"client_secret": "..."` are masked
+too, and so is an assignment in source code such as `const accessToken = load()`
+or `password = readSecret()`. Values that carry no secret stay as they are: an
+empty value, `null`, `true`, `false`, a number under four digits, a type
+(`previousToken: string`, `password: Optional[str]`), a plain environment read
+(`token: process.env.NPM_TOKEN`, `os.environ["DB_PASSWORD"]`, but not
+`os.getenv("DB", "hunter2")`), a GitHub permission (`id-token: write`) and a
+plain reference such as
+`token: ${{ secrets.NPM_TOKEN }}` or `DB_PASSWORD=${DB_PASSWORD}`. A reference
+with a default, a command or anything after it (`${NAME:-x}`, `$(cat file)`,
+`$HOME/x`, or a closing bracket or backtick right behind it) is masked. The original file is never modified; only
 the copy is. Read the file directly when you need the exact text.
 
 ## The CLI exits with code `2`
