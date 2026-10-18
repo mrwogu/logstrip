@@ -406,7 +406,7 @@ The sanitizer replaces:
 | long hexadecimal or alphanumeric hashes | `[HASH]` |
 | HTTP status codes | `[2xx]`, `[4xx]`, `[5xx]`, etc. |
 | Kubernetes ages (`38s`, `2m34s`, `5 (2m36s ago)`) | `[AGO]` |
-| ANSI color escapes | removed |
+| ANSI escape sequences (colors, cursor movement, erase line, OSC hyperlinks) | removed |
 
 Durations that are measurements stay readable: `0.47s`, `timed out after 30s`,
 `retrying in 2s`, `timeout=30s` and `1m 12s` are kept, so a configured timeout

@@ -153,3 +153,25 @@ describe('sanitizeLine durations', () => {
     expect(sanitizeLine('finished 2h 5m 12s later')).toBe('finished 2h 5m 12s later');
   });
 });
+
+describe('sanitizeLine ANSI sequences', () => {
+  it('removes color sequences', () => {
+    expect(sanitizeLine('\u001b[31mred\u001b[0m text')).toBe('red text');
+  });
+
+  it('removes cursor movement and erase-line sequences', () => {
+    expect(sanitizeLine('\u001b[2K\u001b[1Gnpm ERR! code E404')).toBe('npm ERR! code E404');
+    expect(sanitizeLine('\u001b[?25lspinner\u001b[?25h')).toBe('spinner');
+  });
+
+  it('removes OSC hyperlinks and window titles', () => {
+    expect(
+      sanitizeLine('\u001b]8;;https://example.com\u0007link text\u001b]8;;\u0007 error here'),
+    ).toBe('link text error here');
+    expect(sanitizeLine('\u001b]0;build title\u001b\\done')).toBe('done');
+  });
+
+  it('keeps lone escape characters that are not sequences', () => {
+    expect(sanitizeLine('odd \u001b byte')).toBe('odd \u001b byte');
+  });
+});

@@ -40,7 +40,10 @@ const K8S_RELATIVE_DURATION_PATTERN =
 // tail of a decimal ("0.47s"), not a Kubernetes age column.
 const MEASURED_DURATION_PREFIX_PATTERN =
   /(?:[\d.=]|\d[dhm]\s|\b(?:in|after|for|within|than|every|took|elapsed|timeout|ttl|delay|interval|wait|waiting|waited)[\s:=]+)$/iu;
-const ANSI_ESCAPE_PATTERN = /\u001b\[[0-9;]*m/gu;
+// Every CSI sequence (colors, cursor movement, erase line, cursor hide) and
+// OSC sequence (hyperlinks, window titles), not only SGR colors.
+const ANSI_ESCAPE_PATTERN =
+  /\u001b\[[0-?]*[ -/]*[@-~]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)/gu;
 const IPV4_WITH_PORT_PATTERN =
   /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})\b/gu;
 const IPV4_PATTERN =
