@@ -19,7 +19,7 @@ Fixes #(issue number)
 - [ ] `npm run typecheck` passes
 - [ ] `npm run test:coverage` passes and the 100% coverage thresholds are unchanged
 - [ ] `npm run build`, `npm run smoke:cli` and `npm run smoke:hooks` pass
-- [ ] `dist/` is not part of this PR (it is ignored on main and built on release tags)
+- [ ] `dist/` is not part of this PR (the release PR rebuilds and commits it)
 - [ ] New or changed fixtures have realistic `minSavingsPercent` and `mustContain` / `mustNotContain` assertions, and snapshot diffs were regenerated with `vitest -u` and reviewed
 - [ ] CLI flag changes are reflected in `docs/reference/cli.md` and `README.md` (`npm run docs:check` passes)
 - [ ] No new runtime dependencies in `src/cli` or `src/core`
