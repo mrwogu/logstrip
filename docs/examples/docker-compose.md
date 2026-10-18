@@ -84,4 +84,4 @@ docker compose logs --no-color \
 ```
 
 See [CLI reference - aggressiveness](../reference/cli.md#aggressiveness-and-context-retention)
-and [include/exclude patterns](../reference/cli.md#include-exclude-patterns).
+and [include/exclude patterns](../reference/cli.md#include--exclude-patterns).
