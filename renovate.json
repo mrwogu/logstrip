@@ -68,12 +68,12 @@
       "automerge": false
     },
     {
-      "description": "Node.js engine and runtime version bumps are a deliberate decision, never automerged",
+      "description": "Node.js is a deliberate choice: workflows use the floating 22.x and 24.x lines and engines state the minimum major, so Renovate never proposes exact Node versions",
       "matchDepNames": ["node"],
-      "automerge": false
+      "enabled": false
     },
     {
-      "description": "The CI workflow dogfoods the floating v1 tag of this repo's own action, so it stays unpinned",
+      "description": "The CI workflow dogfoods the floating v2 tag of this repo's own action, so it stays unpinned",
       "matchPackageNames": ["mrwogu/logstrip"],
       "pinDigests": false
     },

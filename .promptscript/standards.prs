@@ -75,7 +75,7 @@
     "The CLI smoke step feeds a printf-built log through node dist/cli/index.js and greps for [x2] [ERROR]",
     "The action-smoke-test job downloads the published artifact and runs processLogFile against a printf-built fixture",
     "When adding workflow steps avoid indented heredocs - they preserve leading whitespace and break literal grep assertions",
-    "Renovate (renovate.json) owns dependency and action updates - there is no dependabot.yml; minor/patch devDependencies and action digests automerge after a 3 day release age, majors and lockfile maintenance wait for a human",
+    "Renovate (renovate.json) owns dependency and action updates - there is no dependabot.yml; minor/patch devDependencies and action digests automerge after a 3 day release age, majors and lockfile maintenance wait for a human; Node versions (engines.node, setup-node inputs) are not managed by Renovate, the floating 22.x / 24.x lines and the engines minimum are deliberate",
     "Every uses: in .github/workflows is pinned to a full commit SHA with a # vX.Y.Z comment and Renovate keeps the SHAs fresh; mrwogu/logstrip@v2 stays floating on purpose because that step dogfoods the published action",
     "npm run docs:check (scripts/check-cli-docs.js) fails CI when a --flag from HELP_TEXT is missing from docs/reference/cli.md or README.md - add the flag to both when you add it to the CLI",
     "ci.yml also runs on a Monday cron so main is re-validated against the live registry; release-please uses RELEASE_PAT when the secret exists and falls back to GITHUB_TOKEN",
