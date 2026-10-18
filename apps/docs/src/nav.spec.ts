@@ -11,7 +11,7 @@ function sidebar(currentLabel?: string): SidebarNode[] {
   return [
     {
       type: 'group',
-      label: 'Start',
+      label: 'Get Started',
       entries: [link('Getting Started'), link('Supported Sources')],
     },
     {
@@ -49,6 +49,22 @@ describe('sidebarForTab', () => {
 });
 
 describe('NAV_TABS', () => {
+  it('builds one tab per sidebar group, landing on its first page, then the changelog', () => {
+    const own = NAV_TABS.filter((tab) => !tab.external);
+
+    expect(own.map((tab) => tab.label)).toEqual(SIDEBAR.map((group) => group.label));
+    expect(own.map((tab) => tab.href)).toEqual(
+      SIDEBAR.map((group) => `/${group.items[0].slug}/`)
+    );
+    expect(NAV_TABS.at(-1)).toMatchObject({ label: 'Changelog', external: true });
+  });
+
+  it('has an Evaluate tab for the why, benchmarks and compare pages', () => {
+    const group = SIDEBAR.find((item) => item.label === 'Evaluate');
+
+    expect(group?.items.map((item) => item.slug)).toEqual(['why-logstrip', 'benchmarks', 'compare']);
+  });
+
   it('assigns each sidebar group to exactly one tab', () => {
     const groups = NAV_TABS.flatMap((tab) => tab.groups ?? []);
 

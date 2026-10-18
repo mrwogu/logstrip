@@ -63,6 +63,7 @@
     "build": "tsc -p tsconfig.build.json && node scripts/bundle-action.js && node scripts/post-build.js",
     "build:plugins": "node scripts/build-plugins.js",
     "docs:build": "npm --prefix apps/docs run build",
+    "docs:bench": "node scripts/export-benchmarks.mjs",
     "docs:check": "node scripts/check-cli-docs.js",
     "docs:install": "npm --prefix apps/docs ci",
     "docs:serve": "npm --prefix apps/docs run dev",

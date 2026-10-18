@@ -1,5 +1,6 @@
 // Top-level sections shown as tabs under the header. Each tab owns some
 // sidebar groups; on a page inside a tab the sidebar shows only those groups.
+import { REPO, SIDEBAR } from './site.mjs';
 
 export interface NavTab {
   label: string;
@@ -10,16 +11,16 @@ export interface NavTab {
   external?: boolean;
 }
 
+const CHANGELOG_URL = `${REPO}/blob/main/CHANGELOG.md`;
+
+// One tab per sidebar group, landing on the group's first page, then the changelog.
 export const NAV_TABS: readonly NavTab[] = [
-  { label: 'Get Started', href: '/getting-started/', groups: ['Start'] },
-  { label: 'Reference', href: '/reference/cli/', groups: ['Reference'] },
-  { label: 'Guides', href: '/guides/compression-flow/', groups: ['Guides'] },
-  { label: 'Examples', href: '/examples/', groups: ['Examples'] },
-  {
-    label: 'Changelog',
-    href: 'https://github.com/mrwogu/logstrip/blob/main/CHANGELOG.md',
-    external: true,
-  },
+  ...SIDEBAR.map((group) => ({
+    label: group.label,
+    href: `/${group.items[0].slug}/`,
+    groups: [group.label],
+  })),
+  { label: 'Changelog', href: CHANGELOG_URL, external: true },
 ];
 
 /** The part of Starlight's sidebar entry shape this module needs. */

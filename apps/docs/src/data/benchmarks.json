@@ -1,0 +1,467 @@
+{
+  "logstripVersion": "1.12.0",
+  "tokenEstimate": "words * 1.3",
+  "totals": {
+    "fixtures": 50,
+    "inputLines": 4411,
+    "outputLines": 1908,
+    "inputTokens": 42455,
+    "outputTokens": 20617,
+    "savingsPercent": 51.4,
+    "medianSavingsPercent": 42.1,
+    "minSavingsPercent": 16.7,
+    "maxSavingsPercent": 87.2
+  },
+  "fixtures": [
+    {
+      "id": "ai-ml-ecosystem",
+      "kind": "mixed",
+      "inputLines": 62,
+      "outputLines": 37,
+      "inputTokens": 528,
+      "outputTokens": 311,
+      "savingsPercent": 41.1
+    },
+    {
+      "id": "all-sources-detection",
+      "kind": "mixed",
+      "inputLines": 2115,
+      "outputLines": 705,
+      "inputTokens": 23355,
+      "outputTokens": 10303,
+      "savingsPercent": 55.9
+    },
+    {
+      "id": "apache-httpd-noisy",
+      "kind": "single",
+      "inputLines": 30,
+      "outputLines": 4,
+      "inputTokens": 485,
+      "outputTokens": 62,
+      "savingsPercent": 87.2
+    },
+    {
+      "id": "auth-secrets-config",
+      "kind": "mixed",
+      "inputLines": 64,
+      "outputLines": 35,
+      "inputTokens": 578,
+      "outputTokens": 329,
+      "savingsPercent": 43.1
+    },
+    {
+      "id": "backup-docs-messaging",
+      "kind": "mixed",
+      "inputLines": 95,
+      "outputLines": 50,
+      "inputTokens": 783,
+      "outputTokens": 454,
+      "savingsPercent": 42
+    },
+    {
+      "id": "build-test-systems",
+      "kind": "mixed",
+      "inputLines": 48,
+      "outputLines": 34,
+      "inputTokens": 240,
+      "outputTokens": 153,
+      "savingsPercent": 36.3
+    },
+    {
+      "id": "build-toolchains",
+      "kind": "mixed",
+      "inputLines": 70,
+      "outputLines": 38,
+      "inputTokens": 595,
+      "outputTokens": 332,
+      "savingsPercent": 44.2
+    },
+    {
+      "id": "ci-pkg-managers",
+      "kind": "mixed",
+      "inputLines": 24,
+      "outputLines": 16,
+      "inputTokens": 195,
+      "outputTokens": 151,
+      "savingsPercent": 22.6
+    },
+    {
+      "id": "ci-platforms",
+      "kind": "mixed",
+      "inputLines": 57,
+      "outputLines": 24,
+      "inputTokens": 537,
+      "outputTokens": 228,
+      "savingsPercent": 57.5
+    },
+    {
+      "id": "cloud-serverless",
+      "kind": "mixed",
+      "inputLines": 32,
+      "outputLines": 12,
+      "inputTokens": 392,
+      "outputTokens": 175,
+      "savingsPercent": 55.4
+    },
+    {
+      "id": "data-search-analytics",
+      "kind": "mixed",
+      "inputLines": 147,
+      "outputLines": 65,
+      "inputTokens": 1167,
+      "outputTokens": 565,
+      "savingsPercent": 51.6
+    },
+    {
+      "id": "data-telemetry-scanners",
+      "kind": "mixed",
+      "inputLines": 23,
+      "outputLines": 11,
+      "inputTokens": 211,
+      "outputTokens": 123,
+      "savingsPercent": 41.7
+    },
+    {
+      "id": "docker-build",
+      "kind": "single",
+      "inputLines": 26,
+      "outputLines": 4,
+      "inputTokens": 309,
+      "outputTokens": 64,
+      "savingsPercent": 79.3
+    },
+    {
+      "id": "ecosystem-signals-realistic",
+      "kind": "mixed",
+      "inputLines": 44,
+      "outputLines": 27,
+      "inputTokens": 415,
+      "outputTokens": 238,
+      "savingsPercent": 42.6
+    },
+    {
+      "id": "email-ci-infra",
+      "kind": "mixed",
+      "inputLines": 89,
+      "outputLines": 48,
+      "inputTokens": 738,
+      "outputTokens": 427,
+      "savingsPercent": 42.1
+    },
+    {
+      "id": "go-logfmt-service",
+      "kind": "single",
+      "inputLines": 15,
+      "outputLines": 5,
+      "inputTokens": 163,
+      "outputTokens": 67,
+      "savingsPercent": 58.9
+    },
+    {
+      "id": "go-rust-ruby-frameworks",
+      "kind": "mixed",
+      "inputLines": 74,
+      "outputLines": 36,
+      "inputTokens": 583,
+      "outputTokens": 297,
+      "savingsPercent": 49.1
+    },
+    {
+      "id": "go-test-verbose",
+      "kind": "single",
+      "inputLines": 18,
+      "outputLines": 9,
+      "inputTokens": 82,
+      "outputTokens": 39,
+      "savingsPercent": 52.4
+    },
+    {
+      "id": "infra-cloud",
+      "kind": "mixed",
+      "inputLines": 16,
+      "outputLines": 7,
+      "inputTokens": 182,
+      "outputTokens": 124,
+      "savingsPercent": 31.9
+    },
+    {
+      "id": "iot-game-embedded",
+      "kind": "mixed",
+      "inputLines": 53,
+      "outputLines": 32,
+      "inputTokens": 427,
+      "outputTokens": 284,
+      "savingsPercent": 33.5
+    },
+    {
+      "id": "java-enterprise",
+      "kind": "mixed",
+      "inputLines": 47,
+      "outputLines": 26,
+      "inputTokens": 338,
+      "outputTokens": 181,
+      "savingsPercent": 46.5
+    },
+    {
+      "id": "java-spring-boot-realistic",
+      "kind": "single",
+      "inputLines": 25,
+      "outputLines": 10,
+      "inputTokens": 305,
+      "outputTokens": 95,
+      "savingsPercent": 68.8
+    },
+    {
+      "id": "jest-noisy",
+      "kind": "single",
+      "inputLines": 47,
+      "outputLines": 8,
+      "inputTokens": 284,
+      "outputTokens": 63,
+      "savingsPercent": 77.8
+    },
+    {
+      "id": "json-test-report",
+      "kind": "single",
+      "inputLines": 165,
+      "outputLines": 106,
+      "inputTokens": 1044,
+      "outputTokens": 505,
+      "savingsPercent": 51.6
+    },
+    {
+      "id": "kubernetes-crashloop",
+      "kind": "single",
+      "inputLines": 18,
+      "outputLines": 15,
+      "inputTokens": 150,
+      "outputTokens": 125,
+      "savingsPercent": 16.7
+    },
+    {
+      "id": "maven-downloads-failure",
+      "kind": "single",
+      "inputLines": 13,
+      "outputLines": 3,
+      "inputTokens": 124,
+      "outputTokens": 32,
+      "savingsPercent": 74.2
+    },
+    {
+      "id": "maven-failure",
+      "kind": "single",
+      "inputLines": 41,
+      "outputLines": 15,
+      "inputTokens": 286,
+      "outputTokens": 149,
+      "savingsPercent": 47.9
+    },
+    {
+      "id": "mobile-desktop-cms",
+      "kind": "mixed",
+      "inputLines": 96,
+      "outputLines": 52,
+      "inputTokens": 739,
+      "outputTokens": 450,
+      "savingsPercent": 39.1
+    },
+    {
+      "id": "mocha-spec-failure",
+      "kind": "single",
+      "inputLines": 45,
+      "outputLines": 24,
+      "inputTokens": 236,
+      "outputTokens": 136,
+      "savingsPercent": 42.4
+    },
+    {
+      "id": "networking-edge-serverless",
+      "kind": "mixed",
+      "inputLines": 54,
+      "outputLines": 32,
+      "inputTokens": 457,
+      "outputTokens": 275,
+      "savingsPercent": 39.8
+    },
+    {
+      "id": "nginx-502-burst",
+      "kind": "single",
+      "inputLines": 11,
+      "outputLines": 6,
+      "inputTokens": 258,
+      "outputTokens": 168,
+      "savingsPercent": 34.9
+    },
+    {
+      "id": "nginx-access-noisy",
+      "kind": "single",
+      "inputLines": 16,
+      "outputLines": 10,
+      "inputTokens": 380,
+      "outputTokens": 236,
+      "savingsPercent": 37.9
+    },
+    {
+      "id": "node-crash-realistic",
+      "kind": "single",
+      "inputLines": 24,
+      "outputLines": 13,
+      "inputTokens": 181,
+      "outputTokens": 101,
+      "savingsPercent": 44.2
+    },
+    {
+      "id": "node-repeated-stack",
+      "kind": "single",
+      "inputLines": 29,
+      "outputLines": 17,
+      "inputTokens": 215,
+      "outputTokens": 145,
+      "savingsPercent": 32.6
+    },
+    {
+      "id": "observability-analytics",
+      "kind": "mixed",
+      "inputLines": 71,
+      "outputLines": 38,
+      "inputTokens": 580,
+      "outputTokens": 337,
+      "savingsPercent": 41.9
+    },
+    {
+      "id": "orm-db-migrations",
+      "kind": "mixed",
+      "inputLines": 65,
+      "outputLines": 38,
+      "inputTokens": 526,
+      "outputTokens": 331,
+      "savingsPercent": 37.1
+    },
+    {
+      "id": "pino-bunyan-numeric",
+      "kind": "single",
+      "inputLines": 12,
+      "outputLines": 4,
+      "inputTokens": 82,
+      "outputTokens": 49,
+      "savingsPercent": 40.2
+    },
+    {
+      "id": "polyglot-stacks",
+      "kind": "single",
+      "inputLines": 64,
+      "outputLines": 41,
+      "inputTokens": 390,
+      "outputTokens": 249,
+      "savingsPercent": 36.1
+    },
+    {
+      "id": "pytest-failure",
+      "kind": "single",
+      "inputLines": 36,
+      "outputLines": 16,
+      "inputTokens": 293,
+      "outputTokens": 149,
+      "savingsPercent": 49.1
+    },
+    {
+      "id": "python-lint-async",
+      "kind": "mixed",
+      "inputLines": 50,
+      "outputLines": 27,
+      "inputTokens": 440,
+      "outputTokens": 266,
+      "savingsPercent": 39.5
+    },
+    {
+      "id": "python-worker-logging",
+      "kind": "single",
+      "inputLines": 28,
+      "outputLines": 14,
+      "inputTokens": 379,
+      "outputTokens": 154,
+      "savingsPercent": 59.4
+    },
+    {
+      "id": "realtime-graphql",
+      "kind": "mixed",
+      "inputLines": 53,
+      "outputLines": 30,
+      "inputTokens": 433,
+      "outputTokens": 268,
+      "savingsPercent": 38.1
+    },
+    {
+      "id": "sanitize-secrets-ipv6",
+      "kind": "single",
+      "inputLines": 17,
+      "outputLines": 11,
+      "inputTokens": 102,
+      "outputTokens": 77,
+      "savingsPercent": 24.5
+    },
+    {
+      "id": "scanner-vulnerability",
+      "kind": "single",
+      "inputLines": 12,
+      "outputLines": 8,
+      "inputTokens": 107,
+      "outputTokens": 73,
+      "savingsPercent": 31.8
+    },
+    {
+      "id": "security-scanners",
+      "kind": "mixed",
+      "inputLines": 88,
+      "outputLines": 57,
+      "inputTokens": 662,
+      "outputTokens": 420,
+      "savingsPercent": 36.6
+    },
+    {
+      "id": "server-json",
+      "kind": "single",
+      "inputLines": 11,
+      "outputLines": 7,
+      "inputTokens": 43,
+      "outputTokens": 34,
+      "savingsPercent": 20.9
+    },
+    {
+      "id": "terraform-ansible-systemd",
+      "kind": "mixed",
+      "inputLines": 41,
+      "outputLines": 16,
+      "inputTokens": 454,
+      "outputTokens": 216,
+      "savingsPercent": 52.4
+    },
+    {
+      "id": "vitest-failure",
+      "kind": "single",
+      "inputLines": 43,
+      "outputLines": 14,
+      "inputTokens": 257,
+      "outputTokens": 91,
+      "savingsPercent": 64.6
+    },
+    {
+      "id": "web-frameworks-node",
+      "kind": "mixed",
+      "inputLines": 60,
+      "outputLines": 31,
+      "inputTokens": 478,
+      "outputTokens": 322,
+      "savingsPercent": 32.6
+    },
+    {
+      "id": "webpack-bundle",
+      "kind": "single",
+      "inputLines": 27,
+      "outputLines": 20,
+      "inputTokens": 267,
+      "outputTokens": 194,
+      "savingsPercent": 27.3
+    }
+  ]
+}

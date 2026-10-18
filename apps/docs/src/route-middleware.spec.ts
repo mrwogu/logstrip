@@ -29,7 +29,7 @@ function run(pathname: string, id: string, prev?: boolean): TestRoute {
     sidebar: [
       {
         type: 'group',
-        label: 'Start',
+        label: 'Get Started',
         entries: [{ type: 'link', label: 'Page', isCurrent: true }],
       },
       { type: 'group', label: 'Reference', entries: [] },
