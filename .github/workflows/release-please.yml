@@ -1,8 +1,18 @@
 name: Release Please
 
+# One job, two paths. A push to main (or a manual run with no tag) lets
+# release-please open or merge the release PR and create the vX.Y.Z tag; with
+# RELEASE_PAT that tag push starts this workflow again. A vX.Y.Z tag push, or
+# a manual run naming an existing tag, builds dist/ on the tag, publishes to
+# npm and moves the major tag. The main push never publishes by itself, so a
+# release is published exactly once.
 on:
   push:
     branches: [main]
+    # Release tags only; the floating vN tag the workflow moves must not start
+    # another run.
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
     inputs:
       tag:
@@ -30,7 +40,7 @@ jobs:
 
     steps:
       - name: Create or update release PR
-        if: ${{ github.event.inputs.tag == '' }}
+        if: ${{ github.ref_type == 'branch' && github.event.inputs.tag == '' }}
         id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
@@ -40,14 +50,15 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      # One tag to publish: the release just created, or the one passed by hand.
+      # One tag to publish: the pushed tag, or the one passed by hand. A main
+      # push only creates the release; its tag push comes back as its own run.
       - name: Pick the tag to publish
         id: plan
         env:
-          CREATED_TAG: ${{ steps.release.outputs.tag_name }}
+          PUSHED_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           INPUT_TAG: ${{ github.event.inputs.tag }}
         run: |
-          TAG="${INPUT_TAG:-$CREATED_TAG}"
+          TAG="${INPUT_TAG:-$PUSHED_TAG}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           if [ -n "$TAG" ]; then
             echo "publish=true" >> "$GITHUB_OUTPUT"
