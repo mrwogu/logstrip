@@ -1,0 +1,12 @@
+# CodeRabbit review configuration.
+# The chill profile keeps reviews to the points that matter. With the
+# request-changes workflow, unresolved review comments block the merge when
+# the CodeRabbit check is required in branch protection. Snapshots and
+# fixture logs are generated or verbatim samples and are not reviewed.
+language: en-US
+reviews:
+  profile: chill
+  request_changes_workflow: true
+  path_filters:
+    - '!tests/fixtures/__snapshots__/**'
+    - '!tests/fixtures/**/*.log'
