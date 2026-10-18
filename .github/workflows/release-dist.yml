@@ -88,6 +88,9 @@ jobs:
           if tar -tzf dist.tgz | grep -Eq '(^|/)\.\.(/|$)'; then
             echo "::error::dist.tgz holds a parent directory reference"; exit 1
           fi
+          if tar -tvzf dist.tgz | grep -Eq '^[lh]'; then
+            echo "::error::dist.tgz holds a link"; exit 1
+          fi
           STAGE=$(mktemp -d)
           tar -xzf dist.tgz -C "$STAGE" --no-same-owner
           rm -rf dist dist.tgz

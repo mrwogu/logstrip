@@ -116,11 +116,14 @@ jobs:
         if: ${{ steps.plan.outputs.publish == 'true' }}
         run: npm ci
 
+      # dist/ is removed before the build so a file on the tag that the build
+      # does not produce shows up as deleted in the check below.
       - name: Verify release build
         if: ${{ steps.plan.outputs.publish == 'true' }}
         run: |
           npm run typecheck
           npm run test:coverage
+          rm -rf dist
           npm run build
           npm audit
 
