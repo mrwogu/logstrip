@@ -42,9 +42,15 @@ const MEASURED_DURATION_PREFIX_PATTERN =
   /(?:[\d.=(]|\d[dhm]\s|\b(?:in|after|for|within|than|every|took|elapsed|timeout|ttl|delay|interval|wait|waiting|waited)[\s:=]+)$/iu;
 const AGO_SUFFIX_PATTERN = /^\s+ago\b/u;
 // Every CSI sequence (colors, cursor movement, erase line, cursor hide) and
-// OSC sequence (hyperlinks, window titles), not only SGR colors.
-const ANSI_ESCAPE_PATTERN =
-  /\u001b\[[0-?]*[ -/]*[@-~]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)/gu;
+// OSC sequence (hyperlinks, window titles), not only SGR colors. The control
+// characters are put in with String.fromCharCode so that the pattern source
+// holds none, which linters flag in a literal.
+const ESC = String.fromCharCode(0x1b);
+const BEL = String.fromCharCode(0x07);
+const ANSI_ESCAPE_PATTERN = new RegExp(
+  `${ESC}\\[[0-?]*[ -/]*[@-~]|${ESC}\\][^${BEL}${ESC}]*(?:${BEL}|${ESC}\\\\)`,
+  'gu',
+);
 const IPV4_WITH_PORT_PATTERN =
   /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})\b/gu;
 const IPV4_PATTERN =
@@ -150,7 +156,7 @@ const AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
 
 /** Remove every ANSI CSI and OSC escape sequence from a line. */
 export function stripAnsi(line: string): string {
-  return line.includes('\u001b') ? line.replace(ANSI_ESCAPE_PATTERN, '') : line;
+  return line.includes(ESC) ? line.replace(ANSI_ESCAPE_PATTERN, '') : line;
 }
 
 function maskAge(match: string, offset: number, whole: string): string {
@@ -263,6 +269,14 @@ export function maskSecrets(line: string): string {
   return maskLateSecrets(maskVendorSecrets(line));
 }
 
+// Not /[ \t]+$/: that pattern is tried from every blank of a long run of blanks
+// and rescans the run each time, which is quadratic.
+function trimTrailingBlanks(text: string): string {
+  let end = text.length;
+  while (end > 0 && (text[end - 1] === ' ' || text[end - 1] === '\t')) end -= 1;
+  return end === text.length ? text : text.slice(0, end);
+}
+
 export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
   const uuidReplacement =
     preserveIdSuffix > 0
@@ -326,7 +340,7 @@ export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
     .replace(HEX_HASH_PATTERN, hexHashReplacement)
     .replace(ALPHANUMERIC_HASH_PATTERN, alnumHashReplacement);
   result = maskLateSecrets(result);
-  result = result.replace(/[ \t]+$/u, '');
+  result = trimTrailingBlanks(result);
 
   // HTTP status code grouping
   result = groupHttpStatusCodes(result);
