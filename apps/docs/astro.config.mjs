@@ -5,19 +5,21 @@ import starlightLinksValidator from 'starlight-links-validator';
 import sitemap from '@astrojs/sitemap';
 import { gitLastModified } from './src/plugins/git-lastmod.mjs';
 import { remarkMkdocsCompat } from './src/plugins/remark-mkdocs-compat.mjs';
+import { OG_IMAGE, OG_IMAGE_ALT } from './src/seo.ts';
 import {
+  AUTHOR,
   BASE,
   NPM,
   ORIGIN,
   REPO,
   SIDEBAR,
-  SITE,
   SITE_DESCRIPTION,
   stripBase,
+  withBase,
 } from './src/site.mjs';
 
 const lastModified = gitLastModified();
-const ogImage = `${SITE}/assets/images/og-image-1200x630.png`;
+const ogImage = OG_IMAGE;
 
 export default defineConfig({
   site: ORIGIN,
@@ -61,6 +63,24 @@ export default defineConfig({
       },
       routeMiddleware: './src/route-middleware.ts',
       head: [
+        // Snippets: let search engines show full text and large image previews.
+        {
+          tag: 'meta',
+          attrs: {
+            name: 'robots',
+            content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+          },
+        },
+        { tag: 'meta', attrs: { name: 'author', content: AUTHOR.name } },
+        { tag: 'link', attrs: { rel: 'author', href: AUTHOR.github } },
+        {
+          tag: 'meta',
+          attrs: { name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#161818' },
+        },
+        {
+          tag: 'meta',
+          attrs: { name: 'theme-color', media: '(prefers-color-scheme: light)', content: '#ffffff' },
+        },
         { tag: 'meta', attrs: { property: 'og:image', content: ogImage } },
         { tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
         { tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
@@ -68,7 +88,37 @@ export default defineConfig({
           tag: 'meta',
           attrs: { property: 'og:image:type', content: 'image/png' },
         },
+        { tag: 'meta', attrs: { property: 'og:image:alt', content: OG_IMAGE_ALT } },
         { tag: 'meta', attrs: { name: 'twitter:image', content: ogImage } },
+        { tag: 'meta', attrs: { name: 'twitter:image:alt', content: OG_IMAGE_ALT } },
+        // Icons for iOS home screens and Android, next to the favicon Starlight sets.
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'apple-touch-icon',
+            sizes: '256x256',
+            href: withBase('/assets/images/logo-icon-256.png'),
+          },
+        },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'icon',
+            type: 'image/png',
+            sizes: '64x64',
+            href: withBase('/assets/images/favicon-64.png'),
+          },
+        },
+        // The whole documentation as Markdown, for agents and answer engines.
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'alternate',
+            type: 'text/plain',
+            title: 'llms.txt',
+            href: withBase('/llms.txt'),
+          },
+        },
         {
           tag: 'link',
           attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' },

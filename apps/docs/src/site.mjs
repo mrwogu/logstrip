@@ -12,6 +12,14 @@ export const DOCS_BASE = '../../docs';
 
 export const REPO = 'https://github.com/mrwogu/logstrip';
 export const NPM = 'https://www.npmjs.com/package/logstrip';
+export const CHANGELOG = `${REPO}/blob/main/CHANGELOG.md`;
+
+// Shown in the footer and in the structured data as the author of the project.
+export const AUTHOR = {
+  name: 'Wojciech Guziak',
+  github: 'https://github.com/mrwogu',
+  linkedin: 'https://www.linkedin.com/in/wojciechguziak/',
+};
 
 export const SITE_DESCRIPTION =
   'Free, zero-dependency CLI that compresses noisy logs into high-signal AI context. 705+ detected ecosystems, stream-safe, deterministic output.';

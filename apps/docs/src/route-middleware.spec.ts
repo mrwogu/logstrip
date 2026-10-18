@@ -22,7 +22,12 @@ interface TestRoute {
   pagination?: { prev?: unknown; next?: unknown };
 }
 
-function run(pathname: string, id: string, prev?: boolean): TestRoute {
+function run(
+  pathname: string,
+  id: string,
+  prev?: boolean,
+  head: TestRoute['head'] = []
+): TestRoute {
   const route: TestRoute = {
     entry: { id, data: { title: 'Page', description: 'About', prev } },
     pagination: { prev: 'from frontmatter' },
@@ -34,7 +39,7 @@ function run(pathname: string, id: string, prev?: boolean): TestRoute {
       },
       { type: 'group', label: 'Reference', entries: [] },
     ],
-    head: [],
+    head,
   };
   const handler = onRequest as unknown as (context: unknown) => void;
   handler({
@@ -63,26 +68,52 @@ describe('route middleware', () => {
     });
     expect(route.lastUpdated).toBeInstanceOf(Date);
     const graph = JSON.parse(route.head[1].content ?? '')['@graph'];
-    expect(graph[0].url).toBe('https://mrwogu.github.io/logstrip/getting-started/');
-    expect(graph[1].itemListElement.map((crumb: { name: string }) => crumb.name)).toEqual([
+    expect(graph[1].url).toBe('https://mrwogu.github.io/logstrip/getting-started/');
+    expect(graph[2].itemListElement.map((crumb: { name: string }) => crumb.name)).toEqual([
       'LogStrip',
       'Page',
     ]);
+    expect(route.head[2].attrs).toEqual({
+      property: 'article:modified_time',
+      content: route.lastUpdated?.toISOString(),
+    });
+  });
+
+  it('adds the dataset to the benchmarks page only', () => {
+    const types = (route: TestRoute): string[] =>
+      route.head
+        .filter((tag) => tag.tag === 'script')
+        .flatMap((tag) => JSON.parse(tag.content ?? '')['@graph'])
+        .map((node: { '@type': string }) => node['@type']);
+
+    expect(types(run('/logstrip/benchmarks/', 'benchmarks'))).toContain('Dataset');
+    expect(types(run('/logstrip/compare/', 'compare'))).not.toContain('Dataset');
   });
 
   it('adds the tab to the breadcrumbs of pages below its landing page', () => {
     const route = run('/logstrip/reference/sources/', 'reference/sources');
 
     const graph = JSON.parse(route.head[1].content ?? '')['@graph'];
-    expect(graph[1].itemListElement.map((crumb: { name: string }) => crumb.name)).toEqual([
+    expect(graph[2].itemListElement.map((crumb: { name: string }) => crumb.name)).toEqual([
       'LogStrip',
       'Get Started',
       'Page',
     ]);
   });
 
-  it('leaves the homepage and 404 page without page structured data', () => {
+  it('leaves the homepage without page structured data', () => {
     expect(run('/logstrip/', 'index').head).toEqual([]);
-    expect(run('/logstrip/404/', '404').head).toEqual([]);
+  });
+
+  it('keeps the 404 page out of the index and gives it no structured data', () => {
+    const route = run('/logstrip/404/', '404', undefined, [
+      { tag: 'meta', attrs: { name: 'robots', content: 'index, follow' } },
+      { tag: 'meta', attrs: { name: 'author', content: 'x' } },
+    ]);
+
+    expect(route.head).toEqual([
+      { tag: 'meta', attrs: { name: 'author', content: 'x' } },
+      { tag: 'meta', attrs: { name: 'robots', content: 'noindex' } },
+    ]);
   });
 });
