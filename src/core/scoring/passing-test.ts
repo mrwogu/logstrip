@@ -12,6 +12,12 @@ import { stripAnsi } from '../sanitize/sanitize-line.js';
  * test it was.
  */
 
+// Every pattern here runs on whole lines, which can be far longer than a normal
+// log line, so no two quantifiers that can match the same characters sit next
+// to each other. Where "\S+::\S+" would be written, a lookahead finds the "::"
+// in the first word and "\S+" then takes the word; "(?:(?!\s>\s).)*" stops at
+// the first " > " instead of trying every one.
+
 // Go: "--- PASS: TestX (0.01s)", "PASS", "ok  pkg  0.123s", "? pkg [no test files]".
 const GO_PASS_PATTERN =
   /^\s*--- PASS: \S+|^PASS$|^ok\s+\S+\s+(?:[\d.]+s\b|\(cached\))|^\?\s+\S+\s+\[no test files\]/u;
@@ -20,7 +26,7 @@ const GO_PASS_PATTERN =
 // tests/a.py::test_a"), -rA summary ("PASSED tests/a.py::test_a") and
 // unittest -v ("test_a (tests.A.test_a) ... ok").
 const PYTHON_PASS_PATTERN =
-  /^\s*\S+::\S+\s+PASSED\b|^\[gw\d+\]\s+\[\s*\d+%\]\s+PASSED\b|^PASSED\s+\S+::|\s\.\.\.\s+ok\s*$/u;
+  /^\s*(?=\S+::\S)\S+\s+PASSED\b|^\[gw\d+\]\s+\[\s*\d+%\]\s+PASSED\b|^PASSED\s+\S+::|\s\.\.\.\s+ok\s*$/u;
 
 // mocha, vitest, Playwright and friends: a leading check mark.
 const CHECK_MARK_PATTERN = /^\s*(?:✓|✔|√|✅)(?:\s|$)/u;
@@ -31,7 +37,7 @@ const SUITE_PASS_PATTERN = /^\s*PASS\s+\S*[./\\]\S*/u;
 // xUnit / dotnet ("  Passed Checkout.Tests.Cart.Total [12 ms]"), Gradle test
 // events ("OrderTest > creates order() PASSED") and TAP ("ok 3 - creates").
 const RUNNER_PASS_PATTERN =
-  /^\s*Passed\s+\S+\.\S+\s+\[|^\S.*\s>\s.+\sPASSED\s*$|^\s*ok\s+\d+\b/u;
+  /^\s*Passed\s+(?=\S+\.\S)\S+\s+\[|^\S(?:(?!\s>\s).)*\s>\s.+\sPASSED\s*$|^\s*ok\s+\d+\b/u;
 
 // Gradle tasks that finished without doing work.
 const GRADLE_IDLE_TASK_PATTERN =
