@@ -129,7 +129,7 @@ The documentation site is an [Astro Starlight](https://starlight.astro.build) ap
 npm run docs:install   # once, installs apps/docs dependencies (needs Node 22.22 or newer)
 npm run docs:serve     # live preview at http://localhost:4321/logstrip/
 npm run docs:build     # builds to site/ and fails on broken internal links
-npm run docs:check     # type check and unit tests of the docs app
+npm run docs:test      # type check and unit tests of the docs app
 ```
 
 Rules for page sources:
