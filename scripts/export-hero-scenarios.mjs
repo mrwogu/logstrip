@@ -22,7 +22,10 @@ const PREFIX = 40;
 const pct = (result) => `${result.savingsPercent.toFixed(2)}%`;
 
 // What each scenario shows. `options` go to the parser, `metrics` and `agent`
-// turn the result into the numbers on screen. Static words stay static.
+// turn the result into the numbers on screen. Static words stay static, but
+// everything the "what the agent sees" card claims must appear in the output:
+// `expect` lists the strings the build checks for, so the card cannot promise
+// a detail the parser dropped (for example a line number it masks as [NN]).
 const SPECS = {
   incident: {
     options: {},
@@ -32,7 +35,13 @@ const SPECS = {
       [String(r.stats.duplicateLines), 'duplicates folded'],
       [String(r.stats.hiddenInternalStackLines), 'internal frames hidden'],
     ],
-    agent: (old, r) => replaceAt(old, 3, `${r.stats.droppedLines} low-value lines · internal frames collapsed`),
+    agent: (_old, r) => [
+      ['repeated failure', 'payments charge failed, 3 times'],
+      ['masked credential', 'api_key shown as [REDACTED]'],
+      ['app frame', 'ChargeService.process (ChargeService.java)'],
+      ['noise removed', `${r.stats.droppedLines} low-value lines · internal frames collapsed`],
+    ],
+    expect: ['api_key=[REDACTED]', '[x3]', 'charge failed', 'ChargeService.process(ChargeService.java'],
   },
   'ci-build': {
     options: {},
@@ -42,8 +51,13 @@ const SPECS = {
       ['x3', 'flaky retries folded'],
       ['51', 'tests summarized'],
     ],
-    agent: (old, r) => replaceAt(old, 3, `${r.stats.droppedLines} low-value lines (npm warns, compile chunks)`),
-    expect: ['[x3] Retrying flaky test', '(51)'],
+    agent: (old, r) =>
+      replaceAt(
+        replaceAt(old, 1, 'expected 2 to be 1'),
+        3,
+        `${r.stats.droppedLines} low-value lines (npm warns, compile chunks)`
+      ),
+    expect: ['[x3] Retrying flaky test', '(51)', 'expected 2 to be 1', 'retries declined cards once'],
   },
   'security-scan': {
     options: {},
@@ -54,6 +68,7 @@ const SPECS = {
       ['valid', 'JSON preserved'],
     ],
     agent: (old, r) => replaceAt(old, 2, `empty fields and ${r.stats.droppedLines} boilerplate lines`),
+    expect: ['CVE-2026-12345', '9.8', '3.0.15-r2', '[logstrip:group]', 'busybox'],
     json: true,
   },
   'token-budget': {
@@ -65,6 +80,7 @@ const SPECS = {
       [String(r.stats.outputLines), 'lines kept'],
     ],
     agent: (old, r) => replaceAt(old, 0, `--max-tokens 60 → output is ${r.outputTokens} tokens`),
+    expect: ['charge failed', 'NullPointerException'],
   },
 };
 

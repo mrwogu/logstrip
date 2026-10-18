@@ -6,16 +6,16 @@
     "cmd": "logstrip raw.log --stats",
     "agent": [
       [
-        "likely root cause",
-        "payments charge failed across 3 requests"
+        "repeated failure",
+        "payments charge failed, 3 times"
       ],
       [
-        "leaked credential",
-        "api_key masked to [REDACTED]"
+        "masked credential",
+        "api_key shown as [REDACTED]"
       ],
       [
         "app frame",
-        "ChargeService.process:42"
+        "ChargeService.process (ChargeService.java)"
       ],
       [
         "noise removed",
@@ -311,7 +311,7 @@
       ],
       [
         "assertion",
-        "expected 2 to be 1 (charge.test.ts:88)"
+        "expected 2 to be 1"
       ],
       [
         "flaky retries",
