@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to build and publish again (for example v2.0.0). Leave empty for the normal run.'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -25,6 +30,7 @@ jobs:
 
     steps:
       - name: Create or update release PR
+        if: ${{ github.event.inputs.tag == '' }}
         id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
@@ -34,16 +40,32 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+      # One tag to publish: the release just created, or the one passed by hand.
+      - name: Pick the tag to publish
+        id: plan
+        env:
+          CREATED_TAG: ${{ steps.release.outputs.tag_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          TAG="${INPUT_TAG:-$CREATED_TAG}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if [ -n "$TAG" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout release tag
-        if: ${{ steps.release.outputs.release_created }}
+        if: ${{ steps.plan.outputs.publish == 'true' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: refs/tags/${{ steps.plan.outputs.tag }}
           fetch-depth: 0
-          # Credentials stay: a later step pushes dist/ and the release tags.
+          # Credentials stay: later steps push the release tags.
           persist-credentials: true
 
       - name: Setup Node.js for npm
-        if: ${{ steps.release.outputs.release_created }}
+        if: ${{ steps.plan.outputs.publish == 'true' }}
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.x
@@ -51,36 +73,40 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        if: ${{ steps.release.outputs.release_created }}
+        if: ${{ steps.plan.outputs.publish == 'true' }}
         run: npm ci
 
       - name: Verify release build
-        if: ${{ steps.release.outputs.release_created }}
+        if: ${{ steps.plan.outputs.publish == 'true' }}
         run: |
           npm run typecheck
           npm run test:coverage
           npm run build
           npm audit
 
-      - name: Commit dist/ into main and release tag
-        if: ${{ steps.release.outputs.release_created }}
+      # dist/ is not tracked on main (the branch is protected and CI builds it
+      # anyway). The GitHub Action needs dist/action/index.js at the tag, so the
+      # build is committed on the release tag only and never pushed to main.
+      - name: Commit dist/ on the release tag
+        if: ${{ steps.plan.outputs.publish == 'true' }}
         env:
-          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+          TAG_NAME: ${{ steps.plan.outputs.tag }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add dist/
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: rebuild dist/ for ${TAG_NAME}"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
+          git add -f dist/
+          if git diff --cached --quiet; then
+            echo "dist/ already committed on ${TAG_NAME}"
+          else
+            git commit -m "chore: build dist/ for ${TAG_NAME}"
           fi
           git tag -f "${TAG_NAME}" HEAD
           git push origin "refs/tags/${TAG_NAME}" --force
 
       - name: Update major action tag
-        if: ${{ steps.release.outputs.release_created }}
+        if: ${{ steps.plan.outputs.publish == 'true' }}
         env:
-          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+          TAG_NAME: ${{ steps.plan.outputs.tag }}
         run: |
           MAJOR_TAG=$(node -e "const tag = process.env.TAG_NAME; const match = /^v(\\d+)\\./.exec(tag); if (!match) process.exit(1); console.log('v' + match[1]);")
           git config user.name "github-actions[bot]"
@@ -89,6 +115,5 @@ jobs:
           git push origin "refs/tags/$MAJOR_TAG" --force
 
       - name: Publish to npm
-        if: ${{ steps.release.outputs.release_created }}
+        if: ${{ steps.plan.outputs.publish == 'true' }}
         run: npm publish
-

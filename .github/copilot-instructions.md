@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions
 
-<!-- PromptScript 2026-10-18T13:10:14.484Z | source: .promptscript/project.prs | target: github - do not edit -->
+<!-- PromptScript 2026-10-18T13:39:51.892Z | source: .promptscript/project.prs | target: github - do not edit -->
 
 ## project
 
@@ -125,6 +125,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 - Every uses: in .github/workflows is pinned to a full commit SHA with a # vX.Y.Z comment and Renovate keeps the SHAs fresh; mrwogu/logstrip@v1 stays floating on purpose because that step dogfoods the published action
 - npm run docs:check (scripts/check-cli-docs.js) fails CI when a --flag from HELP_TEXT is missing from docs/reference/cli.md or README.md - add the flag to both when you add it to the CLI
 - ci.yml also runs on a Monday cron so main is re-validated against the live registry; release-please uses RELEASE_PAT when the secret exists and falls back to GITHUB_TOKEN
+- release-please.yml creates the GitHub release, then checks out the tag, builds, commits dist/ on the tag, moves the major tag and runs npm publish (npm trusted publishing, no token); main is never pushed from a workflow because branch protection requires the CI checks; workflow_dispatch with tag=vX.Y.Z repeats the publish steps for an existing release
 
 ### docs
 
@@ -153,7 +154,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 - Don't load the full log into memory - everything must flow through readline / Node streams (CLI, library and action all share processLogStream)
 - Don't write to paths outside the resolved outputPath; do not touch process.cwd() implicitly
 - Don't call the real GitHub API from tests - mock @actions/core and @actions/github
-- Don't edit files under dist/, coverage/ or site/ - they are build outputs
+- Don't edit or commit files under dist/, coverage/ or site/ - they are build outputs; dist/ exists in git only on release tags
 - Don't edit files under tests/fixtures/\_\_snapshots\_\_/ by hand - regenerate with vitest -u and review the diff
 - Don't log raw input bytes, secrets, tokens or full request bodies - the sanitizer must keep PII-like patterns masked
 - Don't embed indented heredocs in .github/workflows/\*.yml - leading whitespace breaks literal grep assertions
@@ -219,9 +220,11 @@ that file scanning cannot.
 package.json carries no dependency overrides any more. `npm audit` must stay
 at 0 vulnerabilities; Renovate opens security PRs outside the weekly schedule
 and automerges minor/patch devDependencies after a 3 day release age.
-Rebuilding (`npm run build`) rewrites dist/, which is committed - never
-commit dist/ changes by hand, release-please rebuilds it on release
-(`git add -A -- . ':!dist'`).
+dist/ is gitignored on main: `npm run build` writes it locally and every CI
+job builds its own. The release workflow builds it once more and commits it
+on the vX.Y.Z and vX tags only (never on main, which is protected), so
+`uses: mrwogu/logstrip@v2` finds dist/action/index.js. To publish an existing
+tag again, run the Release Please workflow by hand with tag=vX.Y.Z.
 
 ## CLI usage cheat sheet
 
@@ -459,4 +462,4 @@ runs:
 | CLI docs                    | docs/reference/cli.md                                               |
 | Library docs                | docs/reference/core.md                                              |
 | GHA docs                    | docs/reference/action.md                                            |
-| Build outputs (do not edit) | dist/, coverage/, site/                                             |
+| Build outputs (ignored)     | dist/ (committed on release tags only), coverage/, site/            |

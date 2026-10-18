@@ -28,9 +28,11 @@
   package.json carries no dependency overrides any more. `npm audit` must stay
   at 0 vulnerabilities; Renovate opens security PRs outside the weekly schedule
   and automerges minor/patch devDependencies after a 3 day release age.
-  Rebuilding (`npm run build`) rewrites dist/, which is committed - never
-  commit dist/ changes by hand, release-please rebuilds it on release
-  (`git add -A -- . ':!dist'`).
+  dist/ is gitignored on main: `npm run build` writes it locally and every CI
+  job builds its own. The release workflow builds it once more and commits it
+  on the vX.Y.Z and vX tags only (never on main, which is protected), so
+  `uses: mrwogu/logstrip@v2` finds dist/action/index.js. To publish an existing
+  tag again, run the Release Please workflow by hand with tag=vX.Y.Z.
 
   ## CLI usage cheat sheet
 
@@ -248,6 +250,6 @@
   | CLI docs                      | docs/reference/cli.md                                 |
   | Library docs                  | docs/reference/core.md                                |
   | GHA docs                      | docs/reference/action.md                              |
-  | Build outputs (do not edit)   | dist/, coverage/, site/                               |
+  | Build outputs (ignored)       | dist/ (committed on release tags only), coverage/, site/ |
   """
 }
