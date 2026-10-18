@@ -79,9 +79,9 @@ LogStrip output:
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-benchmarks.svg" alt="Benchmarks" width="320">
 
 <!-- bench:readme:start -->
-Measured on the 50 test fixtures in the repository, with LogStrip's own token estimate (words times 1.3): **51.4%** fewer tokens overall (42,455 to 20,617). Per fixture the median is 42.1%, the lowest 16.7% and the highest 87.2%. These are small logs that we wrote, so run `logstrip --stats` on yours.
+Measured on the 51 test fixtures in the repository, with LogStrip's own token estimate (words times 1.3): **51.3%** fewer tokens overall (42,705 to 20,805). Per fixture the median is 42.0%, the lowest 16.7% and the highest 87.2%. These are small logs that we wrote, so run `logstrip --stats` on yours.
 
-10 of the 24 single-tool fixtures, best first: the 6 best, the 2 nearest the median and the 2 weakest.
+10 of the 25 single-tool fixtures, best first: the 6 best, the 2 nearest the median and the 2 weakest.
 
 | Fixture | Lines in / out | Input tokens | Output tokens | Savings |
 | :--- | ---: | ---: | ---: | ---: |
@@ -91,8 +91,8 @@ Measured on the 50 test fixtures in the repository, with LogStrip's own token es
 | `maven-downloads-failure` | 13 / 3 | 124 | 32 | 74.2% |
 | `java-spring-boot-realistic` | 25 / 10 | 305 | 95 | 68.8% |
 | `vitest-failure` | 43 / 14 | 257 | 91 | 64.6% |
-| `maven-failure` | 41 / 15 | 286 | 149 | 47.9% |
 | `node-crash-realistic` | 24 / 13 | 181 | 101 | 44.2% |
+| `mocha-spec-failure` | 45 / 24 | 236 | 136 | 42.4% |
 | `server-json` | 11 / 7 | 43 | 34 | 20.9% |
 | `kubernetes-crashloop` | 18 / 15 | 150 | 125 | 16.7% |
 <!-- bench:readme:end -->

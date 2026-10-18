@@ -9,10 +9,10 @@ publish every row, including the weak ones, and we say what the numbers can and
 cannot tell you. The table is generated from the parser, not typed by hand.
 
 <!-- bench:summary:start -->
-- Fixtures: 50
-- Lines: 4,411 in, 1,908 out
-- Tokens: 42,455 in, 20,617 out, 51.4% saved
-- Per-fixture savings: median 42.1%, lowest 16.7%, highest 87.2%
+- Fixtures: 51
+- Lines: 4,433 in, 1,922 out
+- Tokens: 42,705 in, 20,805 out, 51.3% saved
+- Per-fixture savings: median 42.0%, lowest 16.7%, highest 87.2%
 - Measured with LogStrip 1.12.0
 <!-- bench:summary:end -->
 
@@ -43,7 +43,7 @@ repetition to fold.
 <!-- bench:groups:start -->
 | Group | Fixtures | Input tokens | Output tokens | Savings | Median per fixture |
 | :--- | ---: | ---: | ---: | ---: | ---: |
-| Single-tool logs | 24 | 6,422 | 3,057 | 52.4% | 46.1% |
+| Single-tool logs | 25 | 6,672 | 3,245 | 51.4% | 44.2% |
 | Multi-tool samples | 26 | 36,033 | 17,560 | 51.3% | 41.8% |
 <!-- bench:groups:end -->
 
@@ -135,6 +135,7 @@ Sorted by savings, best first.
 | `infra-cloud` | Multi-tool | 16 / 7 | 182 | 124 | 31.9% |
 | `scanner-vulnerability` | Single-tool | 12 / 8 | 107 | 73 | 31.8% |
 | `webpack-bundle` | Single-tool | 27 / 20 | 267 | 194 | 27.3% |
+| `secret-fields` | Single-tool | 22 / 14 | 250 | 188 | 24.8% |
 | `sanitize-secrets-ipv6` | Single-tool | 17 / 11 | 102 | 77 | 24.5% |
 | `ci-pkg-managers` | Multi-tool | 24 / 16 | 195 | 151 | 22.6% |
 | `server-json` | Single-tool | 11 / 7 | 43 | 34 | 20.9% |
