@@ -38,14 +38,16 @@
     "processLogStream is the lower-level entry the CLI uses for stdin/stdout; processLogFile composes it for path-to-path use",
     "Content classification (src/core/detection/content-kind.ts) samples the head of the stream: prose, markdown, source and config files pass through unchanged except for secret masking, with result.contentKind = 'text'; --force / textPassthrough: false runs the log pipeline anyway",
     "maskSecrets in src/core/sanitize/sanitize-line.ts holds the credential rules; sanitizeLine composes it with identifier masking, and passthrough applies maskSecrets plus maskPemBlock - secrets are masked in every output mode",
-    "maskPemBlock runs on every logical line before the noise and ignore filters so a dropped PEM header still puts the state machine inside the block"
+    "maskPemBlock runs on every logical line before the noise and ignore filters so a dropped PEM header still puts the state machine inside the block",
+    "Every regex on the per-line path must run in linear time (no overlapping or nested unbounded quantifiers); tests/regex-backtracking.test.ts feeds adversarial 100 KB lines through the sanitizer, the content classifier and the passing-test matcher with a 500 ms budget - add a case there when you add a line pattern",
+    "SECRET_FIELD_PATTERN captures the raw value and the replacer judges the whole value: quoted values are literals and always masked unless empty, null, true, false, a short number or a whole-value reference; unquoted type annotations (string, Optional[str]) and single env reads (process.env.X, os.environ[\"X\"]) are kept; tests/fixtures/secret-fields.log documents every rule"
   ]
 
   action: [
     "src/action/index.ts is a thin wrapper - delegate to processLogFile + render a Step Summary, nothing else",
     "Read inputs via @actions/core.getInput; never read process.env directly",
     "Resolve relative outputs through buildOutputPath so default suffix is .logstrip.log",
-    "@actions/github is imported dynamically to avoid CJS/ESM conflicts in tests",
+    "@actions/core (3.x, ESM-only) and @actions/github are loaded with await import() inside run() and writeSummary(); a failed core import prints an escaped ::error:: command and sets exitCode 1 instead of throwing",
     "Failures must call core.setFailed - never throw out of run()"
   ]
 

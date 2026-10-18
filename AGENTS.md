@@ -1,4 +1,4 @@
-<!-- PromptScript 2026-10-18T12:00:17.284Z | source: .promptscript/project.prs | target: codex - do not edit -->
+<!-- PromptScript 2026-10-18T13:10:14.484Z | source: .promptscript/project.prs | target: codex - do not edit -->
 
 ## Project
 
@@ -65,10 +65,12 @@ typescript, Node.js >= 22
 - Content classification (src/core/detection/content-kind.ts) samples the head of the stream: prose, markdown, source and config files pass through unchanged except for secret masking, with result.contentKind = 'text'; --force / textPassthrough: false runs the log pipeline anyway
 - maskSecrets in src/core/sanitize/sanitize-line.ts holds the credential rules; sanitizeLine composes it with identifier masking, and passthrough applies maskSecrets plus maskPemBlock - secrets are masked in every output mode
 - maskPemBlock runs on every logical line before the noise and ignore filters so a dropped PEM header still puts the state machine inside the block
+- Every regex on the per-line path must run in linear time (no overlapping or nested unbounded quantifiers); tests/regex-backtracking.test.ts feeds adversarial 100 KB lines through the sanitizer, the content classifier and the passing-test matcher with a 500 ms budget - add a case there when you add a line pattern
+- SECRET_FIELD_PATTERN captures the raw value and the replacer judges the whole value: quoted values are literals and always masked unless empty, null, true, false, a short number or a whole-value reference; unquoted type annotations (string, Optional[str]) and single env reads (process.env.X, os.environ["X"]) are kept; tests/fixtures/secret-fields.log documents every rule
 - src/action/index.ts is a thin wrapper - delegate to processLogFile + render a Step Summary, nothing else
 - Read inputs via @actions/core.getInput; never read process.env directly
 - Resolve relative outputs through buildOutputPath so default suffix is .logstrip.log
-- @actions/github is imported dynamically to avoid CJS/ESM conflicts in tests
+- @actions/core (3.x, ESM-only) and @actions/github are loaded with await import() inside run() and writeSummary(); a failed core import prints an escaped ::error:: command and sets exitCode 1 instead of throwing
 - Failures must call core.setFailed - never throw out of run()
 - tsc -p tsconfig.build.json emits to dist/{cli,core,action}
 - scripts/post-build.js stamps the shebang and chmods dist/cli/index.js to 0755 - do not skip it
@@ -163,6 +165,8 @@ that file scanning cannot.
   npm run docs:build           # astro build -> site/
   npm run docs:serve           # astro dev at http://localhost:4321/logstrip/
   npm run bench                # per-fixture compression benchmark (needs a build)
+  npm run docs:bench           # regenerate benchmarks.json, docs/benchmarks.md, README blocks, badges (-- --check in CI)
+  node scripts/export-hero-scenarios.mjs   # regenerate the homepage demo data from the parser (--check in CI)
   npm run verify               # typecheck, coverage, build, docs:check, audit, docs:build
 ```
 
@@ -384,29 +388,32 @@ runs:
 
 ## Where to find things
 
-| Need                        | Location                                          |
-| --------------------------- | ------------------------------------------------- |
-| CLI entry                   | src/cli/index.ts                                  |
-| Parser logic                | src/core/logstrip-parser.ts                       |
-| Action wrapper              | src/action/index.ts                               |
-| Post-build shebang stamping | scripts/post-build.js                             |
-| CLI unit tests              | tests/cli.test.ts                                 |
-| Parser unit tests           | tests/logstrip-parser.test.ts                     |
-| Action unit tests           | tests/action.test.ts                              |
-| E2E smoke tests             | tests/smoke.test.ts                               |
-| Realistic logs              | tests/fixtures/\*.log                             |
-| Snapshot baselines          | tests/fixtures/\_\_snapshots\_\_/\*.logstrip.snap |
-| CI pipeline                 | .github/workflows/ci.yml                          |
-| Dependency automation       | renovate.json                                     |
-| Content classifier          | src/core/detection/content-kind.ts                |
-| Secret masking              | src/core/sanitize/sanitize-line.ts (maskSecrets)  |
-| CLI docs drift check        | scripts/check-cli-docs.js                         |
-| Docs source (Markdown)      | docs/\**                                          |
-| Docs site (Astro Starlight) | apps/docs (site.mjs, src/components, src/styles)  |
-| CLI docs                    | docs/reference/cli.md                             |
-| Library docs                | docs/reference/core.md                            |
-| GHA docs                    | docs/reference/action.md                          |
-| Build outputs (do not edit) | dist/, coverage/, site/                           |
+| Need                        | Location                                                            |
+| --------------------------- | ------------------------------------------------------------------- |
+| CLI entry                   | src/cli/index.ts                                                    |
+| Parser logic                | src/core/logstrip-parser.ts                                         |
+| Action wrapper              | src/action/index.ts                                                 |
+| Post-build shebang stamping | scripts/post-build.js                                               |
+| CLI unit tests              | tests/cli.test.ts                                                   |
+| Parser unit tests           | tests/logstrip-parser.test.ts                                       |
+| Action unit tests           | tests/action.test.ts                                                |
+| E2E smoke tests             | tests/smoke.test.ts                                                 |
+| Realistic logs              | tests/fixtures/\*.log                                               |
+| Snapshot baselines          | tests/fixtures/\_\_snapshots\_\_/\*.logstrip.snap                   |
+| CI pipeline                 | .github/workflows/ci.yml                                            |
+| Dependency automation       | renovate.json                                                       |
+| Content classifier          | src/core/detection/content-kind.ts                                  |
+| Secret masking              | src/core/sanitize/sanitize-line.ts (maskSecrets)                    |
+| CLI docs drift check        | scripts/check-cli-docs.js                                           |
+| Benchmark data for docs     | scripts/export-benchmarks.mjs -> apps/docs/src/data/benchmarks.json |
+| Regex backtracking guard    | tests/regex-backtracking.test.ts                                    |
+| Secret field fixture        | tests/fixtures/secret-fields.log                                    |
+| Docs source (Markdown)      | docs/\**                                                            |
+| Docs site (Astro Starlight) | apps/docs (site.mjs, src/components, src/styles)                    |
+| CLI docs                    | docs/reference/cli.md                                               |
+| Library docs                | docs/reference/core.md                                              |
+| GHA docs                    | docs/reference/action.md                                            |
+| Build outputs (do not edit) | dist/, coverage/, site/                                             |
 
 ## Restrictions
 
@@ -429,3 +436,4 @@ runs:
 - Don't hand-edit generated agent files (CLAUDE.md, AGENTS.md, OPENCODE.md, .github/copilot-instructions.md, .cursor/, .factory/, .opencode/, .codex/, .claude/commands, .claude/agents, .agents/) - change .promptscript/\*.prs and run npx @promptscript/cli compile
 - Don't add a dependabot.yml or an unpinned uses: in .github/workflows - Renovate owns updates and keeps the SHA pins fresh
 - Don't put the docs app dependencies in the root package.json - apps/docs keeps its own lockfile so the zero-dependency CLI install stays small
+- Don't change parser output or fixtures without running npm run docs:bench (and node scripts/export-hero-scenarios.mjs when the hero demo logs change) - CI fails when apps/docs/src/data/benchmarks.json, docs/benchmarks.md, the README blocks or the badges are stale

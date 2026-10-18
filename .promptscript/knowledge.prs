@@ -20,6 +20,8 @@
     npm run docs:build           # astro build -> site/
     npm run docs:serve           # astro dev at http://localhost:4321/logstrip/
     npm run bench                # per-fixture compression benchmark (needs a build)
+    npm run docs:bench           # regenerate benchmarks.json, docs/benchmarks.md, README blocks, badges (-- --check in CI)
+    node scripts/export-hero-scenarios.mjs   # regenerate the homepage demo data from the parser (--check in CI)
     npm run verify               # typecheck, coverage, build, docs:check, audit, docs:build
   ```
 
@@ -238,6 +240,9 @@
   | Content classifier            | src/core/detection/content-kind.ts                    |
   | Secret masking                | src/core/sanitize/sanitize-line.ts (maskSecrets)      |
   | CLI docs drift check          | scripts/check-cli-docs.js                             |
+  | Benchmark data for docs       | scripts/export-benchmarks.mjs -> apps/docs/src/data/benchmarks.json |
+  | Regex backtracking guard      | tests/regex-backtracking.test.ts                      |
+  | Secret field fixture          | tests/fixtures/secret-fields.log                      |
   | Docs source (Markdown)        | docs/**                                               |
   | Docs site (Astro Starlight)   | apps/docs (site.mjs, src/components, src/styles)      |
   | CLI docs                      | docs/reference/cli.md                                 |

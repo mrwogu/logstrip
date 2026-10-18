@@ -20,4 +20,5 @@
   - "Don't hand-edit generated agent files (CLAUDE.md, AGENTS.md, OPENCODE.md, .github/copilot-instructions.md, .cursor/, .factory/, .opencode/, .codex/, .claude/commands, .claude/agents, .agents/) - change .promptscript/*.prs and run npx @promptscript/cli compile"
   - "Don't add a dependabot.yml or an unpinned uses: in .github/workflows - Renovate owns updates and keeps the SHA pins fresh"
   - "Don't put the docs app dependencies in the root package.json - apps/docs keeps its own lockfile so the zero-dependency CLI install stays small"
+  - "Don't change parser output or fixtures without running npm run docs:bench (and node scripts/export-hero-scenarios.mjs when the hero demo logs change) - CI fails when apps/docs/src/data/benchmarks.json, docs/benchmarks.md, the README blocks or the badges are stale"
 }
