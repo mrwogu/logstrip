@@ -37,8 +37,10 @@ jobs:
           node-version: 24.x
           package-manager-cache: false
 
+      # Lifecycle scripts of dependencies stay off; the build needs none
+      # (esbuild ships its binary as an optional dependency).
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Build
         run: npm run build

@@ -112,9 +112,11 @@ jobs:
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
+      # Lifecycle scripts of dependencies stay off; the build needs none
+      # (esbuild ships its binary as an optional dependency).
       - name: Install dependencies
         if: ${{ steps.plan.outputs.publish == 'true' }}
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       # dist/ is removed before the build so a file on the tag that the build
       # does not produce shows up as deleted in the check below.
