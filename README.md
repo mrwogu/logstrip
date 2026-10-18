@@ -336,6 +336,9 @@ Options:
       --no-root-cause      Disable auto-pruning of downstream cascade restatements (auto on).
       --no-multilingual    Disable auto-detection of non-English error/failure keywords (auto on).
       --no-adaptive-context Disable auto-mode adaptive context windows around errors (auto on).
+      --max-stack-frames <N> Keep at most N consecutive application stack frames per trace; the rest collapse into a marker. 0 keeps every frame. Default: 10.
+      --no-template-mining Disable folding of near-identical lines that differ only in a number after a generic word label (auto on).
+      --no-json-report     Disable auto-detection of structured JSON documents such as test reports and scanner exports (auto on).
       --preserve-id-suffix <N> Keep the last N chars of redacted UUIDs/hashes (0-16, default 0).
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
