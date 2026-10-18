@@ -15,9 +15,10 @@ The parser replaces common high-cardinality identifiers:
 - long hexadecimal or alphanumeric hashes become `[HASH]`;
 - IPv4 addresses become `[IP]`;
 - IPv6 addresses become `[IPV6]`;
-- email addresses become `[EMAIL]`.
+- email addresses become `[EMAIL]`;
+- line and column numbers in JavaScript, Python, Java and Go stack frames become `[NN]`, so repeated traces fold into one (the function and file stay, the exact position is only in the raw log).
 
-This lowers token cost and removes identifiers that rarely help root-cause analysis.
+This lowers token cost and removes identifiers that rarely help root-cause analysis. If you need to follow one request across lines, `--preserve-id-suffix <N>` keeps the last _N_ characters of each UUID and hash (see the [CLI reference](../reference/cli.md)).
 
 ## Secret and credential coverage
 
