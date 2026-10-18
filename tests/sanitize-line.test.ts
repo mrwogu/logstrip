@@ -148,6 +148,15 @@ describe('sanitizeLine durations', () => {
     expect(sanitizeLine('took 12s')).toBe('took 12s');
   });
 
+  it('keeps test runner durations in parentheses but still masks "(... ago)" ages', () => {
+    expect(sanitizeLine('15 passing (1s)')).toBe('15 passing (1s)');
+    expect(sanitizeLine('Time: 3.2s (took 3s)')).toBe('Time: 3.2s (took 3s)');
+    expect(sanitizeLine('pod/x   0/1   CrashLoopBackOff   5 (2m36s ago)   8m')).toBe(
+      'pod/x   0/1   CrashLoopBackOff   5 ([AGO] ago)   8m',
+    );
+    expect(sanitizeLine('restarted (38s ago)')).toBe('restarted ([AGO] ago)');
+  });
+
   it('keeps the seconds part of a spaced minutes-and-seconds duration', () => {
     expect(sanitizeLine('BUILD FAILED in 1m 12s')).toBe('BUILD FAILED in 1m 12s');
     expect(sanitizeLine('finished 2h 5m 12s later')).toBe('finished 2h 5m 12s later');

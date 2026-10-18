@@ -39,7 +39,8 @@ const K8S_RELATIVE_DURATION_PATTERN =
 // ("timed out after 30s", "retrying in 2s", "retry=5s", "1m 12s") or as the
 // tail of a decimal ("0.47s"), not a Kubernetes age column.
 const MEASURED_DURATION_PREFIX_PATTERN =
-  /(?:[\d.=]|\d[dhm]\s|\b(?:in|after|for|within|than|every|took|elapsed|timeout|ttl|delay|interval|wait|waiting|waited)[\s:=]+)$/iu;
+  /(?:[\d.=(]|\d[dhm]\s|\b(?:in|after|for|within|than|every|took|elapsed|timeout|ttl|delay|interval|wait|waiting|waited)[\s:=]+)$/iu;
+const AGO_SUFFIX_PATTERN = /^\s+ago\b/u;
 // Every CSI sequence (colors, cursor movement, erase line, cursor hide) and
 // OSC sequence (hyperlinks, window titles), not only SGR colors.
 const ANSI_ESCAPE_PATTERN =
@@ -110,6 +111,10 @@ const AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
 
 function maskAge(match: string, offset: number, whole: string): string {
   const before = whole.slice(Math.max(0, offset - 16), offset);
+  // "(2m36s ago)" is an age even though it sits in parentheses; "(1s)" is
+  // a test runner's measurement.
+  const agoFollows = AGO_SUFFIX_PATTERN.test(whole.slice(offset + match.length, offset + match.length + 6));
+  if (agoFollows) return '[AGO]';
   return MEASURED_DURATION_PREFIX_PATTERN.test(before) ? match : '[AGO]';
 }
 
