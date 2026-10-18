@@ -7,8 +7,9 @@ description: Fix empty output, exit codes, missing files, and short stack traces
 ## The compressed log is empty
 
 LogStrip removes low-value lines. If a log only contains `[INFO]`,
-`[DEBUG]`, `[TRACE]`, or `[VERBOSE]` entries, the compressed output can be
-empty.
+`[DEBUG]`, `[TRACE]`, or `[VERBOSE]` entries - or the same levels printed
+without brackets, such as `2026-05-16 10:24:31,044 - app - INFO - started` or
+`level=info msg="started"` - the compressed output can be empty.
 
 Add at least one error or warning line to verify the pipeline:
 

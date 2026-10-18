@@ -1,0 +1,14 @@
+time=2026-05-16T10:24:30.112Z level=info msg="server starting" addr=:8080 version=v2.14.1
+time=2026-05-16T10:24:30.118Z level=debug msg="loaded config" path=/etc/checkout/config.yaml
+time=2026-05-16T10:24:30.431Z level=info msg="connected to postgres" host=10.20.0.5 port=5432 db=checkout
+time=2026-05-16T10:24:31.002Z level=info msg="request handled" method=GET path=/api/cart status=200 duration=12ms
+time=2026-05-16T10:24:31.455Z level=info msg="request handled" method=GET path=/api/cart status=200 duration=9ms
+time=2026-05-16T10:24:32.118Z level=warn msg="slow query" query="SELECT * FROM orders WHERE status=$1" duration=2.4s
+time=2026-05-16T10:24:33.340Z level=info msg="request handled" method=POST path=/api/checkout status=201 duration=48ms
+time=2026-05-16T10:24:34.902Z level=error msg="payment provider unreachable" provider=stripe attempt=1 err="dial tcp 10.30.0.9:443: i/o timeout"
+time=2026-05-16T10:24:36.911Z level=error msg="payment provider unreachable" provider=stripe attempt=2 err="dial tcp 10.30.0.9:443: i/o timeout"
+time=2026-05-16T10:24:38.920Z level=error msg="payment provider unreachable" provider=stripe attempt=3 err="dial tcp 10.30.0.9:443: i/o timeout"
+time=2026-05-16T10:24:38.921Z level=info msg="circuit opened" provider=stripe cooldown=30s
+time=2026-05-16T10:24:39.044Z level=debug msg="request queued" method=POST path=/api/checkout depth=12
+time=2026-05-16T10:24:41.300Z level=warn msg="cache miss rate high" ratio=0.82
+time=2026-05-16T10:24:42.500Z level=fatal msg="worker pool exhausted" workers=32 queued=1204

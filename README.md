@@ -213,7 +213,7 @@ Aho-Corasick automaton) and applies several cuts to every streamed line:
 
 | Cut | What it does |
 |:---|:---|
-| **Defoliation** | Drops `[INFO]`, `[DEBUG]`, `[TRACE]`, and `[VERBOSE]` lines. |
+| **Defoliation** | Drops `[INFO]`, `[DEBUG]`, `[TRACE]`, and `[VERBOSE]` lines, and the same levels printed without brackets (Spring Boot, logback, Python logging, loguru, logfmt `level=info`, glog) unless the line still reads as a diagnostic. Unbracketed `WARN`/`ERROR` levels are kept even when the message has no error keyword. |
 | **Sanitization** | Replaces UUIDs, timestamps, IPs, AWS keys, GitHub tokens, JWTs, Slack tokens, connection string passwords, `Authorization:` headers, and long hashes with compact placeholders. Groups HTTP status codes (`503` → `[5xx]`). |
 | **Context scoring** | Keeps high-signal diagnostics and nearby context while dampening repeated spam (TF-IDF). |
 | **Smart dedup** | Folds repeated sanitized lines, including same-shape variants, into `[xN] message` with only differing values listed. |

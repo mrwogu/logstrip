@@ -453,6 +453,33 @@ critical lines, and diagnostic stack trace lines. The full streaming parser uses
 the hybrid scoring engine above, so direct `shouldKeepLine()` calls are best
 treated as a lightweight helper rather than a complete compression pass.
 
+## `detectHeaderLogLevel`
+
+```ts
+import { detectHeaderLogLevel } from 'logstrip';
+
+detectHeaderLogLevel('2026-05-16 10:24:31,044 - app.worker - INFO - started'); // 'noise'
+detectHeaderLogLevel('2026-05-16 10:24:31,044 - app.worker - WARNING - slow'); // 'warn'
+detectHeaderLogLevel('time=... level=error msg="boom"'); // 'severe'
+detectHeaderLogLevel('Server started with DEBUG flag enabled today'); // undefined
+```
+
+Classifies the severity word that logging frameworks print without brackets in
+the line header: `noise` for `INFO`/`DEBUG`/`TRACE`/`VERBOSE`/`FINE*`, `warn`
+for `WARN`/`WARNING` and `severe` for `ERROR`/`FATAL`/`CRITICAL`/`SEVERE`. It
+understands Spring Boot, logback/log4j, Python logging (default and custom
+formats), loguru, level-first lines (`INFO: ...`), logfmt (`level=info`) and
+glog/klog (`I0516 ...`). Position rules keep prose that merely contains an
+uppercase `INFO` word from being classified, and a bare `WARNING: ...` at the
+start of a line is left alone because CLI tools print boilerplate warnings that
+way.
+
+The streaming parser drops `noise` lines unless their text still reads as a
+diagnostic (`INFO ... connection refused` is kept), and floors `warn` and
+`severe` lines at the keep threshold so a level-only message such as
+`WARNING - redis connection lost` is not lost. Bracketed tags (`[INFO]`,
+`[INFO ]`) keep their existing, unconditional handling.
+
 ## Tested log sources and tools
 
 The parser detects **705+ log ecosystems** across 30+ categories.

@@ -8,12 +8,14 @@ import {
 import type { Aggressiveness } from '../types.js';
 import { isAccessLogNoiseLine } from '../formats/access-log-classifier.js';
 import { DIAGNOSTIC_BOOSTERS } from './diagnostic-boosters.js';
+import { detectHeaderLogLevel } from './log-level.js';
 
+// "[INFO ]" with trailing padding comes from "[%-5p]" style layouts.
 const IGNORED_LOG_TAG_PATTERN =
-  /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
+  /\[(?:INFO|DEBUG|TRACE|VERBOSE)\s*\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
 const APACHE_ROUTINE_NOTICE_PATTERN =
   /^(?:\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\s+\d{4}\]|\[TIME\])\s+\[notice\]\s+(?:workerEnv\.init\(\) ok\b|jk2_init\(\) Found child \d+ in scoreboard slot \d+\b)/iu;
-const IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/iu;
+const IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\s*\]/iu;
 const EXPLICIT_LOG_TAG_PATTERN = /\[[A-Z]+\]/iu;
 // Frame patterns accept either raw digits or the [NN] placeholder that
 // normalizeStackFrameLineCol substitutes, so frames stay recognizable
@@ -68,13 +70,21 @@ const INTERNAL_STACK_PATTERN =
   /(?:node_modules[\\/]|node:internal|internal[\\/]modules|bootstrap_node|[\\/]usr[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]go[\\/]src[\\/]runtime[\\/]|site-packages[\\/]|dist-packages[\\/]|\.venv[\\/]|java\.base[\\/]|jdk\.internal|org\.springframework\.|[\\/]pkg[\\/]mod[\\/]|\.cargo[\\/]registry[\\/]|[\\/]gems[\\/]|vendor[\\/]bundle[\\/]|[\\/]rustc[\\/]|\bat System\.)/iu;
 
 const LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/iu;
-const AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/iu;
+const AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\s*\]/iu;
 const AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
 
+/**
+ * True for lines the pipeline drops before scoring: bracketed or JSON
+ * INFO/DEBUG/TRACE/VERBOSE tags, routine Apache notices, and unbracketed
+ * header levels (Spring, logback, Python logging, logfmt, glog). A line with
+ * an unbracketed noise level is kept when its text still reads as a
+ * diagnostic, so "INFO ... connection refused" is never dropped.
+ */
 export function isIgnoredLogLine(line: string): boolean {
   return (
     IGNORED_LOG_TAG_PATTERN.test(line) ||
-    APACHE_ROUTINE_NOTICE_PATTERN.test(line)
+    APACHE_ROUTINE_NOTICE_PATTERN.test(line) ||
+    (detectHeaderLogLevel(line) === 'noise' && !looksLikeDiagnosticLine(line))
   );
 }
 
@@ -87,7 +97,7 @@ export function shouldKeepLine(line: string): boolean {
     return false;
   }
 
-  if (IMPORTANT_LOG_TAG_PATTERN.test(line)) {
+  if (IMPORTANT_LOG_TAG_PATTERN.test(line) || isElevatedHeaderLevel(line)) {
     return true;
   }
 
@@ -96,6 +106,11 @@ export function shouldKeepLine(line: string): boolean {
   }
 
   return false;
+}
+
+function isElevatedHeaderLevel(line: string): boolean {
+  const level = detectHeaderLogLevel(line);
+  return level === 'warn' || level === 'severe';
 }
 
 /**
@@ -183,9 +198,18 @@ export function scoreLineRelevance(
     if (b.pattern.test(line)) score += b.score;
   }
 
+  // An unbracketed WARN/ERROR header level is enough to keep a line even when
+  // its text has no diagnostic keyword ("WARNING - redis connection lost").
+  // It is a floor, not a bonus: lines that already score higher keep their
+  // score, and repeated identical lines still fade under TF-IDF damping.
+  const headerLevel = detectHeaderLogLevel(line);
+  if (headerLevel === 'severe' || headerLevel === 'warn') {
+    score = Math.max(score, SCORE_KEEP_THRESHOLD);
+  }
+
   if (
     aggressiveness === 'aggressive' &&
-    AGGRESSIVE_WARN_PATTERN.test(line) &&
+    (AGGRESSIVE_WARN_PATTERN.test(line) || headerLevel === 'warn') &&
     !AGGRESSIVE_WARNING_SIGNAL_PATTERN.test(line) &&
     !COMPOUND_EXCEPTION_PATTERN.test(line)
   ) {

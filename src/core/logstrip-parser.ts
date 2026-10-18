@@ -161,6 +161,10 @@ export {
   resolveAdaptiveAfterWindow,
 } from './context/adaptive-window.js';
 export { isCascadeNoiseLine } from './scoring/cascade-filter.js';
+export {
+  type HeaderLogLevel,
+  detectHeaderLogLevel,
+} from './scoring/log-level.js';
 export { isMultilingualDiagnosticLine } from './scoring/multilingual-keywords.js';
 export {
   type BlockDedupeOp,

@@ -1,0 +1,28 @@
+2026-05-16 10:24:30,112 - app.worker - INFO - Worker started pid=4411 queue=default
+2026-05-16 10:24:30,118 - app.worker - INFO - Connected to redis://cache.internal:6379/0
+2026-05-16 10:24:30,431 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.payments.example.com:443
+2026-05-16 10:24:30,902 - urllib3.connectionpool - DEBUG - https://api.payments.example.com:443 "POST /v1/charges HTTP/1.1" 200 412
+2026-05-16 10:24:31,044 - app.worker - INFO - Task charge-4821 completed in 0.47s
+2026-05-16 10:24:32,310 - app.worker - WARNING - Redis connection lost, retrying in 2s (attempt 1)
+2026-05-16 10:24:34,325 - app.worker - WARNING - Redis connection lost, retrying in 2s (attempt 2)
+2026-05-16 10:24:36,341 - app.worker - WARNING - Redis connection lost, retrying in 2s (attempt 3)
+2026-05-16 10:24:38,356 - app.worker - WARNING - Redis connection lost, retrying in 2s (attempt 4)
+2026-05-16 10:24:38,901 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (2): api.payments.example.com:443
+2026-05-16 10:24:39,215 - urllib3.connectionpool - DEBUG - https://api.payments.example.com:443 "POST /v1/charges HTTP/1.1" 200 388
+2026-05-16 10:24:39,402 - app.worker - INFO - Task charge-4822 completed in 0.51s
+2026-05-16 10:24:40,118 - app.worker - ERROR - Task charge-4823 failed: connection reset by peer
+Traceback (most recent call last):
+  File "/repo/app/worker.py", line 88, in run_task
+    result = self.handler(task)
+  File "/repo/app/handlers/charge.py", line 42, in handle
+    resp = client.post("/v1/charges", json=payload)
+  File "/usr/lib/python3.12/site-packages/requests/sessions.py", line 637, in post
+    return self.request("POST", url, data=data, json=json, **kwargs)
+  File "/usr/lib/python3.12/site-packages/requests/adapters.py", line 501, in send
+    raise ConnectionError(err, request=request)
+requests.exceptions.ConnectionError: ("Connection aborted.", ConnectionResetError(104, 'Connection reset by peer'))
+2026-05-16 10:24:40,119 - app.worker - INFO - Task charge-4823 scheduled for retry
+2026-05-16 10:24:41,507 - app.worker - WARNING - Redis connection lost, retrying in 2s (attempt 5)
+2026-05-16 10:24:43,522 - app.worker - WARNING - Redis connection lost, retrying in 2s (attempt 6)
+2026-05-16 10:24:45,538 - app.worker - CRITICAL - Redis unavailable after 6 attempts, shutting down worker
+2026-05-16 10:24:45,540 - app.worker - INFO - Worker stopped pid=4411

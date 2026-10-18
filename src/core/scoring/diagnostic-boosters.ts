@@ -15,7 +15,7 @@ export interface DiagnosticBooster {
 
 export const DIAGNOSTIC_BOOSTERS: readonly DiagnosticBooster[] = [
   // ── Severity tags ────────────────────────────────────────────────
-  { pattern: /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/iu, score: 100, label: 'severity-tag' },
+  { pattern: /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\s*\]/iu, score: 100, label: 'severity-tag' },
 
   // ── JSON severity ────────────────────────────────────────────────
   { pattern: /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/iu, score: 80, label: 'json-severity' },

@@ -777,6 +777,50 @@ const cases: readonly SmokeCase[] = [
     ],
     mustDetectSources: [],
   },
+  {
+    fixture: 'python-worker-logging.log',
+    minSavingsPercent: 43,
+    expectDeduplication: false,
+    expectInternalStackHidden: true,
+    mustContain: [
+      'WARNING - Redis connection lost, retrying in 2s',
+      'ERROR - Task charge-4823 failed: connection reset by peer',
+      '/repo/app/handlers/charge.py", line [NN], in handle',
+      'requests.exceptions.ConnectionError',
+      'CRITICAL - Redis unavailable after 6 attempts, shutting down worker',
+      INTERNAL_STACK_MARKER,
+    ],
+    mustNotContain: [
+      ' - INFO - ',
+      ' - DEBUG - ',
+      'urllib3.connectionpool',
+      'site-packages',
+      '10:24:',
+      ',044',
+    ],
+    mustDetectSources: [],
+  },
+  {
+    fixture: 'go-logfmt-service.log',
+    minSavingsPercent: 47,
+    expectDeduplication: true,
+    expectInternalStackHidden: false,
+    mustContain: [
+      'level=warn msg="slow query"',
+      'duration=2.4s',
+      'msg="payment provider unreachable" provider=stripe',
+      'i/o timeout',
+      'level=warn msg="cache miss rate high"',
+      'level=fatal msg="worker pool exhausted"',
+    ],
+    mustNotContain: [
+      'level=info msg="server starting"',
+      'level=debug',
+      'circuit opened',
+      'time=2026',
+    ],
+    mustDetectSources: [],
+  },
 ];
 
 let workDir: string;
