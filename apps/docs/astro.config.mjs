@@ -24,7 +24,7 @@ export default defineConfig({
   base: BASE,
   // site/ is gitignored and uploaded to GitHub Pages by docs.yml
   outDir: '../../site',
-  trailingSlash: 'ignore',
+  trailingSlash: 'always',
   markdown: {
     processor: unified({ remarkPlugins: [remarkMkdocsCompat] }),
   },
