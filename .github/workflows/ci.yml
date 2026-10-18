@@ -71,8 +71,8 @@ jobs:
         if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
         id: logstrip
         # Intentionally the floating major tag of this repo's own action: the
-        # step dogfoods the latest published v1, so it is not pinned to a SHA.
-        uses: mrwogu/logstrip@v1
+        # step dogfoods the latest published v2, so it is not pinned to a SHA.
+        uses: mrwogu/logstrip@v2
         with:
           log-path: tests/fixtures/ci-platforms.log
           aggressiveness: auto

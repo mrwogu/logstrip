@@ -28,13 +28,16 @@
   package.json carries no dependency overrides any more. `npm audit` must stay
   at 0 vulnerabilities; Renovate opens security PRs outside the weekly schedule
   and automerges minor/patch devDependencies after a 3 day release age.
-  dist/ is gitignored on main: `npm run build` writes it locally and every CI
-  job builds its own. The release workflow builds it once more and commits it
-  on the vX.Y.Z and vX tags only (never on main, which is protected), so
-  `uses: mrwogu/logstrip@v2` finds dist/action/index.js. Publishing runs on the
-  vX.Y.Z tag push (release-please creates the tag with RELEASE_PAT). To publish
-  an existing tag again, run the Release Please workflow with tag=vX.Y.Z: a
-  version already on npm is skipped, dist/ is rebuilt and the vN tag moved.
+  dist/ is tracked but only the release PR updates it: release-dist.yml builds
+  it on the release-please branch and commits `chore: build dist/ for vX.Y.Z`,
+  so the release commit on main and its vX.Y.Z tag carry the GitHub Action
+  build and `uses: mrwogu/logstrip@v2` finds dist/action/index.js. Between
+  releases dist/ on main is stale on purpose; never commit it by hand
+  (`git add -A -- . ':!dist'` after a local build). Publishing runs on the
+  vX.Y.Z tag push (release-please creates the tag with RELEASE_PAT): the tag
+  must be on main and dist/ on it must match a fresh build. To publish an
+  existing tag again, run the Release Please workflow with tag=vX.Y.Z: a
+  version already on npm is skipped and the vN tag is moved.
 
   ## CLI usage cheat sheet
 
@@ -252,6 +255,6 @@
   | CLI docs                      | docs/reference/cli.md                                 |
   | Library docs                  | docs/reference/core.md                                |
   | GHA docs                      | docs/reference/action.md                              |
-  | Build outputs (ignored)       | dist/ (committed on release tags only), coverage/, site/ |
+  | Build outputs                 | dist/ (tracked, updated by the release PR only), coverage/, site/ |
   """
 }

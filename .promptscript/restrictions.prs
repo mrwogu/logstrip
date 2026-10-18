@@ -8,7 +8,7 @@
   - "Don't load the full log into memory - everything must flow through readline / Node streams (CLI, library and action all share processLogStream)"
   - "Don't write to paths outside the resolved outputPath; do not touch process.cwd() implicitly"
   - "Don't call the real GitHub API from tests - mock @actions/core and @actions/github"
-  - "Don't edit or commit files under dist/, coverage/ or site/ - they are build outputs; dist/ exists in git only on release tags"
+  - "Don't edit or commit files under dist/, coverage/ or site/ - they are build outputs; dist/ is tracked but only the release PR commits it (release-dist.yml), stray changes get overwritten there"
   - "Don't edit files under tests/fixtures/__snapshots__/ by hand - regenerate with vitest -u and review the diff"
   - "Don't log raw input bytes, secrets, tokens or full request bodies - the sanitizer must keep PII-like patterns masked"
   - "Don't embed indented heredocs in .github/workflows/*.yml - leading whitespace breaks literal grep assertions"

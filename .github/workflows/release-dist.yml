@@ -1,0 +1,111 @@
+name: Release Dist
+
+# release-please keeps the release PR branch up to date with every push to
+# main. This workflow builds dist/ on that branch and commits it, so the
+# release commit on main (and the vX.Y.Z tag release-please puts on it)
+# carries the GitHub Action build. The PAT is used by the commit job only,
+# which installs nothing, treats the tarball from the build as untrusted and
+# hands the token to the push command alone, so code from the build never
+# sees it.
+on:
+  push:
+    branches:
+      - 'release-please--branches--**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # The commit this workflow pushes must not start another build.
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore: build dist/') }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.x
+          package-manager-cache: false
+
+      # Lifecycle scripts of dependencies stay off; the build needs none
+      # (esbuild ships its binary as an optional dependency).
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        run: npm run build
+
+      # A tarball keeps the file modes (dist/cli/index.js is 0755).
+      - name: Pack dist/
+        run: tar -czf dist.tgz dist
+
+      - name: Upload dist/
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist.tgz
+          retention-days: 1
+          if-no-files-found: error
+
+  commit:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download dist/
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+
+      # The tarball was made by a job that ran npm, so only members under
+      # dist/ are taken out of it (into a scratch directory first), git runs
+      # without hooks and the token is passed to the push command only. The
+      # PAT makes CI run on the pushed commit (events from the default token
+      # start no workflows, and branch protection needs the checks).
+      - name: Commit dist/
+        env:
+          BRANCH: ${{ github.ref_name }}
+          PUSH_TOKEN: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          if tar -tzf dist.tgz | grep -Ev '^dist/' | grep -q .; then
+            echo "::error::dist.tgz holds paths outside dist/"; exit 1
+          fi
+          if tar -tzf dist.tgz | grep -Eq '(^|/)\.\.(/|$)'; then
+            echo "::error::dist.tgz holds a parent directory reference"; exit 1
+          fi
+          if tar -tvzf dist.tgz | grep -Eq '^[lh]'; then
+            echo "::error::dist.tgz holds a link"; exit 1
+          fi
+          STAGE=$(mktemp -d)
+          tar -xzf dist.tgz -C "$STAGE" --no-same-owner
+          rm -rf dist dist.tgz
+          cp -R "$STAGE/dist" dist
+          rm -rf "$STAGE"
+          git -c core.hooksPath=/dev/null add -A -- dist
+          if git diff --cached --quiet; then
+            echo "dist/ is up to date"
+            exit 0
+          fi
+          VERSION=$(jq -r .version package.json)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -c core.hooksPath=/dev/null commit -m "chore: build dist/ for v${VERSION}"
+          AUTH=$(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 -w0)
+          git -c core.hooksPath=/dev/null -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${AUTH}" push origin "HEAD:refs/heads/${BRANCH}"

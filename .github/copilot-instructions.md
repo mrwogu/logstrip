@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions
 
-<!-- PromptScript 2026-10-18T14:07:13.182Z | source: .promptscript/project.prs | target: github - do not edit -->
+<!-- PromptScript 2026-10-18T14:20:35.564Z | source: .promptscript/project.prs | target: github - do not edit -->
 
 ## project
 
@@ -122,10 +122,10 @@ parser, tests, fixtures and CI workflow before proposing code.
 - The action-smoke-test job downloads the published artifact and runs processLogFile against a printf-built fixture
 - When adding workflow steps avoid indented heredocs - they preserve leading whitespace and break literal grep assertions
 - Renovate (renovate.json) owns dependency and action updates - there is no dependabot.yml; minor/patch devDependencies and action digests automerge after a 3 day release age, majors and lockfile maintenance wait for a human
-- Every uses: in .github/workflows is pinned to a full commit SHA with a # vX.Y.Z comment and Renovate keeps the SHAs fresh; mrwogu/logstrip@v1 stays floating on purpose because that step dogfoods the published action
+- Every uses: in .github/workflows is pinned to a full commit SHA with a # vX.Y.Z comment and Renovate keeps the SHAs fresh; mrwogu/logstrip@v2 stays floating on purpose because that step dogfoods the published action
 - npm run docs:check (scripts/check-cli-docs.js) fails CI when a --flag from HELP_TEXT is missing from docs/reference/cli.md or README.md - add the flag to both when you add it to the CLI
 - ci.yml also runs on a Monday cron so main is re-validated against the live registry; release-please uses RELEASE_PAT when the secret exists and falls back to GITHUB_TOKEN
-- release-please.yml has two paths: a main push lets release-please open the release PR and create the vX.Y.Z tag (RELEASE_PAT, so the tag push fires the workflow again); a vX.Y.Z tag push or a manual run with tag=vX.Y.Z checks out the tag, validates it, builds, commits dist/ on the tag, runs npm publish (trusted publishing, no token; skipped when the version is already on the registry) and then a second job that checks out and installs nothing moves the vN tag through the API with RELEASE_PAT (needs the workflow scope, the default token may not move a tag across workflow changes); main is never pushed from a workflow because branch protection requires the CI checks
+- release-please.yml has two paths: a main push lets release-please open or update the release PR and create the vX.Y.Z tag (RELEASE_PAT, so the tag push fires the workflow again); a vX.Y.Z tag push or a manual run with tag=vX.Y.Z checks out the tag, validates it (strict name, on main, package.json version), builds, checks that the committed dist/ matches the build, runs npm publish (trusted publishing, no token; skipped when the version is already on the registry) and then a second job that checks out and installs nothing moves the vN tag through the API with RELEASE_PAT (needs the workflow scope, the default token may not move a tag across workflow changes); release-dist.yml builds dist/ on every push to the release-please branch and commits it there with RELEASE_PAT so CI runs on the pushed commit; main is never pushed from a workflow because branch protection requires the CI checks
 
 ### docs
 
@@ -154,7 +154,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 - Don't load the full log into memory - everything must flow through readline / Node streams (CLI, library and action all share processLogStream)
 - Don't write to paths outside the resolved outputPath; do not touch process.cwd() implicitly
 - Don't call the real GitHub API from tests - mock @actions/core and @actions/github
-- Don't edit or commit files under dist/, coverage/ or site/ - they are build outputs; dist/ exists in git only on release tags
+- Don't edit or commit files under dist/, coverage/ or site/ - they are build outputs; dist/ is tracked but only the release PR commits it (release-dist.yml), stray changes get overwritten there
 - Don't edit files under tests/fixtures/\_\_snapshots\_\_/ by hand - regenerate with vitest -u and review the diff
 - Don't log raw input bytes, secrets, tokens or full request bodies - the sanitizer must keep PII-like patterns masked
 - Don't embed indented heredocs in .github/workflows/\*.yml - leading whitespace breaks literal grep assertions
@@ -220,13 +220,16 @@ that file scanning cannot.
 package.json carries no dependency overrides any more. `npm audit` must stay
 at 0 vulnerabilities; Renovate opens security PRs outside the weekly schedule
 and automerges minor/patch devDependencies after a 3 day release age.
-dist/ is gitignored on main: `npm run build` writes it locally and every CI
-job builds its own. The release workflow builds it once more and commits it
-on the vX.Y.Z and vX tags only (never on main, which is protected), so
-`uses: mrwogu/logstrip@v2` finds dist/action/index.js. Publishing runs on the
-vX.Y.Z tag push (release-please creates the tag with RELEASE_PAT). To publish
-an existing tag again, run the Release Please workflow with tag=vX.Y.Z: a
-version already on npm is skipped, dist/ is rebuilt and the vN tag moved.
+dist/ is tracked but only the release PR updates it: release-dist.yml builds
+it on the release-please branch and commits `chore: build dist/ for vX.Y.Z`,
+so the release commit on main and its vX.Y.Z tag carry the GitHub Action
+build and `uses: mrwogu/logstrip@v2` finds dist/action/index.js. Between
+releases dist/ on main is stale on purpose; never commit it by hand
+(`git add -A -- . ':!dist'` after a local build). Publishing runs on the
+vX.Y.Z tag push (release-please creates the tag with RELEASE_PAT): the tag
+must be on main and dist/ on it must match a fresh build. To publish an
+existing tag again, run the Release Please workflow with tag=vX.Y.Z: a
+version already on npm is skipped and the vN tag is moved.
 
 ## CLI usage cheat sheet
 
@@ -464,4 +467,4 @@ runs:
 | CLI docs                    | docs/reference/cli.md                                               |
 | Library docs                | docs/reference/core.md                                              |
 | GHA docs                    | docs/reference/action.md                                            |
-| Build outputs (ignored)     | dist/ (committed on release tags only), coverage/, site/            |
+| Build outputs               | dist/ (tracked, updated by the release PR only), coverage/, site/   |

@@ -1,9 +1,6 @@
 node_modules/
 coverage/
 site/
-# Build output: created by npm run build, committed only on release tags by
-# .github/workflows/release-please.yml so the GitHub Action can run from a tag.
-dist/
 .DS_Store
 
 *.tgz

@@ -1,11 +1,12 @@
 name: Release Please
 
-# One job, two paths. A push to main (or a manual run with no tag) lets
-# release-please open or merge the release PR and create the vX.Y.Z tag; with
-# RELEASE_PAT that tag push starts this workflow again. A vX.Y.Z tag push, or
-# a manual run naming an existing tag, builds dist/ on the tag, publishes to
-# npm and moves the major tag. The main push never publishes by itself, so a
-# release is published exactly once.
+# Two paths. A push to main (or a manual run with no tag) lets release-please
+# open or merge the release PR and create the vX.Y.Z tag; with RELEASE_PAT
+# that tag push starts this workflow again. A vX.Y.Z tag push, or a manual run
+# naming an existing tag, checks that dist/ on the tag (committed in the
+# release PR by release-dist.yml) matches a fresh build, publishes to npm and
+# moves the major tag. The main push never publishes by itself, so a release
+# is published exactly once.
 on:
   push:
     branches: [main]
@@ -35,7 +36,7 @@ jobs:
     outputs:
       publish: ${{ steps.plan.outputs.publish }}
       tag: ${{ steps.plan.outputs.tag }}
-      sha: ${{ steps.dist.outputs.sha }}
+      sha: ${{ steps.validate.outputs.sha }}
     permissions:
       contents: write
       pull-requests: write
@@ -76,14 +77,13 @@ jobs:
         with:
           ref: refs/tags/${{ steps.plan.outputs.tag }}
           fetch-depth: 0
-          # Credentials stay: later steps push the release tags.
-          persist-credentials: true
+          persist-credentials: false
 
       # A hand-picked tag must be a real release of this repository: a strict
-      # vX.Y.Z name, its commit on main (or a dist/ build commit right on top
-      # of one), and the version package.json carries.
+      # vX.Y.Z name, a commit on main and the version package.json carries.
       - name: Validate the tag
         if: ${{ steps.plan.outputs.publish == 'true' }}
+        id: validate
         env:
           TAG_NAME: ${{ steps.plan.outputs.tag }}
         run: |
@@ -96,22 +96,13 @@ jobs:
           fi
           git fetch --quiet origin main
           if ! git merge-base --is-ancestor "$TAG_NAME" origin/main; then
-            # A tag that was published before sits on a dist/ build commit. Its
-            # parent must be the source commit on main and nothing but dist/
-            # may differ; the build is then redone from that source commit, so
-            # whatever the old tag carried under dist/ is never reused.
-            if ! git merge-base --is-ancestor "${TAG_NAME}^" origin/main; then
-              echo "::error::$TAG_NAME is not on main"; exit 1
-            fi
-            if git diff --no-renames --name-status "${TAG_NAME}^" "$TAG_NAME" | grep -Ev '^[AMD]	dist/' | grep -q .; then
-              echo "::error::$TAG_NAME carries changes outside dist/ that are not on main"; exit 1
-            fi
-            git checkout --quiet "${TAG_NAME}^"
+            echo "::error::$TAG_NAME is not on main"; exit 1
           fi
           VERSION=$(node -p "require('./package.json').version")
           if [ "v$VERSION" != "$TAG_NAME" ]; then
             echo "::error::package.json is $VERSION but the tag is $TAG_NAME"; exit 1
           fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js for npm
         if: ${{ steps.plan.outputs.publish == 'true' }}
@@ -121,38 +112,36 @@ jobs:
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
+      # Lifecycle scripts of dependencies stay off; the build needs none
+      # (esbuild ships its binary as an optional dependency).
       - name: Install dependencies
         if: ${{ steps.plan.outputs.publish == 'true' }}
-        run: npm ci
+        run: npm ci --ignore-scripts
 
+      # dist/ is removed before the build so a file on the tag that the build
+      # does not produce shows up as deleted in the check below.
       - name: Verify release build
         if: ${{ steps.plan.outputs.publish == 'true' }}
         run: |
           npm run typecheck
           npm run test:coverage
+          rm -rf dist
           npm run build
           npm audit
 
-      # dist/ is not tracked on main (the branch is protected and CI builds it
-      # anyway). The GitHub Action needs dist/action/index.js at the tag, so the
-      # build is committed on the release tag only and never pushed to main.
-      - name: Commit dist/ on the release tag
+      # dist/ on the tag was committed in the release PR by release-dist.yml.
+      # The build above overwrote it; any difference means the tag does not
+      # carry the build of its own source, so nothing is published.
+      - name: Check dist/ on the tag against the build
         if: ${{ steps.plan.outputs.publish == 'true' }}
-        id: dist
         env:
           TAG_NAME: ${{ steps.plan.outputs.tag }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f dist/
-          if git diff --cached --quiet; then
-            echo "dist/ already committed on ${TAG_NAME}"
-          else
-            git commit -m "chore: build dist/ for ${TAG_NAME}"
+          if [ -n "$(git status --porcelain -- dist/)" ]; then
+            git status --short -- dist/
+            echo "::error::dist/ on ${TAG_NAME} does not match a fresh build"; exit 1
           fi
-          git tag -f "${TAG_NAME}" HEAD
-          git push origin "refs/tags/${TAG_NAME}" --force
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "dist/ on ${TAG_NAME} matches the build"
 
       # npm refuses to publish a version twice, so a run that publishes an
       # existing tag again (to move the major tag, for example) skips it.
