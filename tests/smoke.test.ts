@@ -30,7 +30,7 @@ interface SmokeCase {
 const cases: readonly SmokeCase[] = [
   {
     fixture: 'vitest-failure.log',
-    minSavingsPercent: 47,
+    minSavingsPercent: 64,
     expectDeduplication: true,
     expectInternalStackHidden: true,
     mustContain: [
@@ -43,7 +43,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'jest-noisy.log',
-    minSavingsPercent: 40,
+    minSavingsPercent: 77,
     expectDeduplication: true,
     expectInternalStackHidden: true,
     mustContain: [
@@ -69,7 +69,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'maven-failure.log',
-    minSavingsPercent: 35,
+    minSavingsPercent: 47,
     expectDeduplication: false,
     expectInternalStackHidden: false,
     mustContain: [
@@ -184,7 +184,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'java-spring-boot-realistic.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 68,
     expectDeduplication: true,
     expectInternalStackHidden: true,
     mustContain: [
@@ -266,7 +266,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'infra-cloud.log',
-    minSavingsPercent: 5,
+    minSavingsPercent: 31,
     expectDeduplication: false,
     expectInternalStackHidden: false,
     mustContain: [
@@ -279,7 +279,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'data-telemetry-scanners.log',
-    minSavingsPercent: 5,
+    minSavingsPercent: 41,
     expectDeduplication: false,
     expectInternalStackHidden: false,
     mustContain: [
@@ -393,7 +393,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'python-lint-async.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 39,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
@@ -410,7 +410,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'go-rust-ruby-frameworks.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 49,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
@@ -486,7 +486,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'realtime-graphql.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 38,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
@@ -543,7 +543,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'email-ci-infra.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 42,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
@@ -619,7 +619,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'security-scanners.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 36,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
