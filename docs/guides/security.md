@@ -41,7 +41,7 @@ LogStrip detects and redacts known credential patterns:
 | PEM private key blocks | `[PEM PRIVATE KEY REDACTED]` | `-----BEGIN RSA PRIVATE KEY-----` |
 | High-entropy tokens (fallback) | `[REDACTED]` | `3kF9mQ2xY7LpR4wZ8tN1...` |
 
-Multi-line PEM private key blocks are collapsed to a single `[PEM PRIVATE KEY REDACTED]` marker, with the key body fully removed.
+Multi-line PEM private key blocks are collapsed to a single `[PEM PRIVATE KEY REDACTED]` marker, with the key body fully removed. The block is tracked on every line before any noise, severity or include/exclude filter runs, so a header or footer that carries a level prefix (`DEBUG -----BEGIN PRIVATE KEY-----`) or is dropped by a filter cannot let the key body through.
 
 After the vendor-specific patterns run, an entropy-based fallback masks any
 remaining random-looking token of 20+ characters (Shannon entropy ≥ 4.2

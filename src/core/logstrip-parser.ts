@@ -686,6 +686,19 @@ export async function processLogStream(
     // errors; large gaps mean isolated errors that warrant more context.
     linesSinceError += 1;
 
+    // PEM private key blocks. The state machine must see every line before
+    // any filter below can drop one: a header or footer that a noise rule
+    // removes would otherwise leave the tracker out of sync and let the key
+    // body through. Body and footer lines are dropped right here; a header
+    // is replaced by its redaction marker only after the user filters and
+    // noise rules have judged the raw line.
+    const pemRedacted = maskPemBlock(line, pemState);
+    if (pemRedacted === null) {
+      dropLine(line, physicalLineCount, 'custom-ignore');
+      continue;
+    }
+    const isPemHeader = pemRedacted !== line;
+
     if (includePattern !== undefined && !testRegex(includePattern, line)) {
       dropLine(line, physicalLineCount, 'include-filter');
       continue;
@@ -734,7 +747,9 @@ export async function processLogStream(
     // Noise tags (INFO/DEBUG/TRACE/VERBOSE) are silently dropped without
     // disturbing afterContextRemaining so that sparse INFO lines between
     // errors do not close the context window prematurely.
-    if (isIgnoredLogLine(line)) {
+    // A redacted key header such as "DEBUG -----BEGIN PRIVATE KEY-----" is
+    // exempt: its marker is worth keeping whatever level prefix it carried.
+    if (!isPemHeader && isIgnoredLogLine(line)) {
       dropLine(line, physicalLineCount, 'ignored-tag');
       continue;
     }
@@ -746,13 +761,10 @@ export async function processLogStream(
       continue;
     }
 
-    // PEM block masking (before sanitizeLine so IPs inside PEM are not double-annotated)
-    const masked = maskPemBlock(line, pemState);
-    if (masked === null) {
-      dropLine(line, physicalLineCount, 'custom-ignore');
-      continue;
+    // PEM header masking (before sanitizeLine so IPs inside PEM are not double-annotated)
+    if (isPemHeader) {
+      line = pemRedacted;
     }
-    line = masked;
 
     let sanitized = sanitizeLine(line, options.preserveIdSuffix ?? 0);
 
