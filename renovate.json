@@ -16,6 +16,8 @@
   "automergeType": "pr",
   "automergeStrategy": "squash",
   "ignoreTests": false,
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
     "enabled": true,
@@ -23,7 +25,7 @@
   },
   "lockFileMaintenance": {
     "enabled": true,
-    "automerge": true,
+    "automerge": false,
     "schedule": ["before 6am on monday"]
   },
   "packageRules": [
