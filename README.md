@@ -93,6 +93,8 @@ Compression ratios from the 41 fixture test suite across real-world log sources:
 | Docker build | `docker-build.log` | 54 | 16 | 70% |
 | Kubernetes | `kubernetes-crashloop.log` | 47 | 12 | 74% |
 
+Measured numbers for every fixture, with the method: [Benchmarks](https://mrwogu.github.io/logstrip/benchmarks/).
+
 Production logs with millions of lines routinely hit **80%+** token savings because noise ratios scale with log size.
 
 > Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) - 41 `.log` files covering 705+ ecosystem signatures. Each fixture has a committed snapshot baseline.

@@ -65,8 +65,8 @@ left.
   errors` are pruned so the original failure stands out.
 - **Scanner findings and container failures,** such as `CVE-` lines and
   `ErrImagePull`.
-- **Line order.** Output lines come out in input order, also under
-  `--max-tokens`.
+- **Line order.** Output follows the input order, also under `--max-tokens`.
+  A folded group sits where its first line was.
 - **Valid JSON,** when the input is a whole JSON report.
 
 ## What LogStrip drops
