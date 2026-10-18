@@ -199,6 +199,46 @@ describe('parseCliOptions', () => {
   });
 });
 
+describe('broken stdout pipe', () => {
+  it('exits 0 quietly when the stdout reader closes the pipe', async () => {
+    const epipe = new Writable({
+      highWaterMark: 1,
+      write(_chunk, _encoding, cb) {
+        cb(Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }));
+      },
+    });
+    const stderr = bufferWritable();
+    const io: CliIo = {
+      stdin: bufferReadable('[ERROR] boot failed\n[ERROR] boot failed again\n'),
+      stdout: epipe,
+      stderr,
+      stdinIsTTY: false,
+    };
+
+    await expect(runCli([], io)).resolves.toBe(0);
+    expect(stderr.value()).toBe('');
+  });
+
+  it('still reports other write errors on stdout', async () => {
+    const broken = new Writable({
+      highWaterMark: 1,
+      write(_chunk, _encoding, cb) {
+        cb(Object.assign(new Error('disk full'), { code: 'ENOSPC' }));
+      },
+    });
+    const stderr = bufferWritable();
+    const io: CliIo = {
+      stdin: bufferReadable('[ERROR] boot failed\n'),
+      stdout: broken,
+      stderr,
+      stdinIsTTY: false,
+    };
+
+    await expect(runCli([], io)).resolves.toBe(1);
+    expect(stderr.value()).toBe('logstrip: disk full\n');
+  });
+});
+
 describe('writeAll', () => {
   it('rejects when the stream callback signals an error', async () => {
     const broken = new Writable({

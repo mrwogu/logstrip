@@ -186,6 +186,10 @@ export function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function isBrokenPipe(error: unknown): boolean {
+  return error instanceof Error && (error as NodeJS.ErrnoException).code === 'EPIPE';
+}
+
 export function parseCliOptions(argv: readonly string[]): CliOptions {
   let parsed;
   try {
@@ -615,6 +619,11 @@ export async function runCli(
     }
     if (options.output !== undefined) {
       (output as Writable).destroy();
+    }
+    // The reader of stdout went away (logstrip raw.log | head): stop quietly
+    // like cat does instead of reporting a failure.
+    if (options.output === undefined && isBrokenPipe(error)) {
+      return 0;
     }
     await writeAll(io.stderr, `logstrip: ${messageOf(error)}\n`);
     return 1;

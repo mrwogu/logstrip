@@ -85,6 +85,10 @@ logstrip [INPUT] [options]
 | `1` | Runtime failure (file not found, stream error, internal exception). |
 | `2` | Usage error (unknown flag, unsupported aggressiveness, `--json` without `--output`, stdin is a TTY). |
 
+When the reader of stdout goes away early (`logstrip raw.log | head`), the run
+stops quietly with exit code `0`, like `cat` does, instead of reporting the
+broken pipe as a failure.
+
 ## Recipes
 
 ### File in, file out
