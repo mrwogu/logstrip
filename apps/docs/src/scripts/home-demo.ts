@@ -47,6 +47,8 @@ const ARRIVE_MAX_LINES = 40;
 const FIRST_PLAY_MS = 1600;
 const HOLD_MS = 5500;
 const PAUSED_RETRY_MS = 600;
+// Share of the demo that must be on screen before it plays.
+const IN_VIEW_RATIO = 0.4;
 
 // Anchored and unanchored patterns stay in separate expressions, so an anchor
 // never applies to only one branch of an alternation.
@@ -140,6 +142,7 @@ export function nextScenario<T>(list: readonly T[], current: T): T {
 interface DemoElements {
   title: HTMLElement | null;
   tally: HTMLElement | null;
+  live: HTMLElement | null;
   tabs: HTMLElement[];
   progress: HTMLElement | null;
   rawBtn: HTMLElement;
@@ -154,6 +157,7 @@ interface DemoElements {
   agentCard: HTMLElement | null;
 }
 
+/** The demo's controls and screens, rendered once into the hero container. */
 function demoMarkup(logoUrl: string): string {
   const tabs = SCENARIOS.map(
     (s, i) =>
@@ -165,7 +169,8 @@ function demoMarkup(logoUrl: string): string {
       <span class="hp-demo__dot"></span>
       <span class="hp-demo__dot"></span>
       <span class="hp-demo__title" data-logstrip-title></span>
-      <span class="hp-demo__tally" data-logstrip-tally aria-live="polite"></span>
+      <span class="hp-demo__tally" data-logstrip-tally></span>
+      <span class="hp-sr" data-logstrip-live aria-live="polite"></span>
     </div>
     <div class="hp-demo__tabs" role="tablist" aria-label="Demo scenarios">${tabs}</div>
     <div class="hp-demo__progress" data-logstrip-progress aria-hidden="true"><i></i></div>
@@ -188,6 +193,7 @@ function demoMarkup(logoUrl: string): string {
     <div class="hp-demo__metrics" data-logstrip-metrics></div>`;
 }
 
+/** Looks up the rendered elements. Null when the markup is not what we rendered. */
 function findElements(root: HTMLElement): DemoElements | null {
   const one = <T extends HTMLElement>(selector: string): T | null => root.querySelector<T>(selector);
   const rawBtn = one('[data-logstrip-raw-btn]');
@@ -200,6 +206,7 @@ function findElements(root: HTMLElement): DemoElements | null {
   return {
     title: one('[data-logstrip-title]'),
     tally: one('[data-logstrip-tally]'),
+    live: one('[data-logstrip-live]'),
     tabs: Array.from(root.querySelectorAll<HTMLElement>('[data-logstrip-tab]')),
     progress: one('[data-logstrip-progress]'),
     rawBtn,
@@ -215,6 +222,7 @@ function findElements(root: HTMLElement): DemoElements | null {
   };
 }
 
+/** Wires one hero demo: scenarios, the raw/clean toggle and the autoplay loop. */
 function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
   if (root.dataset.logstripCompareReady === 'true') return;
   root.dataset.logstripCompareReady = 'true';
@@ -229,8 +237,11 @@ function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
   let morphTimers: ReturnType<typeof setTimeout>[] = [];
 
   // Autoplay state. It stops for good at the first click on a control.
+  // Pointer and focus are tracked apart, so the demo stays paused while
+  // either one is still inside it.
   let autoplay = !prefersReduced;
-  let hovered = false;
+  let pointerIn = false;
+  let focusIn = false;
   let inView = true;
   let autoTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -254,8 +265,11 @@ function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
     els.rawPre.scrollTop = 0;
   };
 
-  const setTally = (text: string): void => {
+  // The visible tally changes with every line. Screen readers only hear the
+  // final one, through the live region.
+  const setTally = (text: string, announce = false): void => {
     if (els.tally) els.tally.textContent = text;
+    if (announce && els.live) els.live.textContent = text;
   };
 
   const setControls = (clean: boolean): void => {
@@ -290,7 +304,8 @@ function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
     requestAnimationFrame(frame);
   };
 
-  const canPlay = (): boolean => autoplay && inView && !hovered && !document.hidden;
+  const canPlay = (): boolean =>
+    autoplay && inView && !pointerIn && !focusIn && !document.hidden;
 
   const arm = (fn: () => void, ms: number): void => {
     clearTimeout(autoTimer);
@@ -303,7 +318,7 @@ function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
     els.beam?.classList.remove('is-sweeping');
     els.metrics?.classList.add('is-visible');
     els.metrics?.querySelectorAll<HTMLElement>('strong').forEach(animateMetric);
-    setTally(`${current.raw.length} → ${current.clean.length} lines`);
+    setTally(`${current.raw.length} → ${current.clean.length} lines`, true);
     if (autoplay) {
       setProgress(true);
       arm(autoAdvance, HOLD_MS);
@@ -453,24 +468,25 @@ function setupCompareDemo(root: HTMLElement, logoUrl: string): void {
 
   // Hovering or focusing the demo pauses it, so a reader can study a frame.
   root.addEventListener('mouseenter', () => {
-    hovered = true;
+    pointerIn = true;
   });
   root.addEventListener('mouseleave', () => {
-    hovered = false;
+    pointerIn = false;
   });
   root.addEventListener('focusin', () => {
-    hovered = true;
+    focusIn = true;
   });
   root.addEventListener('focusout', () => {
-    hovered = false;
+    focusIn = false;
   });
+  // isIntersecting is also true below the threshold, so the ratio decides.
   if ('IntersectionObserver' in window) {
     inView = false;
     new IntersectionObserver(
       (entries) => {
-        inView = entries.some((entry) => entry.isIntersecting);
+        inView = entries.some((entry) => entry.intersectionRatio >= IN_VIEW_RATIO);
       },
-      { threshold: 0.4 }
+      { threshold: IN_VIEW_RATIO }
     ).observe(root);
   }
   arm(autoMorph, FIRST_PLAY_MS);

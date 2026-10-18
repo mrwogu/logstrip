@@ -145,5 +145,8 @@ describe('benchmarkJsonLd', () => {
     expect(dataset.description).toContain('51 log fixtures');
     expect(dataset.description).toContain('51.3% fewer tokens');
     expect(dataset.description).toContain('LogStrip 2.0.0');
+    expect((dataset.distribution as { contentUrl: string }).contentUrl).toBe(
+      'https://raw.githubusercontent.com/mrwogu/logstrip/main/apps/docs/src/data/benchmarks.json'
+    );
   });
 });

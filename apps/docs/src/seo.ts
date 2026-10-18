@@ -25,6 +25,9 @@ export const OG_IMAGE = `${SITE}/assets/images/og-image-1200x630.png`;
 export const OG_IMAGE_ALT =
   'LogStrip: a raw log on the left, the compressed LogStrip output on the right, with the measured token savings.';
 
+// Raw file URLs, for links that must return the file bytes.
+const RAW = 'https://raw.githubusercontent.com/mrwogu/logstrip/main';
+
 const WEBSITE_ID = `${SITE}/#website`;
 const AUTHOR_ID = `${SITE}/#author`;
 const SOFTWARE_ID = `${SITE}/#software`;
@@ -60,6 +63,7 @@ export function jsonLdTag(graph: readonly object[]): HeadTag {
   };
 }
 
+/** The CLI as a SoftwareApplication node, shared by the homepage graph. */
 export function softwareJsonLd(version: string): object {
   return {
     '@type': 'SoftwareApplication',
@@ -191,7 +195,7 @@ export function benchmarkJsonLd(summary: BenchmarkSummary): HeadTag {
       distribution: {
         '@type': 'DataDownload',
         encodingFormat: 'application/json',
-        contentUrl: `${REPO}/blob/main/apps/docs/src/data/benchmarks.json`,
+        contentUrl: `${RAW}/apps/docs/src/data/benchmarks.json`,
       },
     },
   ]);
