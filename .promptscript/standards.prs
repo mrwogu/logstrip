@@ -35,14 +35,19 @@
     "All regex tables live near the top of logstrip-parser.ts as named constants",
     "Stats are mutated through a single accumulator object passed by reference",
     "Sanitization runs before deduplication so identical events collapse correctly",
-    "processLogStream is the lower-level entry the CLI uses for stdin/stdout; processLogFile composes it for path-to-path use"
+    "processLogStream is the lower-level entry the CLI uses for stdin/stdout; processLogFile composes it for path-to-path use",
+    "Content classification (src/core/detection/content-kind.ts) samples the head of the stream: prose, markdown, source and config files pass through unchanged except for secret masking, with result.contentKind = 'text'; --force / textPassthrough: false runs the log pipeline anyway",
+    "maskSecrets in src/core/sanitize/sanitize-line.ts holds the credential rules; sanitizeLine composes it with identifier masking, and passthrough applies maskSecrets plus maskPemBlock - secrets are masked in every output mode",
+    "maskPemBlock runs on every logical line before the noise and ignore filters so a dropped PEM header still puts the state machine inside the block",
+    "Every regex on the per-line path must run in linear time (no overlapping or nested unbounded quantifiers); tests/regex-backtracking.test.ts feeds adversarial 100 KB lines through the sanitizer, the content classifier and the passing-test matcher with a 500 ms budget - add a case there when you add a line pattern",
+    "SECRET_FIELD_PATTERN captures the raw value and the replacer judges the whole value: quoted values are literals and always masked unless empty, null, true, false, a short number or a whole-value reference; unquoted type annotations (string, Optional[str]) and single env reads (process.env.X, os.environ[\"X\"]) are kept; tests/fixtures/secret-fields.log documents every rule"
   ]
 
   action: [
     "src/action/index.ts is a thin wrapper - delegate to processLogFile + render a Step Summary, nothing else",
     "Read inputs via @actions/core.getInput; never read process.env directly",
     "Resolve relative outputs through buildOutputPath so default suffix is .logstrip.log",
-    "@actions/github is imported dynamically to avoid CJS/ESM conflicts in tests",
+    "@actions/core (3.x, ESM-only) and @actions/github are loaded with await import() inside run() and writeSummary(); a failed core import prints an escaped ::error:: command and sets exitCode 1 instead of throwing",
     "Failures must call core.setFailed - never throw out of run()"
   ]
 
@@ -66,18 +71,26 @@
   ]
 
   ci: [
-    "ci.yml runs on Node 20.x / 22.x / 24.x; keep parser and CLI compatible with all three",
+    "ci.yml runs on Node 22.x / 24.x (Node 20 is end of life and dropped in 2.0); keep parser and CLI compatible with both",
     "The CLI smoke step feeds a printf-built log through node dist/cli/index.js and greps for [x2] [ERROR]",
     "The action-smoke-test job downloads the published artifact and runs processLogFile against a printf-built fixture",
-    "When adding workflow steps avoid indented heredocs - they preserve leading whitespace and break literal grep assertions"
+    "When adding workflow steps avoid indented heredocs - they preserve leading whitespace and break literal grep assertions",
+    "Renovate (renovate.json) owns dependency and action updates - there is no dependabot.yml; minor/patch devDependencies and action digests automerge after a 3 day release age, majors and lockfile maintenance wait for a human",
+    "Every uses: in .github/workflows is pinned to a full commit SHA with a # vX.Y.Z comment and Renovate keeps the SHAs fresh; mrwogu/logstrip@v1 stays floating on purpose because that step dogfoods the published action",
+    "npm run docs:check (scripts/check-cli-docs.js) fails CI when a --flag from HELP_TEXT is missing from docs/reference/cli.md or README.md - add the flag to both when you add it to the CLI",
+    "ci.yml also runs on a Monday cron so main is re-validated against the live registry; release-please uses RELEASE_PAT when the secret exists and falls back to GITHUB_TOKEN"
   ]
 
   docs: [
-    "MkDocs Material with mkdocs.yml + docs/**; build with mkdocs build --strict",
-    "CLI reference (docs/reference/cli.md) is the canonical user-facing doc - keep it in sync with src/cli/index.ts flags",
-    "Action reference (docs/reference/action.md) is a wrapper page and must clearly call out 'CLI is preferred'",
-    "Custom CSS lives in docs/assets/stylesheets/extra.css (dark theme, JetBrains Mono, lowercase hero)",
-    "Logo asset is docs/assets/images/logo.svg"
+    "The docs site is Astro + Starlight in apps/docs (own package.json and package-lock.json, Node >= 22); Markdown sources stay in docs/** and are loaded from there, so every page must stay readable on GitHub",
+    "Build with npm run docs:install && npm run docs:build (output in site/); npm run docs:test runs astro check plus the apps/docs vitest specs; npm run docs:serve starts astro dev",
+    "apps/docs/src/site.mjs holds ORIGIN, BASE (/logstrip, a GitHub Pages project site), SITE and the sidebar - every internal URL goes through withBase and the compat plugin",
+    "apps/docs/src/plugins/remark-mkdocs-compat.mjs rewrites relative .md links and strips the body H1; page titles come from frontmatter, so every docs/**/*.md needs a title",
+    "Homepage is apps/docs/src/components/home.html rendered by src/pages/index.astro; styles live in apps/docs/src/styles/theme.css and home.css (dark slate palette, Inter + JetBrains Mono, lowercase hero kicker)",
+    "llms.txt, llms-full.txt and the /<page>/index.md Markdown twins are generated by apps/docs/src/pages endpoints - keep them working when adding pages",
+    "Images and the logo live in apps/docs/public/assets/images; robots.txt and the Google verification file are served from apps/docs/public",
+    "CLI reference (docs/reference/cli.md) is the canonical user-facing doc - keep it in sync with src/cli/index.ts flags (docs:check enforces this)",
+    "Action reference (docs/reference/action.md) is a wrapper page and must clearly call out 'CLI is preferred'"
   ]
 
   git: {

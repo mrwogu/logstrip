@@ -1,11 +1,20 @@
 import { createHash } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createInterface } from 'node:readline';
 
-import { processLogFile, processLogString } from '../core/logstrip-parser';
-import type { LogStripStringResult } from '../core/logstrip-parser';
+import {
+  claimTextContent,
+  classifyContent,
+  processLogFile,
+  processLogString,
+} from '../core/logstrip-parser';
+import type {
+  ContentClassification,
+  LogStripStringResult,
+} from '../core/logstrip-parser';
 import type { CliIo } from './index';
 
 const LOG_FILE_EXTENSIONS: readonly string[] = [
@@ -17,18 +26,14 @@ const LOG_FILE_EXTENSIONS: readonly string[] = [
 ];
 
 const HOOK_LOG_DETECTION_MIN_LINES = 5;
-const HOOK_LOG_DETECTION_MIN_SCORE = 2;
-const HOOK_STACK_TRACE_BONUS_THRESHOLD = 3;
-
-const TIMESTAMP_PATTERN =
-  /([0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}|[0-9]{2}:[0-9]{2}:[0-9]{2}[.,][0-9]{3})/u;
-const LOG_LEVEL_PATTERN =
-  /\[(INFO|ERROR|WARN|DEBUG|TRACE|FATAL|WARNING)\]|(^|\s)(ERROR|WARNING|FATAL|INFO):|npm (ERR|WARN)!/iu;
-const STACK_TRACE_PATTERN = /at [a-zA-Z][a-zA-Z0-9_$]+\.[a-zA-Z]/u;
-const CI_MARKER_PATTERN =
-  /(FAIL|PASS|SKIP|RUN)\b|npm ERR!|cargo (error|warning)|make\[|pytest|jest|mocha/iu;
-const LINE_PREFIX_PATTERN =
-  /^\s*(npm ERR|npm WARN|yarn error|FAIL|PASS|SKIP|RUN|OK|ERR!|WARN!|\[ERROR\]|\[INFO\]|\[WARN\]|\[DEBUG\]|\[FATAL\]|\[TRACE\]|FATAL:|ERROR:|WARNING:)/iu;
+// A pasted prompt is only blocked when the shared classifier sees log output
+// in it: at least this many log-like lines, making up at least this share of
+// the non-blank lines. The classifier alone is not enough, it calls any
+// input without recognizable structure a log.
+const HOOK_MIN_LOG_LINES = 3;
+const HOOK_MIN_LOG_RATIO = 0.4;
+// Blocking a paste that barely shrinks only costs the user a round trip.
+const HOOK_MIN_SAVINGS_PERCENT = 15;
 
 const COMPRESSION_FAILED_HINT =
   'LogStrip: compression failed. Analysing raw content.';
@@ -106,16 +111,6 @@ function buildBlockReason(
     '`logstrip <file> -o <file>.logstrip.log`, then re-send referencing the ' +
     'compressed file or paste its contents.'
   );
-}
-
-function countMatchingLines(text: string, pattern: RegExp): number {
-  let count = 0;
-  for (const line of text.split(/\r?\n/u)) {
-    if (pattern.test(line)) {
-      count += 1;
-    }
-  }
-  return count;
 }
 
 function emit(stream: NodeJS.WritableStream, payload: unknown): Promise<void> {
@@ -208,6 +203,28 @@ function buildBlockPayload(
   };
 }
 
+// Read just the head of a file and classify it, so a text file named
+// notes.txt is neither compressed nor left with a stray .logstrip.log.
+async function fileLooksLikeText(filePath: string): Promise<boolean> {
+  const input = createReadStream(filePath, { encoding: 'utf8' });
+  const lines = createInterface({ input, crlfDelay: Infinity });
+  try {
+    const claim = await claimTextContent(lines);
+    return claim.classification.kind === 'text';
+  } finally {
+    lines.close();
+    input.destroy();
+  }
+}
+
+function looksLikeLogPaste(classification: ContentClassification): boolean {
+  return (
+    classification.kind === 'log' &&
+    classification.logLines >= HOOK_MIN_LOG_LINES &&
+    classification.logLines / classification.sampledLines >= HOOK_MIN_LOG_RATIO
+  );
+}
+
 async function handlePreToolUse(
   event: PreToolUseEvent,
   stdout: NodeJS.WritableStream,
@@ -234,7 +251,10 @@ async function handlePreToolUse(
 
   const outputFile = `${filePath}.logstrip.log`;
   try {
-    await processLogFile(filePath, outputFile);
+    if (await fileLooksLikeText(filePath)) {
+      return;
+    }
+    await processLogFile(filePath, outputFile, { textPassthrough: false });
   } catch {
     await emit(stdout, {
       hookSpecificOutput: {
@@ -261,42 +281,21 @@ async function handleUserPromptSubmit(
     return;
   }
 
-  const lineCount = prompt.split(/\r?\n/u).length;
-  if (lineCount < HOOK_LOG_DETECTION_MIN_LINES) {
+  const lines = prompt.split(/\r?\n/u);
+  if (lines.length < HOOK_LOG_DETECTION_MIN_LINES) {
     return;
   }
-
-  let score = 0;
-  if (countMatchingLines(prompt, TIMESTAMP_PATTERN) >= 2) {
-    score += 1;
-  }
-  if (countMatchingLines(prompt, LOG_LEVEL_PATTERN) >= 2) {
-    score += 1;
-  }
-
-  const stackTraceLines = countMatchingLines(prompt, STACK_TRACE_PATTERN);
-  if (stackTraceLines >= 1) {
-    score += 1;
-  }
-  if (stackTraceLines >= HOOK_STACK_TRACE_BONUS_THRESHOLD) {
-    score += 1;
-  }
-
-  if (countMatchingLines(prompt, CI_MARKER_PATTERN) >= 2) {
-    score += 1;
-  }
-  if (countMatchingLines(prompt, LINE_PREFIX_PATTERN) >= 2) {
-    score += 1;
-  }
-
-  if (score < HOOK_LOG_DETECTION_MIN_SCORE) {
+  if (!looksLikeLogPaste(classifyContent(lines))) {
     return;
   }
 
   let compressed: LogStripStringResult;
   try {
-    compressed = await processLogString(prompt);
+    compressed = await processLogString(prompt, { textPassthrough: false });
   } catch {
+    return;
+  }
+  if (compressed.savingsPercent < HOOK_MIN_SAVINGS_PERCENT) {
     return;
   }
 

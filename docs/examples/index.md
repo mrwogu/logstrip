@@ -9,9 +9,9 @@ naturally with any CI that can run a shell. The GitHub Action wrapper appears
 in the npm-test recipe and is documented in full at
 [Reference - GitHub Action](../reference/action.md).
 
-<div class="logstrip-grid" markdown="1">
+<div class="logstrip-grid">
 
-<div class="logstrip-card" markdown="1">
+<div class="logstrip-card">
 <span class="logstrip-metric">node</span>
 
 ### [npm test](npm-test.md)
@@ -20,7 +20,7 @@ in the npm-test recipe and is documented in full at
 PowerShell, artifact upload, GitHub Action wrapper.
 </div>
 
-<div class="logstrip-card" markdown="1">
+<div class="logstrip-card">
 <span class="logstrip-metric">python</span>
 
 ### [pytest](pytest.md)
@@ -29,7 +29,7 @@ Multi-line traceback joining (`-m python`), GitHub Actions, GitLab CI,
 tox, pre-push hooks.
 </div>
 
-<div class="logstrip-card" markdown="1">
+<div class="logstrip-card">
 <span class="logstrip-metric">docker</span>
 
 ### [docker compose](docker-compose.md)
@@ -38,7 +38,7 @@ tox, pre-push hooks.
 compression, on-failure capture in CI.
 </div>
 
-<div class="logstrip-card" markdown="1">
+<div class="logstrip-card">
 <span class="logstrip-metric">k8s</span>
 
 ### [Kubernetes](k8s.md)
@@ -47,7 +47,7 @@ compression, on-failure capture in CI.
 debugging, ArgoCD / GitOps integration.
 </div>
 
-<div class="logstrip-card" markdown="1">
+<div class="logstrip-card">
 <span class="logstrip-metric">ci</span>
 
 ### [Jenkins](jenkins.md)

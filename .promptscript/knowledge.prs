@@ -12,12 +12,25 @@
     npm run test:coverage        # vitest run --coverage with 100% thresholds
     npm run build                # tsc -p tsconfig.build.json + scripts/post-build.js
     npm audit                    # must end with `found 0 vulnerabilities`
-    npm run docs:build           # mkdocs build --strict
-    npm run docs:serve           # local MkDocs preview
+    npm run docs:check           # every --flag in HELP_TEXT is documented in cli.md and README
+    npm run smoke:cli            # printf-built log through dist/cli/index.js
+    npm run smoke:hooks          # plugin hook smoke test
+    npm run docs:install         # npm ci inside apps/docs (Astro + Starlight, Node >= 22)
+    npm run docs:test            # astro check + apps/docs vitest specs
+    npm run docs:build           # astro build -> site/
+    npm run docs:serve           # astro dev at http://localhost:4321/logstrip/
+    npm run bench                # per-fixture compression benchmark (needs a build)
+    npm run docs:bench           # regenerate benchmarks.json, docs/benchmarks.md, README blocks, badges (-- --check in CI)
+    node scripts/export-hero-scenarios.mjs   # regenerate the homepage demo data from the parser (--check in CI)
+    npm run verify               # typecheck, coverage, build, docs:check, audit, docs:build
   ```
 
-  Dependency overrides in package.json keep `@actions/http-client@^3.0.2` and
-  `undici@^6.25.0` to clear known advisories - keep them in sync with audit.
+  package.json carries no dependency overrides any more. `npm audit` must stay
+  at 0 vulnerabilities; Renovate opens security PRs outside the weekly schedule
+  and automerges minor/patch devDependencies after a 3 day release age.
+  Rebuilding (`npm run build`) rewrites dist/, which is committed - never
+  commit dist/ changes by hand, release-please rebuilds it on release
+  (`git add -A -- . ':!dist'`).
 
   ## CLI usage cheat sheet
 
@@ -69,12 +82,14 @@
     export interface CliOptions {
       input?: string;
       output?: string;
-      aggressiveness: 'low' | 'medium' | 'high' | 'aggressive';
+      aggressiveness: 'low' | 'medium' | 'high' | 'aggressive' | 'auto';
       stats: boolean;
       json: boolean;
       telemetry: boolean;
+      force: boolean;          // --force: compress even when the input does not look like a log
       help: boolean;
       version: boolean;
+      // plus one field per flag in HELP_TEXT (--no-* booleans, numeric limits, patterns)
     }
 
     export interface CliIo {
@@ -98,9 +113,14 @@
   Exported from `src/core/logstrip-parser.ts` (package main):
 
   ```ts
-    type Aggressiveness = 'low' | 'medium' | 'high' | 'aggressive';
+    type Aggressiveness = 'low' | 'medium' | 'high' | 'aggressive' | 'auto';
+    type ContentKind = 'log' | 'text';
 
-    interface LogStripOptions { aggressiveness?: Aggressiveness }
+    interface LogStripOptions {
+      aggressiveness?: Aggressiveness;
+      textPassthrough?: boolean;   // default true: non-log text passes through with secret masking only
+      // plus the pipeline options documented in src/core/types.ts
+    }
 
     interface LogStripStats {
       droppedLines: number;
@@ -120,9 +140,18 @@
       savedTokens: number;
       savingsPercent: number;
       outputPath?: string;
+      detectedSources?: readonly string[];
+      detectedFormat?: string;
+      contentKind?: ContentKind;   // 'text' when the stream was passed through
       stats: LogStripStats;
     }
 
+    function classifyContent(lines: readonly string[]): { kind: ContentKind; logLines: number; textLines: number; sampledLines: number };
+    function claimTextContent(lines: AsyncIterable<string>): Promise<{ classification: ContentClassification; replay: AsyncIterable<string> }>;
+    function maskSecrets(line: string): string;
+    function stripAnsi(line: string): string;
+    function detectHeaderLogLevel(line: string): 'noise' | 'warn' | 'severe' | undefined;
+    function isPassingTestLine(line: string): boolean;
     function processLogFile(input: string, output: string, options?: LogStripOptions): Promise<LogStripResult>;
     function processLogStream(input: NodeJS.ReadableStream, output: NodeJS.WritableStream, options?: LogStripOptions): Promise<LogStripResult>;
     function parseAggressiveness(value: string): Aggressiveness;
@@ -156,6 +185,19 @@
     function formatTelemetrySummary(store: TelemetryStore): string;
   ```
 
+  ## Output markers the pipeline emits
+
+  `[xN] line` folded repeats (template mining merges lines that differ only in a
+  number), `[... hidden internal library frames ...]`, `[... K more application
+  stack frames ...]`, `[... N lines repeated from above ...]` (a block already
+  printed in the last 400 output lines, see BLOCK_REFERENCE_* in constants.ts),
+  `[PEM PRIVATE KEY REDACTED]`, `[REDACTED]`, `[JWT]`, `[HASH]`, `[ID]`,
+  `[TIME]`, `[IP]`, `[PORT]`, `[EMAIL]`, `[AGO]` (only for "N ago" ages; measured
+  durations such as `timed out after 30s` are kept), `[HTTP 4xx]` / `[HTTP 5xx]`.
+  Unbracketed levels (`INFO`, `DEBUG` after a timestamp, `level=info`) are noise
+  like `[INFO]`; passing-test lines (`PASS`, `ok pkg`, `✓ name`) are dropped even
+  when the test name mentions an error. New markers need a smoke fixture.
+
   ## Public action surface
 
   Exported from `src/action/index.ts` (used by tests, do not break):
@@ -175,7 +217,7 @@
     outputs:
       output-path:     # path to the compressed log; defaults to <input>.logstrip.log
     runs:
-      using: node20
+      using: node24
       main: dist/action/index.js
   ```
 
@@ -194,7 +236,15 @@
   | Realistic logs                | tests/fixtures/*.log                                  |
   | Snapshot baselines            | tests/fixtures/__snapshots__/*.logstrip.snap            |
   | CI pipeline                   | .github/workflows/ci.yml                              |
-  | Docs source                   | docs/, mkdocs.yml, requirements-docs.txt              |
+  | Dependency automation         | renovate.json                                         |
+  | Content classifier            | src/core/detection/content-kind.ts                    |
+  | Secret masking                | src/core/sanitize/sanitize-line.ts (maskSecrets)      |
+  | CLI docs drift check          | scripts/check-cli-docs.js                             |
+  | Benchmark data for docs       | scripts/export-benchmarks.mjs -> apps/docs/src/data/benchmarks.json |
+  | Regex backtracking guard      | tests/regex-backtracking.test.ts                      |
+  | Secret field fixture          | tests/fixtures/secret-fields.log                      |
+  | Docs source (Markdown)        | docs/**                                               |
+  | Docs site (Astro Starlight)   | apps/docs (site.mjs, src/components, src/styles)      |
   | CLI docs                      | docs/reference/cli.md                                 |
   | Library docs                  | docs/reference/core.md                                |
   | GHA docs                      | docs/reference/action.md                              |

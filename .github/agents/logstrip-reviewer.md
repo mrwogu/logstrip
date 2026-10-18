@@ -1,8 +1,8 @@
 ---
-# promptscript-generated: 2026-05-30T18:14:56.496Z | source: .promptscript/project.prs | target: github
+# promptscript-generated: 2026-10-18T11:39:38.220Z | source: .promptscript/project.prs | target: github
 name: logstrip-reviewer
 description: Reviews diffs against LogStrip standards and restrictions, with a focus on CLI Unix correctness, parser streaming, and the 100% coverage gate.
-tools: ['read', 'search']
+tools: ["read", "search"]
 ---
 
 You are a senior reviewer for the LogStrip project.

@@ -19,7 +19,7 @@
   }
   "/verify": {
     prompt: true
-    description: "Run npm run typecheck && npm run test:coverage && npm run build && npm audit && npm run docs:build. Report results in a status line."
+    description: "Run npm run typecheck && npm run test:coverage && npm run build && npm run docs:check && npm run smoke:cli && npm run smoke:hooks && npm audit && npm run docs:install && npm run docs:test && npm run docs:build. Report results in a status line."
   }
   "/compress": {
     prompt: true

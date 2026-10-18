@@ -1,0 +1,13 @@
+Downloading from central: https://repo.maven.apache.org/maven2/org/springframework/spring-core/6.1.4/spring-core-6.1.4.pom
+Downloaded from central: https://repo.maven.apache.org/maven2/org/springframework/spring-core/6.1.4/spring-core-6.1.4.pom (2.1 kB at 41 kB/s)
+Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1.jar
+Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1.jar (1.6 MB at 5.2 MB/s)
+Downloading from central: https://repo.maven.apache.org/maven2/org/hibernate/orm/hibernate-core/6.4.2.Final/hibernate-core-6.4.2.Final.jar
+Downloaded from central: https://repo.maven.apache.org/maven2/org/hibernate/orm/hibernate-core/6.4.2.Final/hibernate-core-6.4.2.Final.jar (11 MB at 8.9 MB/s)
+Get:1 http://archive.ubuntu.com/ubuntu jammy/main amd64 libssl3 amd64 3.0.2-0ubuntu1.15 [1905 kB]
+Fetched 4210 kB in 1s (5106 kB/s)
+  Downloading requests-2.31.0-py3-none-any.whl (62 kB)
+[INFO] Compiling 42 source files with javac [debug release 21] to target/classes
+[ERROR] /repo/src/main/java/com/acme/checkout/CartService.java:[118,9] cannot find symbol
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.12.1:compile (default-compile) on project checkout: Compilation failure
+Failed to transfer https://repo.example.com/internal/acme-sdk-2.4.0.jar (12 kB/s), retrying

@@ -13,3 +13,12 @@ test-review-data.json
 # Local preview artifacts
 .playwright-mcp/
 logstrip-hero-*.png
+
+# Output of the smoke scripts (scripts/ci-*-smoke.js); raw.log stays tracked
+# because the action-smoke-test job passes it to the action.
+/logstrip.log
+/logstrip-stdin.log
+/raw.logstrip.log
+
+# Docs site (Astro)
+apps/docs/.astro/

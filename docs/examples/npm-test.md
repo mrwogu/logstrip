@@ -41,7 +41,7 @@ When you do not need the raw log on disk, pipe directly:
 ```yaml
 strategy:
   matrix:
-    node-version: [20.x, 22.x, 24.x]
+    node-version: [22.x, 24.x]
 
 steps:
   - uses: actions/setup-node@v4

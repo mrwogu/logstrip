@@ -1,8 +1,8 @@
 ---
-# promptscript-generated: 2026-05-30T18:14:56.498Z | source: .promptscript/project.prs | target: claude
+# promptscript-generated: 2026-10-18T11:39:38.220Z | source: .promptscript/project.prs | target: claude
 name: logstrip-fixture-author
 description: Generates new realistic CI log fixtures (Node, Python, Docker, Java, etc.) and wires them into tests/smoke.test.ts with grounded thresholds.
-tools: ['Read', 'Grep', 'Glob', 'Bash']
+tools: ["Read", "Grep", "Glob", "Bash"]
 model: inherit
 ---
 
@@ -17,7 +17,7 @@ When asked to add a fixture:
 2. Profile it via the CLI or processLogFile against dist/core/logstrip-parser.js
    to learn savings %, duplicateLines, droppedLines, hiddenInternalStackLines.
    A quick recipe:
-       node dist/cli/index.js tests/fixtures/<name>.log -o /tmp/out.log --json
+   node dist/cli/index.js tests/fixtures/<name>.log -o /tmp/out.log --json
 
 3. Add a new case object in tests/smoke.test.ts with minSavingsPercent set
    just below the observed value, plus mustContain / mustNotContain

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LogStripResult } from '../src/core/logstrip-parser';
 
 const mocks = vi.hoisted(() => {
@@ -258,5 +258,61 @@ describe('GitHub Action wrapper', () => {
         ['Saved tokens', '75'],
       ]),
     );
+  });
+});
+
+describe('loading @actions/core', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.doUnmock('@actions/core');
+    vi.resetModules();
+    vi.restoreAllMocks();
+    process.exitCode = undefined;
+  });
+
+  it('does not load the package before it is needed, and loads it once', async () => {
+    const factory = vi.fn(() => ({
+      getInput: mocks.getInput,
+      setOutput: mocks.setOutput,
+      setFailed: mocks.setFailed,
+      summary: mocks.summary,
+    }));
+    mocks.getInput.mockImplementation((name: string) =>
+      name === 'log-path' ? 'raw.log' : '',
+    );
+    mocks.processLogFile.mockResolvedValue(result());
+    mocks.summary.addHeading.mockReturnValue(mocks.summary);
+    mocks.summary.addTable.mockReturnValue(mocks.summary);
+    mocks.summary.write.mockResolvedValue(undefined);
+    vi.resetModules();
+    vi.doMock('@actions/core', factory);
+
+    const action = await import('../src/action/index.js');
+    expect(factory).not.toHaveBeenCalled();
+
+    await action.run();
+    await action.run();
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(mocks.setFailed).not.toHaveBeenCalled();
+  });
+
+  it('reports an error command and a failing exit code when the package cannot be loaded', async () => {
+    const write = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    vi.resetModules();
+    vi.doMock('@actions/core', () => {
+      throw new Error('the package is missing');
+    });
+
+    const { run } = await import('../src/action/index.js');
+    await expect(run()).resolves.toBeUndefined();
+
+    // One workflow command on one line, whatever the loader error says.
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(String(write.mock.calls[0]?.[0])).toMatch(/^::error::[^\r\n]+\n$/u);
+    expect(process.exitCode).toBe(1);
+    expect(mocks.processLogFile).not.toHaveBeenCalled();
   });
 });

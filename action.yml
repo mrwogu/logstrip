@@ -42,5 +42,5 @@ branding:
   icon: scissors
   color: green
 runs:
-  using: node20
+  using: node24
   main: dist/action/index.js

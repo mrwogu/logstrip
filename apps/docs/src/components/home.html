@@ -1,0 +1,309 @@
+<div class="home-page not-content">
+  <section class="hp-hero" aria-labelledby="hp-title">
+    <div class="hp-hero__copy">
+      <p class="hp-kicker">cli compression for agentic pipelines</p>
+
+      <h1 id="hp-title" class="hp-hero__title">
+        <span class="hp-sr">LogStrip: </span>send agents the failure, not the log.
+      </h1>
+
+      <p class="hp-hero__lede">
+        LogStrip cuts CI, server and scanner logs down to the lines an agent needs: errors, the
+        first occurrence of each event, context and your stack frames. No model, no network, the
+        same output every time.
+      </p>
+
+      <div class="hp-cmd">
+        <code tabindex="0">npx -y logstrip raw.log --stats</code>
+        <button type="button" class="hp-copy" data-copy="npx -y logstrip raw.log --stats">
+          copy
+        </button>
+      </div>
+
+      <div class="hp-actions">
+        <a class="hp-button" href="{{base}}/getting-started/">install the cli</a>
+        <a class="hp-button hp-button--ghost" href="{{base}}/benchmarks/">see the benchmarks</a>
+      </div>
+
+      <ul class="hp-facts">
+        <li>offline</li>
+        <li>no model</li>
+        <li>deterministic</li>
+        <li>zero dependencies</li>
+        <li>MIT</li>
+      </ul>
+    </div>
+
+    <div
+      class="hp-demo"
+      data-logstrip-compare
+      aria-label="Interactive raw-to-LogStrip terminal comparison"
+    >
+      <div class="hp-demo__bar">
+        <span class="hp-demo__dot"></span>
+        <span class="hp-demo__dot"></span>
+        <span class="hp-demo__dot"></span>
+        <span class="hp-demo__title">raw.log - logstrip.log</span>
+      </div>
+      <div class="hp-demo__fallback">
+        <pre>
+[INFO] boot ok
+[ERROR] request 123e4567-e89b-12d3-a456-426614174000 failed
+[ERROR] request 987e6543-e21b-42d3-b456-526614174111 failed</pre>
+        <pre>[x2] [ERROR] request [ID] failed</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="hp-section" id="problem" aria-labelledby="hp-problem-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-problem-title">agents pay for every line.</h2>
+      <p>
+        A failing job prints hundreds of lines. Your agent reads all of them, and each token costs
+        money and attention. Most lines are boot messages, health checks, passing tests and the
+        same stack trace again. The few that explain the failure sit somewhere in the middle.
+      </p>
+      <p>
+        Cutting by hand means writing a new <code>grep</code> for every tool. Pasting it all means
+        paying for the noise.
+      </p>
+    </div>
+
+    <figure class="hp-log">
+      <pre class="hp-log__body" tabindex="0" aria-label="The first 12 lines of a raw Jest log"><code><span class="hp-ln"><span class="hp-ln__no">1</span><span class="hp-ln__text">[INFO] 2026-05-15T08:01:00.000Z jest worker booted pid=4011 jobId=ae9c1d2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f</span></span>
+<span class="hp-ln"><span class="hp-ln__no">2</span><span class="hp-ln__text">[INFO] 2026-05-15T08:01:00.001Z runner using 4 workers</span></span>
+<span class="hp-ln"><span class="hp-ln__no">3</span><span class="hp-ln__text">[DEBUG] 2026-05-15T08:01:00.002Z transformer cache hit src/index.ts hash=9f8e7d6c5b4a39281706f5e4d3c2b1a0</span></span>
+<span class="hp-ln"><span class="hp-ln__no">4</span><span class="hp-ln__text">[DEBUG] 2026-05-15T08:01:00.003Z transformer cache hit src/api.ts hash=8e7d6c5b4a39281706f5e4d3c2b1a0f9</span></span>
+<span class="hp-ln"><span class="hp-ln__no">5</span><span class="hp-ln__text">[DEBUG] 2026-05-15T08:01:00.004Z transformer cache hit src/db.ts hash=7d6c5b4a39281706f5e4d3c2b1a0f9e8</span></span>
+<span class="hp-ln"><span class="hp-ln__no">6</span><span class="hp-ln__text">[INFO] 2026-05-15T08:01:00.500Z PASS src/api.test.ts (123ms)</span></span>
+<span class="hp-ln"><span class="hp-ln__no">7</span><span class="hp-ln__text">[INFO] 2026-05-15T08:01:00.600Z PASS src/util.test.ts (87ms)</span></span>
+<span class="hp-ln"><span class="hp-ln__no">8</span><span class="hp-ln__text">[INFO] 2026-05-15T08:01:00.700Z FAIL src/payments.test.ts (412ms)</span></span>
+<span class="hp-ln hp-ln--lit"><span class="hp-ln__no">9</span><span class="hp-ln__text">[ERROR] TypeError: Cannot read properties of undefined (reading 'amount') at request d1b3a8f7-2e4c-4b9a-9d2e-1c4a5b6c7d8e</span></span>
+<span class="hp-ln hp-ln--lit"><span class="hp-ln__no">10</span><span class="hp-ln__text">    at Payments.charge (/repo/src/payments.ts:42:18)</span></span>
+<span class="hp-ln hp-ln--lit"><span class="hp-ln__no">11</span><span class="hp-ln__text">    at Object.&lt;anonymous&gt; (/repo/src/payments.test.ts:31:25)</span></span>
+<span class="hp-ln"><span class="hp-ln__no">12</span><span class="hp-ln__text">    at Promise.then.completed (/repo/node_modules/jest-circus/build/utils.js:298:28)</span></span>
+<span class="hp-ln hp-ln--gap"><span class="hp-ln__no"></span><span class="hp-ln__text">... {{jest-more-lines}} more lines</span></span></code></pre>
+      <figcaption>
+        From <code>jest-noisy.log</code>, one of our test fixtures: {{jest-lines-in}} lines,
+        {{jest-tokens-in}} tokens. LogStrip keeps the lit lines and a marker for the library
+        frames. Output: {{jest-lines-out}} lines, {{jest-tokens-out}} tokens.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="hp-section" id="proof" aria-labelledby="hp-proof-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-proof-title">measured, not promised.</h2>
+      <p>
+        Each bar is one test fixture. The solid part is what LogStrip keeps. The hatched part is
+        what it strips. Tokens are LogStrip's own estimate, words times 1.3.
+      </p>
+      <p class="hp-note">
+        These are small logs that we wrote, not production traffic. Run
+        <code>logstrip --stats</code> on one of yours before you trust any number here.
+      </p>
+      <a class="hp-textlink" href="{{base}}/benchmarks/">all {{fixtures}} fixtures and the method</a>
+    </div>
+    <!-- proof -->
+  </section>
+
+  <section class="hp-section hp-section--wide" id="how" aria-labelledby="hp-how-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-how-title">five stages, one pass.</h2>
+      <p>
+        LogStrip reads the log line by line and never holds all of it in memory. Each line goes
+        through the same stages, so the same input gives the same output.
+      </p>
+    </div>
+    <!-- pipeline -->
+    <ol class="hp-stages">
+      <li>
+        <strong>classify.</strong> Samples the start of the stream. Prose, markdown, source and
+        config pass through with secrets masked. Logs continue.
+      </li>
+      <li>
+        <strong>sanitize.</strong> Masks tokens, keys and passwords. Replaces ids, timestamps and
+        addresses with placeholders, so repeats can fold.
+      </li>
+      <li>
+        <strong>score.</strong> Rates each line by level, keywords, stack frames and scanner
+        findings. Keeps the context around a failure and drops the routine.
+      </li>
+      <li>
+        <strong>dedupe.</strong> Folds repeats into <code>[x3]</code>, hides internal library
+        frames and refers back to blocks that already appeared.
+      </li>
+      <li>
+        <strong>budget.</strong> With <code>--max-tokens N</code>, keeps the highest scoring lines
+        that fit, in their original order.
+      </li>
+    </ol>
+    <p class="hp-more">
+      <a class="hp-textlink" href="{{base}}/guides/compression-flow/">the full flow, step by step</a>
+    </p>
+  </section>
+
+  <section class="hp-section" id="different" aria-labelledby="hp-different-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-different-title">not a model, on purpose.</h2>
+      <p>
+        Prompt compressors in the LLMLingua family run a language model to drop low-information
+        tokens. That suits prose. A log needs whole lines, frames you can follow and the same
+        answer every time.
+      </p>
+      <p class="hp-note">
+        This describes the approach in general. We have not benchmarked other tools, and we say
+        where the answer depends.
+      </p>
+    </div>
+
+    <div class="hp-compare">
+      <table class="hp-table">
+        <caption class="hp-sr">LogStrip compared with model-based prompt compressors</caption>
+        <thead>
+          <tr>
+            <th scope="col"><span class="hp-sr">Question</span></th>
+            <th scope="col">model-based compressors</th>
+            <th scope="col">logstrip</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">needs a model</th>
+            <td data-label="model-based compressors">yes</td>
+            <td data-label="logstrip">no</td>
+          </tr>
+          <tr>
+            <th scope="row">same input, same output</th>
+            <td data-label="model-based compressors">depends on model, hardware and settings</td>
+            <td data-label="logstrip">yes, pinned by snapshot tests</td>
+          </tr>
+          <tr>
+            <th scope="row">lines stay whole</th>
+            <td data-label="model-based compressors">not guaranteed, tokens are removed inside lines</td>
+            <td data-label="logstrip">yes: kept, folded or marked</td>
+          </tr>
+          <tr>
+            <th scope="row">repeats</th>
+            <td data-label="model-based compressors">removed, no count</td>
+            <td data-label="logstrip"><code>[x412]</code> and the values that differed</td>
+          </tr>
+          <tr>
+            <th scope="row">prose and documents</th>
+            <td data-label="model-based compressors">what they are built for</td>
+            <td data-label="logstrip">passed through untouched</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="hp-more">
+        <a class="hp-textlink" href="{{base}}/why-logstrip/">why logs are not prose</a>
+        <a class="hp-textlink" href="{{base}}/compare/">compare with grep, platforms and more</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="hp-section hp-section--wide" id="use" aria-labelledby="hp-use-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-use-title">built for three jobs.</h2>
+    </div>
+
+    <div class="hp-uses">
+      <article class="hp-use">
+        <h3>ci pipelines</h3>
+        <p>Compress the log in the step before the one that reads it.</p>
+        <pre class="hp-code" tabindex="0"><code>npm test &gt; raw.log 2&gt;&amp;1 || true
+logstrip raw.log -o clean.log --stats</code></pre>
+        <p class="hp-use__links">
+          <a class="hp-textlink" href="{{base}}/examples/">ci recipes</a>
+          <a class="hp-textlink" href="{{base}}/reference/action/">github action</a>
+        </p>
+      </article>
+
+      <article class="hp-use">
+        <h3>agent hooks</h3>
+        <p>
+          Plugins teach the agent to run it. Hooks compress a log when the agent reads it or you
+          paste it.
+        </p>
+        <pre class="hp-code" tabindex="0"><code>npm i -g logstrip</code></pre>
+        <p class="hp-use__links">
+          <a class="hp-textlink" href="{{base}}/guides/plugins/">set up your agent</a>
+        </p>
+      </article>
+
+      <article class="hp-use">
+        <h3>incident triage</h3>
+        <p>Pipe what you pulled straight into a size your model can afford.</p>
+        <pre class="hp-code" tabindex="0"><code>kubectl logs deploy/checkout --since=1h \
+  | logstrip --max-tokens 4000</code></pre>
+        <p class="hp-use__links">
+          <a class="hp-textlink" href="{{base}}/reference/cli/">cli reference</a>
+          <a class="hp-textlink" href="{{base}}/examples/k8s/">kubernetes recipe</a>
+        </p>
+      </article>
+    </div>
+
+    <div class="hp-agents">
+      <p>Plugins ship for six agents. Five of them also get a hook that compresses logs without being asked.</p>
+      <ul aria-label="Supported agents">
+        <li><a href="{{base}}/guides/plugins/#claude-code">Claude Code</a></li>
+        <li><a href="{{base}}/guides/plugins/#factory-droid">Factory Droid</a></li>
+        <li><a href="{{base}}/guides/plugins/#github-copilot">GitHub Copilot</a></li>
+        <li><a href="{{base}}/guides/plugins/#cursor">Cursor</a></li>
+        <li><a href="{{base}}/guides/plugins/#codex">Codex</a></li>
+        <li><a href="{{base}}/guides/plugins/#opencode">OpenCode</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="hp-section hp-section--wide hp-sources" id="sources" aria-labelledby="hp-sources-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-sources-title">705+ sources, named in the output.</h2>
+      <p>
+        LogStrip recognises the tools that wrote a log and lists them, so an agent knows what it is
+        reading.
+      </p>
+    </div>
+    <div class="hp-marquee" aria-label="Examples of detected log sources">
+      <!-- marquee -->
+    </div>
+    <p class="hp-more">
+      <a class="hp-textlink" href="{{base}}/reference/sources/">all 705+ sources</a>
+      <a class="hp-textlink" href="{{base}}/reference/cli/#custom-configuration-logstripyml">add your own</a>
+    </p>
+  </section>
+
+  <section class="hp-section" id="install" aria-labelledby="hp-install-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-install-title">install in one command.</h2>
+      <p>Needs Node.js 22+. No account, no model, no config file.</p>
+    </div>
+
+    <div class="hp-install">
+      <div class="hp-cmd">
+        <code tabindex="0">npm install --global logstrip</code>
+        <button type="button" class="hp-copy" data-copy="npm install --global logstrip">copy</button>
+      </div>
+      <p>Or run it once without installing:</p>
+      <div class="hp-cmd">
+        <code tabindex="0">npx -y logstrip raw.log -o clean.log --stats</code>
+        <button type="button" class="hp-copy" data-copy="npx -y logstrip raw.log -o clean.log --stats">copy</button>
+      </div>
+      <ul class="hp-links">
+        <li><a href="{{base}}/getting-started/">Getting Started</a> - file, pipe or script</li>
+        <li><a href="{{base}}/reference/cli/">CLI Reference</a> - every flag and exit code</li>
+        <li><a href="{{base}}/reference/core/">Core API</a> - embed the parser in Node</li>
+        <li><a href="{{base}}/reference/action/">GitHub Action</a> - for a one-step workflow, the CLI is preferred</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="hp-section" id="faq" aria-labelledby="hp-faq-title">
+    <div class="hp-section__intro">
+      <h2 id="hp-faq-title">questions.</h2>
+    </div>
+    <div class="hp-faq">
+      <!-- faq -->
+    </div>
+  </section>
+</div>

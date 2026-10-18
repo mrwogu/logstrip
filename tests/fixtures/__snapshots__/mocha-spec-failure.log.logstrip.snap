@@ -1,0 +1,24 @@
+  Checkout API
+    POST /orders
+    GET /orders/:id
+      1) fails closed when the pricing service is unavailable
+    DELETE /orders/:id
+      2) refunds the payment when the order is cancelled
+  13 passing (1s)
+  2 failing
+  1) Checkout API
+       GET /orders/:id
+         fails closed when the pricing service is unavailable:
+      AssertionError: expected 200 to equal 503
+      + expected - actual
+      -200
+      +503
+      at Context.<anonymous> (test/orders.test.js:[NN]:[NN])
+[... hidden internal library frames ...]
+  2) Checkout API
+       DELETE /orders/:id
+         refunds the payment when the order is cancelled:
+     TypeError: Cannot read properties of undefined (reading 'refundId')
+      at Context.<anonymous> (test/orders.test.js:[NN]:[NN])
+[... hidden internal library frames ...]
+npm ERR! Test failed.  See above for more details.

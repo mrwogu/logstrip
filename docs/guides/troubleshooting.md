@@ -7,14 +7,61 @@ description: Fix empty output, exit codes, missing files, and short stack traces
 ## The compressed log is empty
 
 LogStrip removes low-value lines. If a log only contains `[INFO]`,
-`[DEBUG]`, `[TRACE]`, or `[VERBOSE]` entries, the compressed output can be
-empty.
+`[DEBUG]`, `[TRACE]`, or `[VERBOSE]` entries - or the same levels printed
+without brackets, such as `2026-05-16 10:24:31,044 - app - INFO - started` or
+`level=info msg="started"` - the compressed output can be empty.
 
 Add at least one error or warning line to verify the pipeline:
 
 ```text
 [ERROR] smoke test failure
 ```
+
+## My file came out unchanged
+
+If the output has the same number of lines as the input, `savings` is `0%`
+and `--stats` prints `content kind    : text (passed through, secrets masked)`,
+LogStrip did not take the input for a log. It reads the first 100 non-blank
+lines (up to 256 KiB), and when they look like prose, markdown, source code or
+configuration (a README, a YAML file, `notes.txt`) it copies the input through
+instead of compressing it, because the line scorer would drop most of such a
+file.
+
+The text is passed through unchanged except for credentials: tokens,
+passwords, connection-string passwords, `Authorization` headers, cloud keys
+and PEM private key blocks are masked even in text that is copied as it is.
+
+The decision is made from the first sampled lines only. If the input is a log
+that begins with a long stretch of configuration-like or prose-like output, or
+you want a text file compressed anyway, use `--force`:
+
+```bash
+logstrip output.txt --force -o clean.log
+```
+
+From the library, pass `textPassthrough: false`. The `contentKind` field of
+`--json` output (`"text"` or `"log"`) tells you which way a run went.
+
+## Parts of my file were replaced with `[REDACTED]`
+
+Text that LogStrip copies through still has its credentials masked, with the
+same rules the compressor applies to logs. Those rules favour safety over
+fidelity, so besides real secrets they also mask look-alikes such as an
+example like `password=hunter2`, or a sentence that mentions an
+`Authorization:` header (the rest of that line is masked). Any key that ends
+in `password`, `secret`, `token`, `api_key`, `auth` and similar names counts,
+so `DB_PASSWORD=...`, `apiKey: ...` and `"client_secret": "..."` are masked
+too, and so is an assignment in source code such as `const accessToken = load()`
+or `password = readSecret()`. Values that carry no secret stay as they are: an
+empty value, `null`, `true`, `false`, a number under four digits, an unquoted
+type (`previousToken: string`, `password: Optional[str]`), a plain unquoted
+environment read (`token: process.env.NPM_TOKEN`, `os.environ["DB_PASSWORD"]`,
+but not `os.getenv("DB", "hunter2")`), a GitHub permission (`id-token: write`)
+and a plain reference such as
+`token: ${{ secrets.NPM_TOKEN }}` or `DB_PASSWORD=${DB_PASSWORD}`. A reference
+with a default, a command or anything after it (`${NAME:-x}`, `$(cat file)`,
+`$HOME/x`, or a closing bracket or backtick right behind it) is masked. The original file is never modified; only
+the copy is. Read the file directly when you need the exact text.
 
 ## The CLI exits with code `2`
 

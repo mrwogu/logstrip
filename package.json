@@ -56,14 +56,18 @@
   },
   "homepage": "https://mrwogu.github.io/logstrip/",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "bench": "node scripts/benchmark-fixtures.mjs",
     "build": "tsc -p tsconfig.build.json && node scripts/bundle-action.js && node scripts/post-build.js",
     "build:plugins": "node scripts/build-plugins.js",
-    "docs:build": "mkdocs build --strict",
-    "docs:serve": "mkdocs serve",
+    "docs:build": "npm --prefix apps/docs run build",
+    "docs:bench": "node scripts/export-benchmarks.mjs",
+    "docs:check": "node scripts/check-cli-docs.js",
+    "docs:install": "npm --prefix apps/docs ci",
+    "docs:serve": "npm --prefix apps/docs run dev",
+    "docs:test": "npm --prefix apps/docs run check && npm --prefix apps/docs test",
     "prepack": "npm run build",
     "smoke:cli": "node scripts/ci-cli-smoke.js",
     "smoke:hooks": "node scripts/ci-plugin-hook-smoke.js",
@@ -71,19 +75,15 @@
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm run typecheck && npm run test:coverage && npm run build && npm audit && npm run docs:build"
+    "verify": "npm run typecheck && npm run test:coverage && npm run build && npm run docs:check && npm run docs:bench -- --check && node scripts/export-hero-scenarios.mjs --check && npm audit && npm run docs:build"
   },
   "devDependencies": {
-    "@actions/core": "^1.11.1",
+    "@actions/core": "^3.0.1",
     "@actions/github": "^9.1.1",
-    "@types/node": "^25.9.1",
-    "@vitest/coverage-v8": "^4.1.6",
-    "esbuild": "^0.28.0",
-    "typescript": "^5.7.2",
-    "vitest": "^4.1.6"
-  },
-  "overrides": {
-    "@actions/http-client": "^3.0.2",
-    "undici": "^6.25.0"
+    "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "^5.0.5",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
   }
 }

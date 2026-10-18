@@ -1,0 +1,18 @@
+=== RUN   TestCreateOrder
+--- PASS: TestCreateOrder (0.01s)
+=== RUN   TestCreateOrderRejectsEmptyCart
+--- PASS: TestCreateOrderRejectsEmptyCart (0.00s)
+=== RUN   TestRetryAfterTimeout
+--- PASS: TestRetryAfterTimeout (0.21s)
+=== RUN   TestRefund
+=== RUN   TestRefund/settled_order
+    refund_test.go:44: ledger entry already settled for order ord-88421
+--- FAIL: TestRefund (0.03s)
+    --- FAIL: TestRefund/settled_order (0.02s)
+=== RUN   TestInventoryReserve
+--- PASS: TestInventoryReserve (0.05s)
+FAIL
+FAIL	github.com/acme/checkout/orders	0.412s
+?   	github.com/acme/checkout/tools	[no test files]
+ok  	github.com/acme/checkout/pricing	0.119s
+FAIL

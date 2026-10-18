@@ -13,9 +13,16 @@ export interface DiagnosticBooster {
  * diagnostic boosts that only fire when the source is confidently detected.
  */
 
+// logfmt / key=value request logs ("method=GET status=503"). The sanitizer
+// rewrites 4xx/5xx codes to [HTTP 4xx] / [HTTP 5xx], so both forms match.
+export const HTTP_5XX_FIELD_PATTERN =
+  /\bstatus(?:_?code)?[=:]\s*(?:5\d{2}|\[HTTP 5xx\])(?!\d)/iu;
+export const HTTP_4XX_FIELD_PATTERN =
+  /\bstatus(?:_?code)?[=:]\s*(?:4\d{2}|\[HTTP 4xx\])(?!\d)/iu;
+
 export const DIAGNOSTIC_BOOSTERS: readonly DiagnosticBooster[] = [
   // ── Severity tags ────────────────────────────────────────────────
-  { pattern: /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/iu, score: 100, label: 'severity-tag' },
+  { pattern: /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\s*\]/iu, score: 100, label: 'severity-tag' },
 
   // ── JSON severity ────────────────────────────────────────────────
   { pattern: /"(?:level|severity)"\s*:\s*"(?:fatal|error|critical|warn|warning)"/iu, score: 80, label: 'json-severity' },
@@ -48,13 +55,13 @@ export const DIAGNOSTIC_BOOSTERS: readonly DiagnosticBooster[] = [
   { pattern: /^thread '[^']*' panicked at\b/u, score: 60, label: 'rust-panic' },
 
   // ── Go test failures ─────────────────────────────────────────────
-  { pattern: /---\s*FAIL:/u, score: 50, label: 'go-test-fail' },
+  { pattern: /---\s*FAIL:|^FAIL\s+\S+\s+[\d.]+s\b/u, score: 50, label: 'go-test-fail' },
 
   // ── Make errors ──────────────────────────────────────────────────
   { pattern: /^make[:\s*]+/u, score: 50, label: 'make-error' },
 
   // ── Systemd status failures ──────────────────────────────────────
-  { pattern: /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/iu, score: 50, label: 'systemd-status' },
+  { pattern: /\b(?:[Ff]ailed to (?:start|load|listen|mount|open|connect)|status=(?!0\b)\d+(?:\/|\s+)[A-Z][A-Z_]{2,})\b/u, score: 50, label: 'systemd-status' },
 
   // ── CircleCI step failures ───────────────────────────────────────
   { pattern: /\b(?:Spin Cancelled|Step failed|job was not approved)\b/u, score: 50, label: 'circleci-step' },
@@ -71,6 +78,8 @@ export const DIAGNOSTIC_BOOSTERS: readonly DiagnosticBooster[] = [
   // ── HTTP 5xx / 4xx in access-logs ────────────────────────────────
   { pattern: /\bHTTP\/\d\.\d"\s+5\d{2}\b/u, score: 50, label: 'http-5xx' },
   { pattern: /\bHTTP\/\d\.\d"\s+4\d{2}\b/u, score: 20, label: 'http-4xx' },
+  { pattern: HTTP_5XX_FIELD_PATTERN, score: 50, label: 'http-5xx-field' },
+  { pattern: HTTP_4XX_FIELD_PATTERN, score: 20, label: 'http-4xx-field' },
 
   // ── Stack frame patterns ─────────────────────────────────────────
   { pattern: /^\s*at\s+.*(?:\(|\s).+:(?:\d+|\[NN\]):(?:\d+|\[NN\])\)?$/, score: 40, label: 'js-stack-frame' },

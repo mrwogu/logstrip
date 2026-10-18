@@ -1,0 +1,29 @@
+[INFO] 2026-05-16T10:24:31.011Z checkout-api booting pid=412 node=v22.12.0
+[INFO] 2026-05-16T10:24:31.487Z listening on 0.0.0.0:3000
+[ERROR] 2026-05-16T10:24:38.219Z failed to reserve inventory for order ord-88421
+TypeError: Cannot read properties of undefined (reading 'available')
+    at InventoryClient.reserve (/srv/app/src/inventory/client.ts:74:21)
+    at CheckoutService.placeOrder (/srv/app/src/checkout/checkout-service.ts:132:30)
+    at async checkoutHandler (/srv/app/src/http/routes/checkout.ts:58:9)
+    at Layer.handle [as handle_request] (/srv/app/node_modules/express/lib/router/layer.js:95:5)
+[WARN] 2026-05-16T10:24:38.230Z order ord-88421 queued for manual review
+[INFO] 2026-05-16T10:24:39.004Z GET /healthz 200 4ms
+[ERROR] 2026-05-16T10:24:41.502Z failed to reserve inventory for order ord-88422
+TypeError: Cannot read properties of undefined (reading 'available')
+    at InventoryClient.reserve (/srv/app/src/inventory/client.ts:74:21)
+    at CheckoutService.placeOrder (/srv/app/src/checkout/checkout-service.ts:132:30)
+    at async checkoutHandler (/srv/app/src/http/routes/checkout.ts:58:9)
+    at Layer.handle [as handle_request] (/srv/app/node_modules/express/lib/router/layer.js:95:5)
+[WARN] 2026-05-16T10:24:41.511Z order ord-88422 queued for manual review
+[INFO] 2026-05-16T10:24:44.201Z GET /healthz 200 3ms
+[ERROR] 2026-05-16T10:24:46.833Z failed to reserve inventory for order ord-88423
+TypeError: Cannot read properties of undefined (reading 'available')
+    at InventoryClient.reserve (/srv/app/src/inventory/client.ts:74:21)
+    at CheckoutService.placeOrder (/srv/app/src/checkout/checkout-service.ts:132:30)
+    at async checkoutHandler (/srv/app/src/http/routes/checkout.ts:58:9)
+    at Layer.handle [as handle_request] (/srv/app/node_modules/express/lib/router/layer.js:95:5)
+[WARN] 2026-05-16T10:24:46.840Z order ord-88423 queued for manual review
+[FATAL] 2026-05-16T10:24:50.001Z inventory client unusable, shutting down
+Error: Cannot recover checkout worker after repeated reservation failures
+    at shutdown (/srv/app/src/runtime/shutdown.ts:29:11)
+    at process.emit (node:events:520:35)

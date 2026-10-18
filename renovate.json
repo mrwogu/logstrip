@@ -1,0 +1,86 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "Europe/Warsaw",
+  "schedule": ["before 6am on monday"],
+  "enabledManagers": ["npm", "github-actions"],
+  "labels": ["dependencies"],
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "rangeStrategy": "bump",
+  "platformAutomerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "ignoreTests": false,
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["dependencies", "security"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": false,
+    "schedule": ["before 6am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "npm updates are chore(deps) for the root package and apps/docs; the preset would use fix(deps) for production dependencies",
+      "matchManagers": ["npm"],
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps"
+    },
+    {
+      "description": "Workflow action updates are chore(ci) and keep the ci label the old dependabot config used",
+      "matchManagers": ["github-actions"],
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "ci",
+      "addLabels": ["ci"]
+    },
+    {
+      "description": "One PR for all non-major npm updates across the root package and apps/docs",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm non-major dependencies"
+    },
+    {
+      "description": "Automerge minor and patch devDependencies once checks pass",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "description": "Automerge minor, patch and digest updates of uses: references once checks pass; setup-node and setup-python version inputs are not matched",
+      "matchManagers": ["github-actions"],
+      "matchDepTypes": ["action"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "automerge": true
+    },
+    {
+      "description": "Major updates get their own PR and always need a human",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "Node.js engine and runtime version bumps are a deliberate decision, never automerged",
+      "matchDepNames": ["node"],
+      "automerge": false
+    },
+    {
+      "description": "The CI workflow dogfoods the floating v1 tag of this repo's own action, so it stays unpinned",
+      "matchPackageNames": ["mrwogu/logstrip"],
+      "pinDigests": false
+    },
+    {
+      "description": "action.yml describes the published action itself and is not a dependency manifest",
+      "matchFileNames": ["action.yml"],
+      "enabled": false
+    }
+  ]
+}

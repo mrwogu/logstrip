@@ -11,13 +11,14 @@ LogStrip is designed to reduce accidental data exposure before logs are passed t
 The parser replaces common high-cardinality identifiers:
 
 - UUIDs become `[ID]`;
-- ISO and UTC timestamps become `[TIME]`;
+- timestamps become `[TIME]` - ISO and UTC, comma-fraction (Python logging, log4j), syslog, Tomcat/PHP/Redis month-name formats, bare times of day, and epoch numbers under `time`/`ts`/`timestamp` keys;
 - long hexadecimal or alphanumeric hashes become `[HASH]`;
 - IPv4 addresses become `[IP]`;
 - IPv6 addresses become `[IPV6]`;
-- email addresses become `[EMAIL]`.
+- email addresses become `[EMAIL]`;
+- line and column numbers in JavaScript, Python, Java and Go stack frames become `[NN]`, so repeated traces fold into one (the function and file stay, the exact position is only in the raw log).
 
-This lowers token cost and removes identifiers that rarely help root-cause analysis.
+This lowers token cost and removes identifiers that rarely help root-cause analysis. If you need to follow one request across lines, `--preserve-id-suffix <N>` keeps the last _N_ characters of each UUID and hash (see the [CLI reference](../reference/cli.md)).
 
 ## Secret and credential coverage
 
@@ -35,13 +36,13 @@ LogStrip detects and redacts known credential patterns:
 | SendGrid keys (`SG.`) | `[REDACTED]` | `SG.Abcd...XyZ` |
 | Connection strings with credentials | `[REDACTED]` (password) | `postgres://user:pwd@host` |
 | Authorization headers | `Authorization: [REDACTED]` | `Authorization: Bearer xyz` |
-| Secret field values | key=`[REDACTED]` | `password=hunter2` |
+| Secret field values (any key ending in `password`, `secret`, `token`, `api_key`, `auth`, ...; `KEY=value`, `key: value` or a JSON property) | key=`[REDACTED]` | `DB_PASSWORD=hunter2`, `"client_secret": "abc"` |
 | AWS access keys (`AKIA`, `ABIA`, `ASIA`) | `[REDACTED]` | `AKIAIOSFODNN7...` |
 | AWS ARN account IDs | `[ACCOUNT]` | `arn:aws:s3:::123456789012:...` |
 | PEM private key blocks | `[PEM PRIVATE KEY REDACTED]` | `-----BEGIN RSA PRIVATE KEY-----` |
 | High-entropy tokens (fallback) | `[REDACTED]` | `3kF9mQ2xY7LpR4wZ8tN1...` |
 
-Multi-line PEM private key blocks are collapsed to a single `[PEM PRIVATE KEY REDACTED]` marker, with the key body fully removed.
+Multi-line PEM private key blocks are collapsed to a single `[PEM PRIVATE KEY REDACTED]` marker, with the key body fully removed. The block is tracked on every line before any noise, severity or include/exclude filter runs, so a header or footer that carries a level prefix (`DEBUG -----BEGIN PRIVATE KEY-----`) or is dropped by a filter cannot let the key body through.
 
 After the vendor-specific patterns run, an entropy-based fallback masks any
 remaining random-looking token of 20+ characters (Shannon entropy ≥ 4.2

@@ -121,6 +121,26 @@ When you add new parsing, sanitization, or scoring logic:
 
 ---
 
+## Working on the Documentation
+
+The documentation site is an [Astro Starlight](https://starlight.astro.build) app in `apps/docs`. It is a standalone npm project (not a workspace), so the root `npm ci` of the CLI stays small. The Markdown sources stay in `docs/`; the landing page lives in `apps/docs/src/components/home.html`.
+
+```bash
+npm run docs:install   # once, installs apps/docs dependencies (needs Node 22.22 or newer)
+npm run docs:serve     # live preview at http://localhost:4321/logstrip/
+npm run docs:build     # builds to site/ and fails on broken internal links
+npm run docs:test      # type check and unit tests of the docs app
+```
+
+Rules for page sources:
+
+- Every page needs `title` and `description` in its frontmatter. The body keeps its `# H1` for readers on GitHub; the site renders the frontmatter title instead.
+- Link to other pages with relative `.md` paths (`../reference/cli.md#flags`). The site rewrites them and adds the `/logstrip` base path.
+- Use Starlight asides (`:::tip[Title]` ... `:::`) for callouts and `<details>` for collapsible blocks.
+- Add a new page to the sidebar in `apps/docs/src/site.mjs`. It is listed in `/llms.txt` and `/llms-full.txt` automatically.
+
+---
+
 ## Commit Style
 
 Use [Conventional Commits](https://www.conventionalcommits.org/):
@@ -140,4 +160,4 @@ docs: update supported sources list
 npm run typecheck && npm run test:coverage && npm run build && npm audit && npm run docs:build
 ```
 
-All commands must exit 0 before you push.
+All commands must exit 0 before you push. `docs:build` needs the docs dependencies, so run `npm run docs:install` once first.

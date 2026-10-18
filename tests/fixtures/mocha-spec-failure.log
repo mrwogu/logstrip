@@ -1,0 +1,45 @@
+
+> checkout-api@2.4.0 test
+> mocha --reporter spec
+
+  Checkout API
+    POST /orders
+      ✔ creates an order (45ms)
+      ✔ returns an error for an empty cart (12ms)
+      ✔ rejects invalid payment details with a 422 failure payload (9ms)
+      ✔ retries after a timeout from the inventory service (210ms)
+      ✔ does not throw when the coupon has expired (7ms)
+    GET /orders/:id
+      ✔ returns the order (8ms)
+      ✔ handles a missing order with an error response (5ms)
+      1) fails closed when the pricing service is unavailable
+    DELETE /orders/:id
+      ✔ cancels a pending order (14ms)
+      ✔ reports an error when the order already shipped (6ms)
+      2) refunds the payment when the order is cancelled
+
+
+  13 passing (1s)
+  2 failing
+
+  1) Checkout API
+       GET /orders/:id
+         fails closed when the pricing service is unavailable:
+
+      AssertionError: expected 200 to equal 503
+      + expected - actual
+
+      -200
+      +503
+
+      at Context.<anonymous> (test/orders.test.js:88:30)
+      at process.processImmediate (node:internal/timers:476:21)
+
+  2) Checkout API
+       DELETE /orders/:id
+         refunds the payment when the order is cancelled:
+     TypeError: Cannot read properties of undefined (reading 'refundId')
+      at Context.<anonymous> (test/orders.test.js:131:42)
+      at process.processImmediate (node:internal/timers:476:21)
+
+npm ERR! Test failed.  See above for more details.

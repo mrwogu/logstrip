@@ -1,0 +1,3 @@
+[ERROR] /repo/src/main/java/com/acme/checkout/CartService.java:[118,9] cannot find symbol
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.12.1:compile (default-compile) on project checkout: Compilation failure
+Failed to transfer https://repo.example.com/internal/acme-sdk-2.4.0.jar (12 kB/s), retrying

@@ -1,0 +1,191 @@
+/* LogStrip palette: near-black slate with a mint accent (see home.css for the landing page). */
+:root {
+  --sl-font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sl-font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* Header tabs (src/components/Header.astro). The header grows by one tab
+     row, so the logo and the mobile menu button stay sized to the first row. */
+  --ls-nav-base: 3.5rem;
+  --ls-tabs-height: 2.5rem;
+  --sl-nav-height: calc(var(--ls-nav-base) + var(--ls-tabs-height));
+}
+
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #12301a;
+  --sl-color-accent: #3dbb5c;
+  --sl-color-accent-high: #a4ffaf;
+  --sl-color-white: #f7f4ea;
+  --sl-color-gray-1: #e4e2d9;
+  --sl-color-gray-2: #c0beb5;
+  --sl-color-gray-3: #8e8d86;
+  --sl-color-gray-4: #4a4d4d;
+  --sl-color-gray-5: #2f3233;
+  --sl-color-gray-6: #1d1f20;
+  --sl-color-black: #161818;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #d6efde;
+  --sl-color-accent: #1f6f38;
+  --sl-color-accent-high: #14482a;
+}
+
+/* The landing page sits inside .sl-markdown-content but styles itself, so the
+   rules below skip anything under .not-content (the same guard Starlight uses). */
+
+/* Tight headings, like the MkDocs site had */
+.sl-markdown-content :is(h1, h2, h3, h4):not(:where(.not-content *)),
+h1#_top {
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+/* Starlight's desktop heading scale makes h3 almost as large as h2, so long
+   reference pages lose their hierarchy. A tighter scale keeps levels apart. */
+@media (min-width: 50rem) {
+  :root {
+    --sl-text-h1: 2.5rem;
+    --sl-text-h2: 1.75rem;
+    --sl-text-h3: 1.3125rem;
+    --sl-text-h4: 1.125rem;
+  }
+}
+
+/* Supported sources: plain bullet lists rendered as pills */
+.source-list ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0;
+  list-style: none;
+}
+.source-list li {
+  margin: 0;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 999px;
+  background: var(--sl-color-bg-nav);
+  color: var(--sl-color-white);
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-text-xs);
+  line-height: 1.2;
+}
+
+/* Cookbook cards (docs/examples/index.md) */
+.logstrip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.8rem;
+}
+.logstrip-card {
+  padding: 0.95rem 1rem 1.1rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 0.85rem;
+  background: var(--sl-color-bg-nav);
+}
+.logstrip-card h3 {
+  margin-top: 0.4rem;
+  font-size: var(--sl-text-base);
+}
+.logstrip-card p {
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-2);
+}
+.logstrip-metric {
+  display: inline-block;
+  padding: 0.08rem 0.5rem;
+  border-radius: 0.4rem;
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent-high);
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-text-sm);
+  font-weight: 700;
+}
+:where(.logstrip-grid, .logstrip-card, .source-list) * + * {
+  margin-top: 0;
+}
+
+/* Wide tables (five columns or more, such as the comparison and benchmark
+   tables): smaller type and padding so they fit the content column. */
+.sl-markdown-content table:has(th:nth-child(5)) {
+  font-size: var(--sl-text-sm);
+}
+.sl-markdown-content table:has(th:nth-child(5)) :is(th, td) {
+  padding: 0.5rem 0.6rem;
+}
+
+/* Collapsible blocks (<details> in the Markdown) */
+.sl-markdown-content details:not(:where(.not-content *)) {
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+.sl-markdown-content details:not(:where(.not-content *)) > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.sl-markdown-content details[open]:not(:where(.not-content *)) > summary {
+  margin-bottom: 0.75rem;
+}
+
+/* Header tabs, see the variables at the top */
+@media (min-width: 50rem) {
+  :root {
+    --ls-nav-base: 4rem;
+  }
+}
+.ls-header {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.ls-header__main {
+  height: calc(var(--ls-nav-base) - 2 * var(--sl-nav-pad-y));
+}
+.site-title img {
+  height: calc(var(--ls-nav-base) - 2 * var(--sl-nav-pad-y));
+}
+.sl-menu-button {
+  top: calc((var(--ls-nav-base) - var(--sl-menu-button-size)) / 2);
+}
+.ls-tabs-nav {
+  margin-top: auto;
+  margin-inline: calc(-1 * var(--sl-nav-pad-x));
+  padding-inline: var(--sl-nav-pad-x);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ls-tabs-nav ul {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ls-tabs-nav a {
+  display: block;
+  padding: 0.55rem 0.75rem calc(0.55rem - 2px);
+  white-space: nowrap;
+  font-size: var(--sl-text-sm);
+  font-weight: 500;
+  color: var(--sl-color-gray-2);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.ls-tabs-nav a:hover {
+  color: var(--sl-color-white);
+}
+.ls-tabs-nav a[aria-current='page'] {
+  color: var(--sl-color-accent-high);
+  border-bottom-color: var(--sl-color-accent);
+}
+header.header {
+  padding-bottom: 0;
+}
+
+/* Tip asides follow the mint accent instead of Starlight's purple */
+.starlight-aside--tip {
+  border-color: var(--sl-color-accent);
+  background-color: var(--sl-color-accent-low);
+  --sl-color-asides-text-accent: var(--sl-color-accent-high);
+}

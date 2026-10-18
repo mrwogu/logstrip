@@ -1,9 +1,7 @@
 [ERROR] amazon ses Error: ThrottlingException: Daily message quota exceeded for account [IP]
     at email.amazonaws.com/SendEmail:42 in invoke
     at aws ses/lib/client.js:88 in send
-[ERROR] amazon ses Error: ThrottlingException: Daily message quota exceeded for account [IP]
-    at email.amazonaws.com/SendEmail:42 in invoke
-    at aws ses/lib/client.js:88 in send
+[... 3 lines repeated from above ...]
 [ERROR] mailchimp Error: CampaignError: template rendering failed - merge tag *|FNAME|* not found
     at mailchimp/lib/campaigns.js:42 in render
     at mailchimp/lib/templates.js:88 in parse

@@ -2,7 +2,9 @@
 // Per-fixture compression benchmark for data-driven threshold tuning.
 //
 // Runs the built parser over every tests/fixtures/*.log and prints one row
-// per fixture: line counts, token savings and the per-reason drop histogram.
+// per fixture: line counts, token counts, token savings and the per-reason
+// drop histogram. Token counts use the same word-based estimate as the CLI
+// (--stats), so before/after tables stay comparable across commits.
 // Use it before changing scoring weights, regex tables or smoke-case
 // thresholds (minSavingsPercent) so the numbers are grounded, not guessed.
 //
@@ -28,7 +30,7 @@ try {
 
 const filter = process.argv[2];
 const entries = (await readdir(fixturesDir))
-  .filter((name) => name.endsWith('.log'))
+  .filter((name) => name.endsWith('.log') && !name.endsWith('.logstrip.log'))
   .filter((name) => (filter === undefined ? true : name.includes(filter)))
   .sort();
 
@@ -61,35 +63,41 @@ for (const name of entries) {
     fixture: name,
     in: result.stats.inputLines,
     out: result.stats.outputLines,
+    inTok: result.inputTokens,
+    outTok: result.outputTokens,
     savings: `${result.savingsPercent.toFixed(1)}%`,
     ms: elapsedMs.toFixed(1),
     topReasons,
   });
 }
 
-const headers = ['fixture', 'in', 'out', 'savings', 'ms', 'top drop reasons'];
-const widths = [
-  Math.max(...rows.map((r) => r.fixture.length), headers[0].length),
-  Math.max(...rows.map((r) => String(r.in).length), headers[1].length),
-  Math.max(...rows.map((r) => String(r.out).length), headers[2].length),
-  Math.max(...rows.map((r) => r.savings.length), headers[3].length),
-  Math.max(...rows.map((r) => r.ms.length), headers[4].length),
-];
+const headers = ['fixture', 'in', 'out', 'inTok', 'outTok', 'savings', 'ms', 'top drop reasons'];
+const keys = ['fixture', 'in', 'out', 'inTok', 'outTok', 'savings', 'ms'];
+const widths = keys.map((key, index) =>
+  Math.max(...rows.map((row) => String(row[key]).length), headers[index].length),
+);
 
 const pad = (value, width) => String(value).padEnd(width);
 const padNum = (value, width) => String(value).padStart(width);
+const formatRow = (cells, reasons) =>
+  `${cells.map((cell, index) => (index === 0 ? pad(cell, widths[0]) : padNum(cell, widths[index]))).join('  ')}  ${reasons}\n`;
 
-process.stdout.write(
-  `${pad(headers[0], widths[0])}  ${padNum(headers[1], widths[1])}  ${padNum(headers[2], widths[2])}  ${padNum(headers[3], widths[3])}  ${padNum(headers[4], widths[4])}  ${headers[5]}\n`,
-);
+process.stdout.write(formatRow(headers.slice(0, keys.length), headers[keys.length]));
 for (const row of rows) {
   process.stdout.write(
-    `${pad(row.fixture, widths[0])}  ${padNum(row.in, widths[1])}  ${padNum(row.out, widths[2])}  ${padNum(row.savings, widths[3])}  ${padNum(row.ms, widths[4])}  ${row.topReasons}\n`,
+    formatRow(
+      keys.map((key) => row[key]),
+      row.topReasons,
+    ),
   );
 }
 
-const totalIn = rows.reduce((sum, row) => sum + row.in, 0);
-const totalOut = rows.reduce((sum, row) => sum + row.out, 0);
+const sum = (key) => rows.reduce((total, row) => total + row[key], 0);
+const totalIn = sum('in');
+const totalOut = sum('out');
+const totalInTok = sum('inTok');
+const totalOutTok = sum('outTok');
 process.stdout.write(
-  `\n${rows.length} fixtures, ${totalIn} lines in, ${totalOut} lines out (${(100 - (totalOut / totalIn) * 100).toFixed(1)}% line reduction)\n`,
+  `\n${rows.length} fixtures, ${totalIn} lines in, ${totalOut} lines out (${(100 - (totalOut / totalIn) * 100).toFixed(1)}% line reduction)\n` +
+    `${totalInTok} tokens in, ${totalOutTok} tokens out (${(100 - (totalOutTok / totalInTok) * 100).toFixed(1)}% token reduction)\n`,
 );

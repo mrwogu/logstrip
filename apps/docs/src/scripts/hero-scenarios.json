@@ -1,0 +1,2017 @@
+[
+  {
+    "id": "incident",
+    "label": "incident",
+    "title": "raw.log → logstrip.log",
+    "cmd": "logstrip raw.log --stats",
+    "agent": [
+      [
+        "repeated failure",
+        "payments charge failed, 3 times"
+      ],
+      [
+        "masked credential",
+        "api_key shown as [REDACTED]"
+      ],
+      [
+        "app frame",
+        "ChargeService.process (ChargeService.java)"
+      ],
+      [
+        "noise removed",
+        "36 low-value lines · internal frames collapsed"
+      ]
+    ],
+    "metrics": [
+      [
+        "80.48%",
+        "token savings"
+      ],
+      [
+        "36",
+        "lines dropped"
+      ],
+      [
+        "2",
+        "duplicates folded"
+      ],
+      [
+        "1",
+        "internal frames hidden"
+      ]
+    ],
+    "raw": [
+      "[INFO] 2026-05-15T08:01:12.001Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 12ms",
+      "[INFO] 2026-05-15T08:01:12.018Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/products 200 10.0.1.15:443 → 10.42.7.18:8080 8ms",
+      "[DEBUG] 2026-05-15T08:01:12.034Z spring-boot [Actuator] health UP diskSpace 42.3GB/100GB",
+      "[INFO] 2026-05-15T08:01:12.051Z i-0a1b2c3d4e5f6g7h8 [nginx] POST /api/v1/orders 201 10.0.1.15:443 → 10.42.7.18:8080 23ms",
+      "[DEBUG] 2026-05-15T08:01:12.067Z spring-boot [HikariPool-1] Pool stats: active=3 idle=7 wait=0",
+      "[INFO] 2026-05-15T08:01:12.084Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users/018f23ab-7c1d-7f44-8bfe-0acddaf33456 200 5ms",
+      "[INFO] 2026-05-15T08:01:12.101Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /static/app.js 304 2ms",
+      "[INFO] 2026-05-15T08:01:12.118Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /static/vendor.js 304 2ms",
+      "[DEBUG] 2026-05-15T08:01:12.134Z spring-boot [Tomcat] thread pool: current=12 max=200",
+      "[INFO] 2026-05-15T08:01:12.151Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/cart 200 10.0.1.15:443 → 10.42.7.18:8080 7ms",
+      "[INFO] 2026-05-15T08:01:12.168Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /favicon.ico 200 1ms",
+      "[INFO] 2026-05-15T08:01:12.185Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/recommendations 200 10.0.1.15:443 → 10.42.7.18:8080 45ms",
+      "[DEBUG] 2026-05-15T08:01:12.201Z spring-boot [Redis] GET cache:session:018f23ab-7c1d-7f44-8bfe-0acddaf33499 hit TTL=1800",
+      "[INFO] 2026-05-15T08:01:12.218Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 11ms",
+      "[INFO] 2026-05-15T08:01:12.235Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/products?page=2 200 10.0.1.15:443 → 10.42.7.18:8080 9ms",
+      "[INFO] 2026-05-15T08:01:12.251Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 13ms",
+      "[DEBUG] 2026-05-15T08:01:12.268Z spring-boot [Kafka] consumer orders-group offset=184741 lag=0",
+      "[INFO] 2026-05-15T08:01:12.285Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 10ms",
+      "[INFO] 2026-05-15T08:01:12.302Z i-0a1b2c3d4e5f6g7h8 [nginx] PUT /api/v1/users/018f23ab-7c1d-7f44-8bfe-0acddaf33456 200 18ms",
+      "[INFO] 2026-05-15T08:01:12.318Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/notifications 200 10.0.1.15:443 → 10.42.7.18:8080 6ms",
+      "[DEBUG] 2026-05-15T08:01:12.335Z spring-boot [Actuator] prometheus scrape 42 metrics exported",
+      "[INFO] 2026-05-15T08:01:12.352Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 14ms",
+      "[INFO] 2026-05-15T08:01:12.369Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/products 200 10.0.1.15:443 → 10.42.7.18:8080 7ms",
+      "[INFO] 2026-05-15T08:01:12.385Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 11ms",
+      "[DEBUG] 2026-05-15T08:01:12.402Z spring-boot [HikariPool-1] getConnection 3ms total=10",
+      "[INFO] 2026-05-15T08:01:12.419Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 9ms",
+      "[ERROR] 2026-05-15T08:01:12.436Z spring-boot [payments] gateway auth rejected api_key=2qy81FdkchesO1HxzS3v9XmQ7TgL5BnA",
+      "[ERROR] 2026-05-15T08:01:12.436Z spring-boot [payments] charge failed requestId=018f23ab-7c1d-7f44-8bfe-0acddaf33456 amount=99.99",
+      "[ERROR] 2026-05-15T08:01:12.436Z spring-boot [payments] charge failed requestId=018f23ab-7c1d-7f44-8bfe-0acddaf33457 amount=49.50",
+      "[ERROR] 2026-05-15T08:01:12.436Z spring-boot [payments] charge failed requestId=018f23ab-7c1d-7f44-8bfe-0acddaf33458 amount=12.00",
+      "java.lang.NullPointerException: Cannot read \"userId\" of null",
+      "    at com.shop.payments.ChargeService.process(ChargeService.java:42)",
+      "    at com.shop.payments.ChargeController.post(ChargeController.java:88)",
+      "    at javax.servlet.http.HttpServlet.service(HttpServlet.java:623)",
+      "    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:227)",
+      "    at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:117)",
+      "    at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+      "[INFO] 2026-05-15T08:01:12.502Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 8ms",
+      "[WARN] 2026-05-15T08:01:12.519Z spring-boot [circuit-breaker] payments-service OPEN failures=3/5",
+      "[INFO] 2026-05-15T08:01:12.536Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/products 200 10.0.1.15:443 → 10.42.7.18:8080 6ms",
+      "CRITICAL CVE-2026-12345 openssl 3.0.13-r0 fixed=3.0.15-r2",
+      "HIGH GHSA-ab12-cd34-ef56 axios 1.7.0 fixed=1.8.2",
+      "[INFO] 2026-05-15T08:01:12.586Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 10ms",
+      "[INFO] 2026-05-15T08:01:12.603Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/cart 200 10.0.1.15:443 → 10.42.7.18:8080 5ms",
+      "Warning BackOff restarting failed container checkout-api in pod checkout-api-84b7c46f8b-r9x2n",
+      "Warning Failed Error: ErrImagePull image=registry.example.com/checkout@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+      "[INFO] 2026-05-15T08:01:12.653Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 12ms",
+      "panic: runtime error: invalid memory address or nil pointer dereference",
+      "    at main (main.go:88:13)",
+      "[INFO] 2026-05-15T08:01:12.703Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 11ms",
+      "[INFO] 2026-05-15T08:01:12.720Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/products 200 10.0.1.15:443 → 10.42.7.18:8080 8ms",
+      "[INFO] 2026-05-15T08:01:12.736Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 9ms",
+      "[INFO] 2026-05-15T08:01:12.753Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /health 200 1ms",
+      "[INFO] 2026-05-15T08:01:12.770Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 7ms"
+    ],
+    "clean": [
+      "❯ logstrip raw.log --stats",
+      "✓ detected: nginx · spring-boot · kafka · tomcat · trivy",
+      "[ERROR] [TIME] spring-boot [payments] gateway auth rejected api_key=[REDACTED]",
+      "[x3] [ERROR] [TIME] spring-boot [payments] charge failed requestId=[ID] amount=[99.99 | 49.50 | 12.00]",
+      "java.lang.NullPointerException: Cannot read \"userId\" of null",
+      "    at com.shop.payments.ChargeService.process(ChargeService.java:[NN])",
+      "    at com.shop.payments.ChargeController.post(ChargeController.java:[NN])",
+      "    at javax.servlet.http.HttpServlet.service(HttpServlet.java:[NN])",
+      "    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:[NN])",
+      "[... hidden internal library frames ...]",
+      "    at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+      "[WARN] [TIME] spring-boot [circuit-breaker] payments-service OPEN failures=3/5",
+      "CRITICAL CVE-2026-12345 openssl 3.0.13-r0 fixed=3.0.15-r2",
+      "HIGH GHSA-ab12-cd34-ef56 axios 1.7.0 fixed=1.8.2",
+      "Warning BackOff restarting failed container checkout-api in pod checkout-api-84b7c46f8b-r9x2n",
+      "Warning Failed Error: ErrImagePull image=registry.example.com/checkout@sha256:[HASH]",
+      "panic: runtime error: invalid memory address or nil pointer dereference",
+      "    at main (main.go:[NN]:[NN])"
+    ],
+    "fates": [
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        2
+      ],
+      [
+        "k",
+        3
+      ],
+      [
+        "g",
+        27
+      ],
+      [
+        "g",
+        27
+      ],
+      [
+        "k",
+        4
+      ],
+      [
+        "k",
+        5
+      ],
+      [
+        "k",
+        6
+      ],
+      [
+        "k",
+        7
+      ],
+      [
+        "k",
+        8
+      ],
+      [
+        "k",
+        9
+      ],
+      [
+        "k",
+        10
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        11
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        12
+      ],
+      [
+        "k",
+        13
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        14
+      ],
+      [
+        "k",
+        15
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        16
+      ],
+      [
+        "k",
+        17
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ]
+    ]
+  },
+  {
+    "id": "ci-build",
+    "label": "ci build",
+    "title": "build.log → logstrip.log",
+    "cmd": "logstrip build.log --stats",
+    "agent": [
+      [
+        "failing test",
+        "ChargeService > retries declined cards once"
+      ],
+      [
+        "assertion",
+        "expected 2 to be 1"
+      ],
+      [
+        "flaky retries",
+        "folded into [x3] attempt [1 | 2 | 3]"
+      ],
+      [
+        "noise removed",
+        "25 low-value lines (npm warns, compile chunks)"
+      ]
+    ],
+    "metrics": [
+      [
+        "58.61%",
+        "token savings"
+      ],
+      [
+        "25",
+        "lines dropped"
+      ],
+      [
+        "x3",
+        "flaky retries folded"
+      ],
+      [
+        "51",
+        "tests summarized"
+      ]
+    ],
+    "raw": [
+      "[command]/usr/bin/git checkout --progress --force refs/remotes/origin/main",
+      "2026-06-09T14:21:02.114Z ##[group]Run npm ci",
+      "npm warn deprecated inflight@1.0.6: This module is not supported",
+      "npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported",
+      "npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported",
+      "added 412 packages, and audited 413 packages in 9s",
+      "2026-06-09T14:21:13.882Z ##[endgroup]",
+      "> checkout-api@2.3.1 build",
+      "> tsc -p tsconfig.build.json",
+      "Compiling chunk 1 of 8",
+      "Compiling chunk 2 of 8",
+      "Compiling chunk 3 of 8",
+      "Compiling chunk 4 of 8",
+      "Compiling chunk 5 of 8",
+      "Compiling chunk 6 of 8",
+      "Compiling chunk 7 of 8",
+      "Compiling chunk 8 of 8",
+      "> checkout-api@2.3.1 test",
+      "> vitest run --coverage",
+      " RUN  v3.1.4 /home/runner/work/checkout-api",
+      " ✓ tests/cart.test.ts (14 tests) 213ms",
+      " ✓ tests/inventory.test.ts (9 tests) 102ms",
+      " ✓ tests/pricing.test.ts (22 tests) 187ms",
+      " ❯ tests/charge.test.ts (6 tests | 1 failed) 154ms",
+      "FAIL tests/charge.test.ts > ChargeService > retries declined cards once",
+      "AssertionError: expected 2 to be 1 // Object.is equality",
+      "- Expected: 1",
+      "+ Received: 2",
+      "    at tests/charge.test.ts:88:31",
+      "    at file:///home/runner/work/checkout-api/node_modules/@vitest/runner/dist/index.js:135:14",
+      "    at file:///home/runner/work/checkout-api/node_modules/@vitest/runner/dist/index.js:60:26",
+      "Retrying flaky test charge.test.ts attempt 1",
+      "Retrying flaky test charge.test.ts attempt 2",
+      "Retrying flaky test charge.test.ts attempt 3",
+      " Test Files  1 failed | 3 passed (4)",
+      "      Tests  1 failed | 50 passed (51)",
+      "   Duration  4216ms",
+      "npm ERR! Lifecycle script `test` failed with error:",
+      "npm ERR! code 1",
+      "npm ERR! workspace checkout-api@2.3.1",
+      "2026-06-09T14:22:41.005Z ##[error]Process completed with exit code 1.",
+      "Uploading artifact coverage-report (size: 1.2 MB)",
+      "Artifact upload finished"
+    ],
+    "clean": [
+      "❯ logstrip build.log --stats",
+      "✓ detected: github-actions · npm · vitest · typescript",
+      "> checkout-api@2.3.1 test",
+      "> vitest run --coverage",
+      " RUN  v3.1.4 /home/runner/work/checkout-api",
+      " ❯ tests/charge.test.ts (6 tests | 1 failed) 154ms",
+      "FAIL tests/charge.test.ts > ChargeService > retries declined cards once",
+      "AssertionError: expected 2 to be 1 // Object.is equality",
+      "- Expected: 1",
+      "[x3] Retrying flaky test charge.test.ts attempt [1 | 2 | 3]",
+      " Test Files  1 failed | 3 passed (4)",
+      "      Tests  1 failed | 50 passed (51)",
+      "   Duration  4216ms",
+      "npm ERR! Lifecycle script `test` failed with error:",
+      "npm ERR! code 1",
+      "npm ERR! workspace checkout-api@2.3.1",
+      "[TIME] ##[error]Process completed with exit code 1.",
+      "Uploading artifact coverage-report (size: 1.2 MB)"
+    ],
+    "fates": [
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        2
+      ],
+      [
+        "k",
+        3
+      ],
+      [
+        "k",
+        4
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        5
+      ],
+      [
+        "k",
+        6
+      ],
+      [
+        "k",
+        7
+      ],
+      [
+        "k",
+        8
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        9
+      ],
+      [
+        "g",
+        31
+      ],
+      [
+        "g",
+        31
+      ],
+      [
+        "k",
+        10
+      ],
+      [
+        "k",
+        11
+      ],
+      [
+        "k",
+        12
+      ],
+      [
+        "k",
+        13
+      ],
+      [
+        "k",
+        14
+      ],
+      [
+        "k",
+        15
+      ],
+      [
+        "k",
+        16
+      ],
+      [
+        "k",
+        17
+      ],
+      [
+        "d"
+      ]
+    ]
+  },
+  {
+    "id": "security-scan",
+    "label": "security scan",
+    "title": "trivy.json → logstrip.json",
+    "cmd": "logstrip trivy.json --stats",
+    "agent": [
+      [
+        "ship blocker",
+        "CVE-2026-12345 openssl CRITICAL 9.8 → fix 3.0.15-r2"
+      ],
+      [
+        "grouped",
+        "5 LOW busybox CVEs → one [logstrip:group] entry"
+      ],
+      [
+        "pruned",
+        "empty fields and 68 boilerplate lines"
+      ],
+      [
+        "still valid JSON",
+        "downstream tools can keep parsing it"
+      ]
+    ],
+    "metrics": [
+      [
+        "38.22%",
+        "token savings"
+      ],
+      [
+        "68",
+        "lines pruned"
+      ],
+      [
+        "x5",
+        "CVEs grouped"
+      ],
+      [
+        "valid",
+        "JSON preserved"
+      ]
+    ],
+    "raw": [
+      "{",
+      "  \"SchemaVersion\": 2,",
+      "  \"CreatedAt\": \"2026-06-10T07:12:44.118Z\",",
+      "  \"ArtifactName\": \"registry.example.com/checkout:1.4.2\",",
+      "  \"ArtifactType\": \"container_image\",",
+      "  \"Metadata\": {",
+      "    \"OS\": {",
+      "      \"Family\": \"alpine\",",
+      "      \"Name\": \"3.19.1\"",
+      "    },",
+      "    \"ImageID\": \"sha256:7b2f3a9c1d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f\",",
+      "    \"RepoTags\": [",
+      "      \"registry.example.com/checkout:1.4.2\"",
+      "    ]",
+      "  },",
+      "  \"Results\": [",
+      "    {",
+      "      \"Target\": \"registry.example.com/checkout:1.4.2 (alpine 3.19.1)\",",
+      "      \"Class\": \"os-pkgs\",",
+      "      \"Type\": \"alpine\",",
+      "      \"Vulnerabilities\": [",
+      "        {",
+      "          \"VulnerabilityID\": \"CVE-2026-12345\",",
+      "          \"PkgName\": \"openssl\",",
+      "          \"InstalledVersion\": \"3.0.13-r0\",",
+      "          \"FixedVersion\": \"3.0.15-r2\",",
+      "          \"Status\": \"fixed\",",
+      "          \"Layer\": {",
+      "            \"Digest\": \"sha256:9a4f0e3b2c1d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f\"",
+      "          },",
+      "          \"SeveritySource\": \"nvd\",",
+      "          \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-12345\",",
+      "          \"Title\": \"openssl: buffer overflow in TLS handshake parsing\",",
+      "          \"Description\": \"A flaw was found in the affected package. A remote attacker able to supply crafted input may trigger memory corruption, leading to denial of service or potential remote code execution. Upgrade to the fixed version where available.\",",
+      "          \"Severity\": \"CRITICAL\",",
+      "          \"CweIDs\": [],",
+      "          \"CVSS\": {",
+      "            \"nvd\": {",
+      "              \"V3Score\": 9.8",
+      "            }",
+      "          },",
+      "          \"References\": [",
+      "            \"https://nvd.nist.gov/vuln/detail/CVE-2026-12345\",",
+      "            \"https://security.alpinelinux.org/vuln/CVE-2026-12345\"",
+      "          ],",
+      "          \"PublishedDate\": \"2026-04-02T14:00:00Z\",",
+      "          \"LastModifiedDate\": \"2026-05-29T09:30:00Z\"",
+      "        },",
+      "        {",
+      "          \"VulnerabilityID\": \"CVE-2026-20001\",",
+      "          \"PkgName\": \"busybox\",",
+      "          \"InstalledVersion\": \"1.36.1-r15\",",
+      "          \"FixedVersion\": \"\",",
+      "          \"Status\": \"affected\",",
+      "          \"Layer\": {",
+      "            \"Digest\": \"sha256:9a4f0e3b2c1d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f\"",
+      "          },",
+      "          \"SeveritySource\": \"nvd\",",
+      "          \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-20001\",",
+      "          \"Title\": \"busybox: awk integer overflow\",",
+      "          \"Description\": \"A flaw was found in the affected package. A remote attacker able to supply crafted input may trigger memory corruption, leading to denial of service or potential remote code execution. Upgrade to the fixed version where available.\",",
+      "          \"Severity\": \"LOW\",",
+      "          \"CweIDs\": [],",
+      "          \"CVSS\": {",
+      "            \"nvd\": {",
+      "              \"V3Score\": 3.3",
+      "            }",
+      "          },",
+      "          \"References\": [",
+      "            \"https://nvd.nist.gov/vuln/detail/CVE-2026-20001\",",
+      "            \"https://security.alpinelinux.org/vuln/CVE-2026-20001\"",
+      "          ],",
+      "          \"PublishedDate\": \"2026-04-02T14:00:00Z\",",
+      "          \"LastModifiedDate\": \"2026-05-29T09:30:00Z\"",
+      "        },",
+      "        {",
+      "          \"VulnerabilityID\": \"CVE-2026-20002\",",
+      "          \"PkgName\": \"busybox\",",
+      "          \"InstalledVersion\": \"1.36.1-r15\",",
+      "          \"FixedVersion\": \"\",",
+      "          \"Status\": \"affected\",",
+      "          \"Layer\": {",
+      "            \"Digest\": \"sha256:9a4f0e3b2c1d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f\"",
+      "          },",
+      "          \"SeveritySource\": \"nvd\",",
+      "          \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-20002\",",
+      "          \"Title\": \"busybox: wget header injection\",",
+      "          \"Description\": \"A flaw was found in the affected package. A remote attacker able to supply crafted input may trigger memory corruption, leading to denial of service or potential remote code execution. Upgrade to the fixed version where available.\",",
+      "          \"Severity\": \"LOW\",",
+      "          \"CweIDs\": [],",
+      "          \"CVSS\": {",
+      "            \"nvd\": {",
+      "              \"V3Score\": 3.3",
+      "            }",
+      "          },",
+      "          \"References\": [",
+      "            \"https://nvd.nist.gov/vuln/detail/CVE-2026-20002\",",
+      "            \"https://security.alpinelinux.org/vuln/CVE-2026-20002\"",
+      "          ],",
+      "          \"PublishedDate\": \"2026-04-02T14:00:00Z\",",
+      "          \"LastModifiedDate\": \"2026-05-29T09:30:00Z\"",
+      "        },",
+      "        {",
+      "          \"VulnerabilityID\": \"CVE-2026-20003\",",
+      "          \"PkgName\": \"busybox\",",
+      "          \"InstalledVersion\": \"1.36.1-r15\",",
+      "          \"FixedVersion\": \"\",",
+      "          \"Status\": \"affected\",",
+      "          \"Layer\": {",
+      "            \"Digest\": \"sha256:9a4f0e3b2c1d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f\"",
+      "          },",
+      "          \"SeveritySource\": \"nvd\",",
+      "          \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-20003\",",
+      "          \"Title\": \"busybox: ash heredoc parsing crash\",",
+      "          \"Description\": \"A flaw was found in the affected package. A remote attacker able to supply crafted input may trigger memory corruption, leading to denial of service or potential remote code execution. Upgrade to the fixed version where available.\",",
+      "          \"Severity\": \"LOW\",",
+      "          \"CweIDs\": [],",
+      "          \"CVSS\": {",
+      "            \"nvd\": {",
+      "              \"V3Score\": 3.3",
+      "            }",
+      "          },",
+      "          \"References\": [",
+      "            \"https://nvd.nist.gov/vuln/detail/CVE-2026-20003\",",
+      "            \"https://security.alpinelinux.org/vuln/CVE-2026-20003\"",
+      "          ],",
+      "          \"PublishedDate\": \"2026-04-02T14:00:00Z\",",
+      "          \"LastModifiedDate\": \"2026-05-29T09:30:00Z\"",
+      "        },",
+      "        {",
+      "          \"VulnerabilityID\": \"CVE-2026-20004\",",
+      "          \"PkgName\": \"busybox\",",
+      "          \"InstalledVersion\": \"1.36.1-r15\",",
+      "          \"FixedVersion\": \"\",",
+      "          \"Status\": \"affected\",",
+      "          \"Layer\": {",
+      "            \"Digest\": \"sha256:9a4f0e3b2c1d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f\"",
+      "          },",
+      "          \"SeveritySource\": \"nvd\",",
+      "          \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-20004\",",
+      "          \"Title\": \"busybox: tar path traversal\",",
+      "          \"Description\": \"A flaw was found in the affected package. A remote attacker able to supply crafted input may trigger memory corruption, leading to denial of service or potential remote code execution. Upgrade to the fixed version where available.\",",
+      "          \"Severity\": \"LOW\",",
+      "          \"CweIDs\": [],",
+      "          \"CVSS\": {",
+      "            \"nvd\": {",
+      "              \"V3Score\": 3.3",
+      "            }",
+      "          },",
+      "          \"References\": [",
+      "            \"https://nvd.nist.gov/vuln/detail/CVE-2026-20004\",",
+      "            \"https://security.alpinelinux.org/vuln/CVE-2026-20004\"",
+      "          ],",
+      "          \"PublishedDate\": \"2026-04-02T14:00:00Z\",",
+      "          \"LastModifiedDate\": \"2026-05-29T09:30:00Z\"",
+      "        },",
+      "        {",
+      "          \"VulnerabilityID\": \"CVE-2026-20005\",",
+      "          \"PkgName\": \"busybox\",",
+      "          \"InstalledVersion\": \"1.36.1-r15\",",
+      "          \"FixedVersion\": \"\",",
+      "          \"Status\": \"affected\",",
+      "          \"Layer\": {",
+      "            \"Digest\": \"sha256:9a4f0e3b2c1d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f\"",
+      "          },",
+      "          \"SeveritySource\": \"nvd\",",
+      "          \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-20005\",",
+      "          \"Title\": \"busybox: sed out-of-bounds read\",",
+      "          \"Description\": \"A flaw was found in the affected package. A remote attacker able to supply crafted input may trigger memory corruption, leading to denial of service or potential remote code execution. Upgrade to the fixed version where available.\",",
+      "          \"Severity\": \"LOW\",",
+      "          \"CweIDs\": [],",
+      "          \"CVSS\": {",
+      "            \"nvd\": {",
+      "              \"V3Score\": 3.3",
+      "            }",
+      "          },",
+      "          \"References\": [",
+      "            \"https://nvd.nist.gov/vuln/detail/CVE-2026-20005\",",
+      "            \"https://security.alpinelinux.org/vuln/CVE-2026-20005\"",
+      "          ],",
+      "          \"PublishedDate\": \"2026-04-02T14:00:00Z\",",
+      "          \"LastModifiedDate\": \"2026-05-29T09:30:00Z\"",
+      "        }",
+      "      ]",
+      "    },",
+      "    {",
+      "      \"Target\": \"app/package-lock.json\",",
+      "      \"Class\": \"lang-pkgs\",",
+      "      \"Type\": \"npm\",",
+      "      \"Vulnerabilities\": [",
+      "        {",
+      "          \"VulnerabilityID\": \"GHSA-ab12-cd34-ef56\",",
+      "          \"PkgName\": \"axios\",",
+      "          \"InstalledVersion\": \"1.7.0\",",
+      "          \"FixedVersion\": \"1.8.2\",",
+      "          \"Status\": \"fixed\",",
+      "          \"Layer\": {",
+      "            \"Digest\": \"sha256:9a4f0e3b2c1d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f\"",
+      "          },",
+      "          \"SeveritySource\": \"nvd\",",
+      "          \"PrimaryURL\": \"https://avd.aquasec.com/nvd/ghsa-ab12-cd34-ef56\",",
+      "          \"Title\": \"axios: SSRF via absolute URL in redirect handling\",",
+      "          \"Description\": \"A flaw was found in the affected package. A remote attacker able to supply crafted input may trigger memory corruption, leading to denial of service or potential remote code execution. Upgrade to the fixed version where available.\",",
+      "          \"Severity\": \"HIGH\",",
+      "          \"CweIDs\": [],",
+      "          \"CVSS\": {",
+      "            \"nvd\": {",
+      "              \"V3Score\": 7.7",
+      "            }",
+      "          },",
+      "          \"References\": [",
+      "            \"https://nvd.nist.gov/vuln/detail/GHSA-ab12-cd34-ef56\",",
+      "            \"https://security.alpinelinux.org/vuln/GHSA-ab12-cd34-ef56\"",
+      "          ],",
+      "          \"PublishedDate\": \"2026-04-02T14:00:00Z\",",
+      "          \"LastModifiedDate\": \"2026-05-29T09:30:00Z\"",
+      "        }",
+      "      ]",
+      "    }",
+      "  ]",
+      "}"
+    ],
+    "clean": [
+      "❯ logstrip trivy.json --stats",
+      "✓ detected: trivy · docker · format: json report",
+      "{",
+      "  \"[logstrip:meta]\": \"\\\"[logstrip:= f]\\\" repeats the text of sibling field f; empty fields pruned; \\\"[logstrip:group]\\\" collapses entries identical except for the listed variant fields\",",
+      "  \"SchemaVersion\": 2,",
+      "  \"CreatedAt\": \"[TIME]\",",
+      "  \"ArtifactName\": \"registry.example.com/checkout:1.4.2\",",
+      "  \"ArtifactType\": \"container_image\",",
+      "  \"Metadata\": {",
+      "    \"OS\": {",
+      "      \"Family\": \"alpine\",",
+      "      \"Name\": \"3.19.1\"",
+      "    },",
+      "    \"ImageID\": \"sha256:[HASH]\",",
+      "    \"RepoTags\": [",
+      "      \"registry.example.com/checkout:1.4.2\"",
+      "    ]",
+      "  },",
+      "  \"Results\": [",
+      "    {",
+      "      \"Target\": \"registry.example.com/checkout:1.4.2 (alpine 3.19.1)\",",
+      "      \"Class\": \"os-pkgs\",",
+      "      \"Type\": \"alpine\",",
+      "      \"Vulnerabilities\": [",
+      "        {",
+      "          \"VulnerabilityID\": \"CVE-2026-12345\",",
+      "          \"PkgName\": \"openssl\",",
+      "          \"InstalledVersion\": \"3.0.13-r0\",",
+      "          \"FixedVersion\": \"3.0.15-r2\",",
+      "          \"Status\": \"fixed\",",
+      "          \"Layer\": {",
+      "            \"Digest\": \"sha256:[HASH]\"",
+      "          },",
+      "          \"SeveritySource\": \"nvd\",",
+      "          \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-12345\",",
+      "          \"Title\": \"openssl: buffer overflow in TLS handshake parsing\",",
+      "          \"Description\": \"A flaw was found in the affected package. A remote attacker able to supply crafted input may trigger memory corruption, leading to denial of service or potential remote code execution. Upgrade to the fixed version where available.\",",
+      "          \"Severity\": \"CRITICAL\",",
+      "          \"CVSS\": {",
+      "            \"nvd\": {",
+      "              \"V3Score\": 9.8",
+      "            }",
+      "          },",
+      "          \"References\": [",
+      "            \"https://nvd.nist.gov/vuln/detail/CVE-2026-12345\",",
+      "            \"https://security.alpinelinux.org/vuln/CVE-2026-12345\"",
+      "          ],",
+      "          \"PublishedDate\": \"[TIME]\",",
+      "          \"LastModifiedDate\": \"[TIME]\"",
+      "        },",
+      "        {",
+      "          \"[logstrip:group]\": {",
+      "            \"count\": 5,",
+      "            \"variants\": [",
+      "              {",
+      "                \"VulnerabilityID\": \"CVE-2026-20001\",",
+      "                \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-20001\",",
+      "                \"Title\": \"busybox: awk integer overflow\",",
+      "                \"References\": [",
+      "                  \"https://nvd.nist.gov/vuln/detail/CVE-2026-20001\",",
+      "                  \"https://security.alpinelinux.org/vuln/CVE-2026-20001\"",
+      "                ]",
+      "              },",
+      "              {",
+      "                \"VulnerabilityID\": \"CVE-2026-20002\",",
+      "                \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-20002\",",
+      "                \"Title\": \"busybox: wget header injection\",",
+      "                \"References\": [",
+      "                  \"https://nvd.nist.gov/vuln/detail/CVE-2026-20002\",",
+      "                  \"https://security.alpinelinux.org/vuln/CVE-2026-20002\"",
+      "                ]",
+      "              },",
+      "              {",
+      "                \"VulnerabilityID\": \"CVE-2026-20003\",",
+      "                \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-20003\",",
+      "                \"Title\": \"busybox: ash heredoc parsing crash\",",
+      "                \"References\": [",
+      "                  \"https://nvd.nist.gov/vuln/detail/CVE-2026-20003\",",
+      "                  \"https://security.alpinelinux.org/vuln/CVE-2026-20003\"",
+      "                ]",
+      "              },",
+      "              {",
+      "                \"VulnerabilityID\": \"CVE-2026-20004\",",
+      "                \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-20004\",",
+      "                \"Title\": \"busybox: tar path traversal\",",
+      "                \"References\": [",
+      "                  \"https://nvd.nist.gov/vuln/detail/CVE-2026-20004\",",
+      "                  \"https://security.alpinelinux.org/vuln/CVE-2026-20004\"",
+      "                ]",
+      "              },",
+      "              {",
+      "                \"VulnerabilityID\": \"CVE-2026-20005\",",
+      "                \"PrimaryURL\": \"https://avd.aquasec.com/nvd/cve-2026-20005\",",
+      "                \"Title\": \"busybox: sed out-of-bounds read\",",
+      "                \"References\": [",
+      "                  \"https://nvd.nist.gov/vuln/detail/CVE-2026-20005\",",
+      "                  \"https://security.alpinelinux.org/vuln/CVE-2026-20005\"",
+      "                ]",
+      "              }",
+      "            ]",
+      "          },",
+      "          \"PkgName\": \"busybox\",",
+      "          \"InstalledVersion\": \"1.36.1-r15\",",
+      "          \"Status\": \"affected\",",
+      "          \"Layer\": {",
+      "            \"Digest\": \"sha256:[HASH]\"",
+      "          },",
+      "          \"SeveritySource\": \"nvd\",",
+      "          \"Description\": \"A flaw was found in the affected package. A remote attacker able to supply crafted input may trigger memory corruption, leading to denial of service or potential remote code execution. Upgrade to the fixed version where available.\",",
+      "          \"Severity\": \"LOW\",",
+      "          \"CVSS\": {",
+      "            \"nvd\": {",
+      "              \"V3Score\": 3.3",
+      "            }",
+      "          },",
+      "          \"PublishedDate\": \"[TIME]\",",
+      "          \"LastModifiedDate\": \"[TIME]\"",
+      "        }",
+      "      ]",
+      "    },",
+      "    {",
+      "      \"Target\": \"app/package-lock.json\",",
+      "      \"Class\": \"lang-pkgs\",",
+      "      \"Type\": \"npm\",",
+      "      \"Vulnerabilities\": [",
+      "        {",
+      "          \"VulnerabilityID\": \"GHSA-ab12-cd34-ef56\",",
+      "          \"PkgName\": \"axios\",",
+      "          \"InstalledVersion\": \"1.7.0\",",
+      "          \"FixedVersion\": \"1.8.2\",",
+      "          \"Status\": \"fixed\",",
+      "          \"Layer\": {",
+      "            \"Digest\": \"sha256:[HASH]\"",
+      "          },",
+      "          \"SeveritySource\": \"nvd\",",
+      "          \"PrimaryURL\": \"https://avd.aquasec.com/nvd/ghsa-ab12-cd34-ef56\",",
+      "          \"Title\": \"axios: SSRF via absolute URL in redirect handling\",",
+      "          \"Description\": \"A flaw was found in the affected package. A remote attacker able to supply crafted input may trigger memory corruption, leading to denial of service or potential remote code execution. Upgrade to the fixed version where available.\",",
+      "          \"Severity\": \"HIGH\",",
+      "          \"CVSS\": {",
+      "            \"nvd\": {",
+      "              \"V3Score\": 7.7",
+      "            }",
+      "          },",
+      "          \"References\": [",
+      "            \"https://nvd.nist.gov/vuln/detail/GHSA-ab12-cd34-ef56\",",
+      "            \"https://security.alpinelinux.org/vuln/GHSA-ab12-cd34-ef56\"",
+      "          ],",
+      "          \"PublishedDate\": \"[TIME]\",",
+      "          \"LastModifiedDate\": \"[TIME]\"",
+      "        }",
+      "      ]",
+      "    }",
+      "  ]",
+      "}"
+    ],
+    "fates": [
+      [
+        "k",
+        2
+      ],
+      [
+        "k",
+        4
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        6
+      ],
+      [
+        "k",
+        7
+      ],
+      [
+        "k",
+        8
+      ],
+      [
+        "k",
+        9
+      ],
+      [
+        "k",
+        10
+      ],
+      [
+        "k",
+        11
+      ],
+      [
+        "k",
+        12
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        14
+      ],
+      [
+        "k",
+        15
+      ],
+      [
+        "k",
+        16
+      ],
+      [
+        "k",
+        17
+      ],
+      [
+        "k",
+        18
+      ],
+      [
+        "k",
+        19
+      ],
+      [
+        "k",
+        20
+      ],
+      [
+        "k",
+        21
+      ],
+      [
+        "k",
+        22
+      ],
+      [
+        "k",
+        23
+      ],
+      [
+        "k",
+        24
+      ],
+      [
+        "k",
+        25
+      ],
+      [
+        "k",
+        26
+      ],
+      [
+        "k",
+        27
+      ],
+      [
+        "k",
+        28
+      ],
+      [
+        "k",
+        29
+      ],
+      [
+        "k",
+        30
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        32
+      ],
+      [
+        "k",
+        33
+      ],
+      [
+        "k",
+        34
+      ],
+      [
+        "k",
+        35
+      ],
+      [
+        "k",
+        36
+      ],
+      [
+        "k",
+        37
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        38
+      ],
+      [
+        "k",
+        39
+      ],
+      [
+        "k",
+        40
+      ],
+      [
+        "k",
+        41
+      ],
+      [
+        "k",
+        42
+      ],
+      [
+        "k",
+        43
+      ],
+      [
+        "k",
+        44
+      ],
+      [
+        "k",
+        45
+      ],
+      [
+        "k",
+        46
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        49
+      ],
+      [
+        "k",
+        50
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        100
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        101
+      ],
+      [
+        "k",
+        102
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        103
+      ],
+      [
+        "k",
+        104
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        106
+      ],
+      [
+        "k",
+        107
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        108
+      ],
+      [
+        "k",
+        109
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        110
+      ],
+      [
+        "k",
+        111
+      ],
+      [
+        "k",
+        112
+      ],
+      [
+        "k",
+        113
+      ],
+      [
+        "k",
+        114
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        117
+      ],
+      [
+        "k",
+        118
+      ],
+      [
+        "k",
+        119
+      ],
+      [
+        "k",
+        120
+      ],
+      [
+        "k",
+        121
+      ],
+      [
+        "k",
+        122
+      ],
+      [
+        "k",
+        123
+      ],
+      [
+        "k",
+        124
+      ],
+      [
+        "k",
+        125
+      ],
+      [
+        "k",
+        126
+      ],
+      [
+        "k",
+        127
+      ],
+      [
+        "k",
+        128
+      ],
+      [
+        "k",
+        129
+      ],
+      [
+        "k",
+        130
+      ],
+      [
+        "k",
+        131
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        133
+      ],
+      [
+        "k",
+        134
+      ],
+      [
+        "k",
+        135
+      ],
+      [
+        "k",
+        136
+      ],
+      [
+        "k",
+        137
+      ],
+      [
+        "k",
+        138
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        139
+      ],
+      [
+        "k",
+        140
+      ],
+      [
+        "k",
+        141
+      ],
+      [
+        "k",
+        142
+      ],
+      [
+        "k",
+        143
+      ],
+      [
+        "k",
+        144
+      ],
+      [
+        "k",
+        145
+      ],
+      [
+        "k",
+        146
+      ],
+      [
+        "k",
+        147
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        150
+      ],
+      [
+        "k",
+        151
+      ],
+      [
+        "k",
+        152
+      ],
+      [
+        "k",
+        153
+      ],
+      [
+        "k",
+        154
+      ]
+    ]
+  },
+  {
+    "id": "token-budget",
+    "label": "token budget",
+    "title": "raw.log → 60-token budget",
+    "cmd": "logstrip raw.log --max-tokens 60 --stats",
+    "agent": [
+      [
+        "token budget",
+        "--max-tokens 60 → output is 58 tokens"
+      ],
+      [
+        "kept",
+        "only the highest-scoring diagnostic lines"
+      ],
+      [
+        "root cause survives",
+        "charge failures + NullPointerException intact"
+      ],
+      [
+        "fits",
+        "any model context window, however small"
+      ]
+    ],
+    "metrics": [
+      [
+        "58 / 60",
+        "tokens used"
+      ],
+      [
+        "90.15%",
+        "token savings"
+      ],
+      [
+        "46",
+        "lines dropped"
+      ],
+      [
+        "6",
+        "lines kept"
+      ]
+    ],
+    "raw": [
+      "[INFO] 2026-05-15T08:01:12.001Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 12ms",
+      "[INFO] 2026-05-15T08:01:12.018Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/products 200 10.0.1.15:443 → 10.42.7.18:8080 8ms",
+      "[DEBUG] 2026-05-15T08:01:12.034Z spring-boot [Actuator] health UP diskSpace 42.3GB/100GB",
+      "[INFO] 2026-05-15T08:01:12.051Z i-0a1b2c3d4e5f6g7h8 [nginx] POST /api/v1/orders 201 10.0.1.15:443 → 10.42.7.18:8080 23ms",
+      "[DEBUG] 2026-05-15T08:01:12.067Z spring-boot [HikariPool-1] Pool stats: active=3 idle=7 wait=0",
+      "[INFO] 2026-05-15T08:01:12.084Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users/018f23ab-7c1d-7f44-8bfe-0acddaf33456 200 5ms",
+      "[INFO] 2026-05-15T08:01:12.101Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /static/app.js 304 2ms",
+      "[INFO] 2026-05-15T08:01:12.118Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /static/vendor.js 304 2ms",
+      "[DEBUG] 2026-05-15T08:01:12.134Z spring-boot [Tomcat] thread pool: current=12 max=200",
+      "[INFO] 2026-05-15T08:01:12.151Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/cart 200 10.0.1.15:443 → 10.42.7.18:8080 7ms",
+      "[INFO] 2026-05-15T08:01:12.168Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /favicon.ico 200 1ms",
+      "[INFO] 2026-05-15T08:01:12.185Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/recommendations 200 10.0.1.15:443 → 10.42.7.18:8080 45ms",
+      "[DEBUG] 2026-05-15T08:01:12.201Z spring-boot [Redis] GET cache:session:018f23ab-7c1d-7f44-8bfe-0acddaf33499 hit TTL=1800",
+      "[INFO] 2026-05-15T08:01:12.218Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 11ms",
+      "[INFO] 2026-05-15T08:01:12.235Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/products?page=2 200 10.0.1.15:443 → 10.42.7.18:8080 9ms",
+      "[INFO] 2026-05-15T08:01:12.251Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 13ms",
+      "[DEBUG] 2026-05-15T08:01:12.268Z spring-boot [Kafka] consumer orders-group offset=184741 lag=0",
+      "[INFO] 2026-05-15T08:01:12.285Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 10ms",
+      "[INFO] 2026-05-15T08:01:12.302Z i-0a1b2c3d4e5f6g7h8 [nginx] PUT /api/v1/users/018f23ab-7c1d-7f44-8bfe-0acddaf33456 200 18ms",
+      "[INFO] 2026-05-15T08:01:12.318Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/notifications 200 10.0.1.15:443 → 10.42.7.18:8080 6ms",
+      "[DEBUG] 2026-05-15T08:01:12.335Z spring-boot [Actuator] prometheus scrape 42 metrics exported",
+      "[INFO] 2026-05-15T08:01:12.352Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 14ms",
+      "[INFO] 2026-05-15T08:01:12.369Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/products 200 10.0.1.15:443 → 10.42.7.18:8080 7ms",
+      "[INFO] 2026-05-15T08:01:12.385Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 11ms",
+      "[DEBUG] 2026-05-15T08:01:12.402Z spring-boot [HikariPool-1] getConnection 3ms total=10",
+      "[INFO] 2026-05-15T08:01:12.419Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 9ms",
+      "[ERROR] 2026-05-15T08:01:12.436Z spring-boot [payments] gateway auth rejected api_key=2qy81FdkchesO1HxzS3v9XmQ7TgL5BnA",
+      "[ERROR] 2026-05-15T08:01:12.436Z spring-boot [payments] charge failed requestId=018f23ab-7c1d-7f44-8bfe-0acddaf33456 amount=99.99",
+      "[ERROR] 2026-05-15T08:01:12.436Z spring-boot [payments] charge failed requestId=018f23ab-7c1d-7f44-8bfe-0acddaf33457 amount=49.50",
+      "[ERROR] 2026-05-15T08:01:12.436Z spring-boot [payments] charge failed requestId=018f23ab-7c1d-7f44-8bfe-0acddaf33458 amount=12.00",
+      "java.lang.NullPointerException: Cannot read \"userId\" of null",
+      "    at com.shop.payments.ChargeService.process(ChargeService.java:42)",
+      "    at com.shop.payments.ChargeController.post(ChargeController.java:88)",
+      "    at javax.servlet.http.HttpServlet.service(HttpServlet.java:623)",
+      "    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:227)",
+      "    at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:117)",
+      "    at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+      "[INFO] 2026-05-15T08:01:12.502Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 8ms",
+      "[WARN] 2026-05-15T08:01:12.519Z spring-boot [circuit-breaker] payments-service OPEN failures=3/5",
+      "[INFO] 2026-05-15T08:01:12.536Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/products 200 10.0.1.15:443 → 10.42.7.18:8080 6ms",
+      "CRITICAL CVE-2026-12345 openssl 3.0.13-r0 fixed=3.0.15-r2",
+      "HIGH GHSA-ab12-cd34-ef56 axios 1.7.0 fixed=1.8.2",
+      "[INFO] 2026-05-15T08:01:12.586Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 10ms",
+      "[INFO] 2026-05-15T08:01:12.603Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/cart 200 10.0.1.15:443 → 10.42.7.18:8080 5ms",
+      "Warning BackOff restarting failed container checkout-api in pod checkout-api-84b7c46f8b-r9x2n",
+      "Warning Failed Error: ErrImagePull image=registry.example.com/checkout@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+      "[INFO] 2026-05-15T08:01:12.653Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 12ms",
+      "panic: runtime error: invalid memory address or nil pointer dereference",
+      "    at main (main.go:88:13)",
+      "[INFO] 2026-05-15T08:01:12.703Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 11ms",
+      "[INFO] 2026-05-15T08:01:12.720Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/products 200 10.0.1.15:443 → 10.42.7.18:8080 8ms",
+      "[INFO] 2026-05-15T08:01:12.736Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 9ms",
+      "[INFO] 2026-05-15T08:01:12.753Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /health 200 1ms",
+      "[INFO] 2026-05-15T08:01:12.770Z i-0a1b2c3d4e5f6g7h8 [nginx] GET /api/v1/users 200 10.0.1.15:443 → 10.42.7.18:8080 7ms"
+    ],
+    "clean": [
+      "❯ logstrip raw.log --max-tokens 60 --stats",
+      "✓ detected: nginx · spring-boot · kafka · tomcat · trivy",
+      "[ERROR] [TIME] spring-boot [payments] gateway auth rejected api_key=[REDACTED]",
+      "[x3] [ERROR] [TIME] spring-boot [payments] charge failed requestId=[ID] amount=[99.99 | 49.50 | 12.00]",
+      "java.lang.NullPointerException: Cannot read \"userId\" of null",
+      "[WARN] [TIME] spring-boot [circuit-breaker] payments-service OPEN failures=3/5",
+      "CRITICAL CVE-2026-12345 openssl 3.0.13-r0 fixed=3.0.15-r2",
+      "Warning Failed Error: ErrImagePull image=registry.example.com/checkout@sha256:[HASH]"
+    ],
+    "fates": [
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        2
+      ],
+      [
+        "k",
+        3
+      ],
+      [
+        "g",
+        27
+      ],
+      [
+        "g",
+        27
+      ],
+      [
+        "k",
+        4
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        5
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        6
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "k",
+        7
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ],
+      [
+        "d"
+      ]
+    ]
+  }
+]

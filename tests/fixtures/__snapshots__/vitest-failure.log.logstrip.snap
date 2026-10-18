@@ -1,6 +1,4 @@
  RUN  v4.1.6 /repo
- ✓ tests/unit/sum.test.ts (12 tests) 18ms
- ✓ tests/unit/util.test.ts (8 tests) 9ms
  ✗ tests/integration/users.test.ts (5 tests | 3 failed) 124ms
 [ERROR] AssertionError: expected 500 to be 201
     at Object.<anonymous> (/repo/tests/integration/users.test.ts:[NN]:[NN])
@@ -9,13 +7,7 @@
     at /repo/node_modules/@vitest/runner/dist/index.js:567:15
     at /repo/node_modules/tinypool/dist/esm/worker.js:89:5
 [... hidden internal library frames ...]
-[ERROR] AssertionError: expected 500 to be 201
-    at Object.<anonymous> (/repo/tests/integration/users.test.ts:[NN]:[NN])
-[... hidden internal library frames ...]
-    at /repo/node_modules/vitest/dist/index.js:1234:20
-    at /repo/node_modules/@vitest/runner/dist/index.js:567:15
-    at /repo/node_modules/tinypool/dist/esm/worker.js:89:5
-[... hidden internal library frames ...]
+[... 7 lines repeated from above ...]
 [ERROR] AssertionError: expected 500 to be 201
     at Object.<anonymous> (/repo/tests/integration/users.test.ts:[NN]:[NN])
 [x2] [... hidden internal library frames ...]

@@ -15,15 +15,23 @@ export interface RepeatGroup {
 interface RepeatTokenValue {
   prefix: string;
   value: string;
+  suffix: string;
 }
 
 interface RepeatDelta {
   prefix: string;
+  suffix: string;
   values: string[];
   hasMoreValues: boolean;
 }
 
-const STANDALONE_REPEAT_VALUE_PATTERN = /^\d+(?:[.:,-]\d+)*$/u;
+// Classic (allowlist) mode keeps the strict bare-number form.
+const CLASSIC_REPEAT_VALUE_PATTERN = /^\d+(?:[.:,-]\d+)*$/u;
+// A standalone number, optionally with a duration or size unit ("12s",
+// "250ms", "3.4MB", "45%"), wrapped in the punctuation logs put around it:
+// "(attempt 3)", "retry 2,", "(0.19s)". Group 1 and 3 are kept verbatim.
+const STANDALONE_REPEAT_VALUE_PATTERN =
+  /^(\(?)(\d+(?:[.:,-]\d+)*(?:ms|us|\u00b5s|ns|s|m|h|d|%|[kKMGT]i?B|B)?)([)\],;.]*)$/u;
 // Labels that precede an enumerable instance counter. Numbers after these
 // collapse into a single delta-tracked group so otherwise-identical lines
 // fold via [xN]. Intentionally excludes labels whose numbers carry meaning
@@ -64,7 +72,8 @@ const STANDALONE_VALUE_BLOCKLIST = new Set([
   'version',
 ]);
 
-const TEMPLATE_LABEL_PATTERN = /^[A-Za-z][\w-]*:?$/u;
+// A label may open a parenthesis: "(attempt 3)".
+const TEMPLATE_LABEL_PATTERN = /^\(?[A-Za-z][\w-]*:?$/u;
 
 export function createRepeatSignature(line: string, template = false): string {
   const tokens = tokenizeRepeatLine(line);
@@ -74,7 +83,7 @@ export function createRepeatSignature(line: string, template = false): string {
       const tokenValue = splitRepeatToken(token, tokens[index - 1], template);
       return tokenValue === undefined
         ? token
-        : `${tokenValue.prefix}[VALUE]`;
+        : `${tokenValue.prefix}[VALUE]${tokenValue.suffix}`;
     })
     .join(' ');
 }
@@ -120,6 +129,7 @@ export function addRepeatGroupLine(
       firstValue === undefined ||
       nextValue === undefined ||
       firstValue.prefix !== nextValue.prefix ||
+      firstValue.suffix !== nextValue.suffix ||
       firstValue.value === nextValue.value
     ) {
       continue;
@@ -127,6 +137,7 @@ export function addRepeatGroupLine(
 
     const delta = group.deltas.get(index) ?? {
       prefix: firstValue.prefix,
+      suffix: firstValue.suffix,
       values: [firstValue.value],
       hasMoreValues: false,
     };
@@ -189,7 +200,7 @@ function mergeDeltaTokens(group: RepeatGroup): string[] {
     const values = delta.hasMoreValues
       ? [...delta.values, '…']
       : delta.values;
-    tokens[index] = `${delta.prefix}[${values.join(' | ')}]`;
+    tokens[index] = `${delta.prefix}[${values.join(' | ')}]${delta.suffix}`;
   }
   return tokens;
 }
@@ -215,29 +226,50 @@ function splitRepeatToken(
     return {
       prefix: token.slice(0, separator + 1),
       value: token.slice(separator + 1),
+      suffix: '',
+    };
+  }
+
+  const standalone = template ? STANDALONE_REPEAT_VALUE_PATTERN.exec(token) : null;
+  if (
+    standalone !== null &&
+    previousToken !== undefined &&
+    isTemplateMergeLabel(previousToken)
+  ) {
+    return {
+      prefix: standalone[1],
+      value: standalone[2],
+      suffix: standalone[3],
     };
   }
 
   if (
+    !template &&
     previousToken !== undefined &&
-    STANDALONE_REPEAT_VALUE_PATTERN.test(token) &&
-    (template
-      ? isTemplateMergeLabel(previousToken)
-      : STANDALONE_REPEAT_LABELS.has(previousToken.toLowerCase()))
+    CLASSIC_REPEAT_VALUE_PATTERN.test(token) &&
+    STANDALONE_REPEAT_LABELS.has(previousToken.toLowerCase())
   ) {
     return {
       prefix: '',
       value: token,
+      suffix: '',
     };
   }
 
   return undefined;
 }
 
+// A response size follows the status code in common/combined access logs:
+// '"GET /x HTTP/1.1" 502 150 ...'. Sizes differ on every line of a burst.
+const HTTP_STATUS_TOKEN_PATTERN = /^[1-5]\d{2}$/u;
+
 function isTemplateMergeLabel(previousToken: string): boolean {
+  if (HTTP_STATUS_TOKEN_PATTERN.test(previousToken)) {
+    return true;
+  }
   if (!TEMPLATE_LABEL_PATTERN.test(previousToken)) {
     return false;
   }
-  const label = previousToken.replace(/:$/u, '').toLowerCase();
+  const label = previousToken.replace(/^\(/u, '').replace(/:$/u, '').toLowerCase();
   return !STANDALONE_VALUE_BLOCKLIST.has(label);
 }

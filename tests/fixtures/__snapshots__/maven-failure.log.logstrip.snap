@@ -1,13 +1,9 @@
 [ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol
 [ERROR]   symbol:   class Logger
 [ERROR]   location: class com.example.checkout.CartService
-[ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol
-[ERROR]   symbol:   class Logger
-[ERROR]   location: class com.example.checkout.CartService
+[... 3 lines repeated from above ...]
 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project checkout: Compilation failure
-[ERROR] /repo/src/main/java/com/example/checkout/CartService.java:[118,9] cannot find symbol
-[ERROR]   symbol:   class Logger
-[ERROR]   location: class com.example.checkout.CartService
+[... 3 lines repeated from above ...]
 [ERROR] -> [Help 1]
 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
 [ERROR] Re-run Maven using the -X switch to enable full debug logging.

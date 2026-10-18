@@ -31,6 +31,7 @@ interface LogStripResult {
   savingsPercent: number;
   detectedSources?: readonly string[];
   detectedFormat?: string;
+  contentKind?: 'log' | 'text';
   timedOut?: boolean;
   outputPath?: string;
 }
@@ -63,7 +64,111 @@ vote over the first `formatDetectionSampleSize` (default 50) non-blank lines, so
 mixed-format streams resolve to their dominant format. `timedOut` is `true` when
 `processLogStreamWithTimeout` was used and the deadline was reached.
 `truncatedLines` counts lines that exceeded `maxLineLength` and were replaced
-with `[TRUNCATED]`.
+with `[TRUNCATED]`. `contentKind` is `'text'` when the input was copied through
+instead of compressed (see below) and `'log'` otherwise, including for JSON
+documents handled by the report path. It is absent when `timedOut` is `true`
+and the input had not been classified yet.
+
+## Non-log input (`textPassthrough`)
+
+The line scorer keeps diagnostics and drops everything else, which is right
+for a build log and destructive for a README, a YAML file or a source file.
+So `processLogStream`, and everything built on it (`processLogFile`,
+`processLogString`, `createLogStripTransform`, `processLogStreamWithTimeout`),
+reads a bounded sample of the input first, right after the JSON document check,
+and classifies it. Plain text is copied through line by line; anything else
+goes through the compression pipeline untouched by this step.
+
+```ts
+import { processLogString } from 'logstrip';
+
+const copy = await processLogString(readmeText);
+copy.contentKind;                  // 'text'
+copy.savingsPercent;               // 0
+copy.stats.droppedLines;           // 0
+copy.output === readmeText;        // true when the text holds no secrets
+
+const forced = await processLogString(readmeText, { textPassthrough: false });
+forced.contentKind;                // 'log' - compressed like any log
+```
+
+| Option | Type | Default | Behavior |
+| :--- | :--- | :--- | :--- |
+| `textPassthrough` | `boolean` | `true` | Classify the head of the stream and copy plain text (prose, markdown, source code, configuration, data) through instead of compressing it. `false` always runs the log pipeline; the CLI exposes it as `--force`. |
+
+What passthrough does and does not do:
+
+- **Unchanged except for secrets.** Every line is written, in order, with line
+  endings normalized to `\n`. The only edits are credential masking: PEM
+  private key blocks (the key lines are dropped and counted in
+  `stats.droppedLines`), then [`maskSecrets`](#masksecrets), then the custom
+  `sanitizePatterns` of the config. Identifiers, timestamps, IP addresses,
+  emails and prose are left alone, so text without secrets comes out as it went
+  in.
+- **Filters do not apply.** `include`, `exclude`, `severity`, `sampleSize`,
+  `maxTokens`, `maxLineLength` and `collapseBlocks` only shape compressed
+  logs.
+- **Stats.** `inputLines` / `outputLines` and the byte and word counts are
+  filled in, `droppedLines` is `0` (apart from private key lines),
+  `savedTokens` and `savingsPercent` are `0` for text without secrets.
+- **Decisions.** `onDecision` receives `{ kept: true, reason: 'passthrough' }`
+  for every written line, with the masked text in `sanitizedLine`.
+- **Streaming.** Only the sample is buffered, and only until the verdict is
+  known. A stream that already reads like a log is settled after
+  `CONTENT_EARLY_LOG_MIN_LINES` (8) lines, so a real log starts flowing almost
+  at once. Text, and a log with little structure, wait for the full sample:
+  the first `DEFAULT_CONTENT_SAMPLE_LINES` non-blank lines or
+  `DEFAULT_CONTENT_SAMPLE_BYTES` bytes, whichever comes first, which is the
+  worst case. Output then starts and the rest of the input flows line by
+  line. A `signal` aborts passthrough like any other run.
+- **Decided from the head only.** The verdict comes from the sampled lines,
+  not from the whole input. When it is wrong for your input, pass
+  `textPassthrough: false`.
+
+### `classifyContent`
+
+```ts
+import { classifyContent } from 'logstrip';
+
+const { kind, logLines, textLines, sampledLines } = classifyContent(lines);
+// kind: 'log' | 'text'
+```
+
+Scores up to `DEFAULT_CONTENT_SAMPLE_LINES` non-blank lines (and at most
+`DEFAULT_CONTENT_SAMPLE_BYTES` bytes) and returns a `ContentClassification`.
+Each line counts as log-like (timestamp, severity tag, CI marker, stack frame,
+logfmt / JSON-line / syslog record, access-log line, ANSI escape, process id,
+several `key=value` pairs, known tool output), text-like (markdown, prose
+sentence, source code, YAML / INI / JSON configuration, shell or Dockerfile
+syntax, HTML, CSV) or neither. Lines inside a closed markdown fence count as
+text. The sample is `'text'` only when at least `CONTENT_TEXT_MIN_LINES` lines
+are text-like, they make up at least `CONTENT_TEXT_MIN_RATIO` of the sampled
+lines, and log-like lines stay at or below `CONTENT_TEXT_MAX_LOG_RATIO` (a weak
+log signal such as the word `error` counts half). Otherwise the result is
+`'log'`, so unrecognised formats keep being compressed and a log that opens
+with a short prose banner stays a log.
+
+| Constant | Value | Meaning |
+| :--- | :---: | :--- |
+| `DEFAULT_CONTENT_SAMPLE_LINES` | `100` | Non-blank lines scored. |
+| `DEFAULT_CONTENT_SAMPLE_BYTES` | `262144` | Byte cap of the sample (256 KiB). |
+| `CONTENT_LINE_SCAN_LIMIT` | `2000` | Characters of a line that are scored. |
+| `CONTENT_TEXT_MIN_LINES` | `2` | Text-like lines needed for a `'text'` verdict. |
+| `CONTENT_TEXT_MIN_RATIO` | `0.5` | Minimum share of text-like lines. |
+| `CONTENT_TEXT_MAX_LOG_RATIO` | `0.15` | Maximum share of log-like lines. |
+| `CONTENT_EARLY_LOG_MIN_LINES` | `8` | Sampled lines needed before a log-like share settles the verdict early. |
+| `CONTENT_EARLY_LOG_MIN_RATIO` | `0.6` | Log-like share (weak signals at half weight) that settles a log verdict early. |
+
+`claimTextContent(lines, limits?)` is the streaming half: it reads at most one
+sample from an `AsyncIterable<string>` and returns the classification together
+with a `replay` iterable that yields every consumed line again, followed by the
+rest of the stream. It stops reading early with a `'log'` verdict when the log
+count alone rules text out, when more than half of a full sample can no longer
+be text, or when at least `CONTENT_EARLY_LOG_MIN_LINES` lines are sampled and
+`CONTENT_EARLY_LOG_MIN_RATIO` of them is log-like. The last exit can differ from
+the verdict of the full sample for a text file that opens with a log excerpt,
+which is then compressed as before. `ContentSampler` is the incremental scorer
+behind both `classifyContent` and the claim.
 
 ## Aggressiveness
 
@@ -286,6 +391,9 @@ const result = await processLogStream(input, output, {
   adaptiveContext: true,        // size the after-error context by error density
   templateMining: true,         // fold near-identical lines differing only in a
                                 //   number after a generic word label
+  collapseRepeatedBlocks: true, // replace a run of lines that repeats earlier
+                                //   output with a "[... N lines repeated ...]"
+                                //   marker
 
   // Numeric tuning / budget options:
   maxTokens: 8_000,             // trim to the highest-scoring lines within a
@@ -310,7 +418,8 @@ const result = await processLogStream(input, output, {
 | `dedupeWindow` | `number` | `1` | Collapses non-adjacent duplicate lines seen within the last _N_ distinct lines. `1` keeps adjacent-only deduplication. |
 | `collapseBlocks` | `number` | _(off)_ | Collapses consecutive repeats of a multi-line block (up to _N_ lines) into one copy plus a `[block xM]` marker. |
 | `formatDetectionSampleSize` | `number` | `50` | Number of leading non-blank lines sampled before the first-line format guess may be corrected by majority vote. After the vote locks, a sustained run of differently-formatted lines (20 consecutive) re-elects the format, so mixed streams that switch format mid-file stay correctly classified. |
-| `templateMining` | `boolean` | auto-on | Folds near-identical lines whose only difference is a number after a generic word label (`Retrying upload 17` / `… 18` → `[x2] Retrying upload [17 \| 18] …`). Numbers after diagnostic labels (`code`, `status`, `exit`, `signal`, `line`, `version`, `errno`, `error`) never merge. |
+| `templateMining` | `boolean` | auto-on | Folds near-identical lines whose only difference is a number after a generic word label (`Retrying upload 17` / `… 18` → `[x2] Retrying upload [17 \| 18] …`). Numbers with a duration or size unit (`took 120ms`, `12MB`, `45%`) and parenthesized counters (`(attempt 3)`) merge too, and the wrapping punctuation is kept. In access logs the response size after an HTTP status (`502 157`) merges as well, so a burst of 5xx lines that differ only in size and timing folds into one `[xN]` line. Numbers after diagnostic labels (`code`, `status`, `exit`, `signal`, `line`, `version`, `errno`, `error`) never merge. |
+| `collapseRepeatedBlocks` | `boolean` | auto-on | Replaces a run of at least 3 output lines (and 12 words, so the marker always pays for itself) that repeats an earlier run from the last 400 output lines with one `[... N lines repeated from above ...]` marker. Back-to-back copies of the same block share one marker, a different block gets its own, and the marker counts toward `stats.duplicateLines`. Lines that cannot start a repeat are written immediately; only lines that match an earlier run so far are held back, so memory stays bounded. Ignored when `dedupe` is `false`. A token budget (`maxTokens`) drops these markers before any other line. |
 | `maxStackFrames` | `number` | `10` | Keeps at most _N_ consecutive application stack frames per trace; the remainder collapses into a `[... K more application stack frames ...]` marker. `0` keeps every frame. Internal library frames are hidden separately by the internal-stack collapser. |
 
 ```ts
@@ -392,7 +501,7 @@ The sanitizer replaces:
 | Pattern | Replacement |
 | :--- | :--- |
 | UUID | `[ID]` |
-| ISO and UTC timestamps | `[TIME]` |
+| Timestamps (ISO with `.` or `,` fractions and zone, UTC/GMT, syslog `May 16 10:24:31`, `16-May-2026 10:24:31`, Go `log`, bare `10:24:31.044`, epoch values under `time`/`ts`/`timestamp` keys) | `[TIME]` |
 | IPv4 addresses | `[IP]` |
 | IPv4 address + port | `[IP]:[PORT]` |
 | GitHub tokens (`ghp_`, `gho_`, `ghu_`, etc.) | `[REDACTED]` |
@@ -400,12 +509,73 @@ The sanitizer replaces:
 | Slack tokens (`xoxb-...`, `xoxp-...`) | `[REDACTED]` |
 | Connection strings (`postgres://user:pass@`) | password → `[REDACTED]` |
 | `Authorization:` headers | `Authorization: [REDACTED]` |
-| Secret field values (`password=`, `token=`, `api_key=`, etc.) | value → `[REDACTED]` |
+| Secret fields (`password=`, `DB_PASSWORD=`, `apiKey:`, `"client_secret": "..."`, see below) | value → `[REDACTED]` |
 | AWS access keys (`AKIA...`) | `[REDACTED]` |
 | AWS ARN account IDs | `[ACCOUNT]` |
 | long hexadecimal or alphanumeric hashes | `[HASH]` |
 | HTTP status codes | `[2xx]`, `[4xx]`, `[5xx]`, etc. |
-| ANSI color escapes | removed |
+| Kubernetes ages (`38s`, `2m34s`, `5 (2m36s ago)`) | `[AGO]` |
+| ANSI escape sequences (colors, cursor movement, erase line, OSC hyperlinks) | removed |
+
+A secret field is any key whose last part is `password`, `passwd`,
+`passphrase`, `pwd`, `secret`, `token` (so also `auth_token`, `refresh_token`,
+`access_token` and `id_token`), `auth`, `credentials`, `bearer` or a key such
+as `api_key`, `access_key`, `private_key`, `secret_key`, `signing_key`,
+`encryption_key`, `session_key`, `master_key`, `service_key` or `client_key`,
+in any case style (`DB_PASSWORD`, `dbPassword`,
+`x-api-key`, `spring.datasource.password`, `AWS_SECRET_ACCESS_KEY`). Its value
+is masked whether it is written as `KEY=value`, `key: value`, `key := value` or
+as a quoted JSON or dict property, including JSON that was logged inside a
+string. A JSON property keeps its quotes, so `"password": "hunter2"` becomes
+`"password": "[REDACTED]"` and the line still parses. A quote after the key
+always yields a redaction: when the closing quote is missing or an escape is
+odd (`password="hunter2`), the value is masked to the end of the line. These
+are left alone:
+
+- values that carry no secret: an empty or quoted-empty value, `null`, `true`,
+  `false`, a bare number under four digits and a reference that is the whole
+  value, with one pair of quotes removed: `$NAME`, `${NAME}` or a GitHub
+  expression, as in `token: ${{ secrets.NPM_TOKEN }}` or
+  `DB_PASSWORD=${DB_PASSWORD}`. A reference with a default or a command
+  (`${NAME:-hunter2}`, `$(cat secret)`) or with anything after it
+  (`$HOME/x`, `${NAME}extra`, `connect(password=${NAME})`) is masked, because
+  the rest of the value may be the secret
+- an unquoted type as the whole value, which is what source code has instead of
+  a secret: `string`, `number`, `boolean`, `bigint`, `symbol`, `unknown`,
+  `never`, `undefined`, `void`, `str`, `int`, `float`, `bool`, `bytes`, `None`,
+  `nil`, `Integer`, `Boolean`, `Buffer` and `SecretStr`, also as
+  `Optional[...]`, `Option<...>` or `Promise<...>` around those or around
+  `any`, `String` and `Secret`, followed by `[]` or as `T|null` and
+  `T|undefined`, as in `previousToken: string`. `String`, `Secret` and `any`
+  alone are plausible passwords and are masked
+- an unquoted read of one environment variable or config value as the whole
+  value, with no default: `process.env.X`, `process.env["X"]`,
+  `os.environ["X"]`, `os.environ.get("X")`, `os.getenv("X")`, `env("X")`,
+  `getenv("X")`, `ENV["X"]`, `System.getenv("X")`, `$ENV{X}`,
+  `core.getInput("x")` and `secrets.X`. The read must end at white space, a
+  comma, a semicolon or the end of the line, or at one closing bracket or
+  backtick that is followed by one of those (`connect(password=process.env.X)`
+  is kept, `password=process.env.X)hunter2` is masked). A call with another
+  argument (`os.getenv("X", "hunter2")`), a bare identifier followed by a call
+  (`load()`, `readSecret()`) and a bare word such as `password=hunter` are
+  masked
+- the unquoted words `read`, `write` and `none` after a token name, because a
+  GitHub permission such as `id-token: write` is not a token (`password: none`
+  is still masked)
+- A quoted value is a literal, so the three rules above never apply to it:
+  `password: "string"`, `token: "process.env.X"` and `secret: "none"` are
+  masked, while `""`, `"null"`, `"true"`, `"false"`, a quoted number of up to
+  three digits and a quoted reference (`password="${PASS}"`) are kept
+- a JSON object or array under a quoted key (`"auth": {...}`), whose own fields
+  are masked on their own
+- a path under the environment variables `PWD` and `OLDPWD`
+- a bare `auth:` or `credentials:` label such as `supabase auth: gotrue started`;
+  `auth` and `credentials` count at the end of a longer key (`basic_auth`,
+  `x-auth`), as a quoted key or with `=`
+
+Durations that are measurements stay readable: `0.47s`, `timed out after 30s`,
+`retrying in 2s`, `timeout=30s` and `1m 12s` are kept, so a configured timeout
+or backoff is never replaced by `[AGO]`.
 
 Pass a second argument to keep a trailing slice of redacted UUIDs and hashes
 instead of fully masking them - the same behavior the CLI exposes as
@@ -418,6 +588,35 @@ sanitizeLine('request 123e4567-e89b-12d3-a456-426614174000 failed', 6);
 
 `preserveIdSuffix` accepts `0`–`16`; `0` (the default) masks the value entirely
 to `[ID]` / `[HASH]`.
+
+### `maskSecrets`
+
+```ts
+import { maskSecrets } from 'logstrip';
+
+maskSecrets('deploy with ghp_... and password=hunter2');
+// deploy with [REDACTED] and password=[REDACTED]
+```
+
+The credential rules of `sanitizeLine` on their own: GitHub, Slack, Stripe,
+npm, Google, Twilio, SendGrid and AWS keys, JWTs, connection-string passwords,
+`Authorization:` headers, secret field values, AWS account ids in ARNs and the
+high-entropy token fallback. UUIDs, timestamps, IP addresses, emails, hashes
+and ANSI escapes are not touched. Text passthrough uses it so a copied config
+or document does not carry credentials along. `sanitizeLine` applies the same
+rules in the same order as before, so the compressed log output is unchanged.
+The rules recognise common credential shapes; they are a safety net, not a
+guarantee that a file holds no secrets. They also favour masking over fidelity:
+an assignment in source code such as `const accessToken = load()` and a
+sentence that mentions an `Authorization:` header (the rest of the line is
+masked) are masked as well.
+
+Text passthrough also handles PEM private key blocks, with
+`maskPemBlockInText`, a variant of `maskPemBlock` for documents and configs:
+only a header that ends its line opens a block, so a page that merely names
+`-----BEGIN PRIVATE KEY-----` in a sentence or table keeps the rest of its
+content, and a whole key on one line (a JSON string with `\n` escapes) is
+redacted on the spot.
 
 ## `createRepeatSignature`
 
@@ -447,6 +646,55 @@ The filter removes low-value log tags and keeps errors, warnings, fatal lines,
 critical lines, and diagnostic stack trace lines. The full streaming parser uses
 the hybrid scoring engine above, so direct `shouldKeepLine()` calls are best
 treated as a lightweight helper rather than a complete compression pass.
+
+## `detectHeaderLogLevel`
+
+```ts
+import { detectHeaderLogLevel } from 'logstrip';
+
+detectHeaderLogLevel('2026-05-16 10:24:31,044 - app.worker - INFO - started'); // 'noise'
+detectHeaderLogLevel('2026-05-16 10:24:31,044 - app.worker - WARNING - slow'); // 'warn'
+detectHeaderLogLevel('time=... level=error msg="boom"'); // 'severe'
+detectHeaderLogLevel('Server started with DEBUG flag enabled today'); // undefined
+```
+
+Classifies the severity word that logging frameworks print without brackets in
+the line header: `noise` for `INFO`/`DEBUG`/`TRACE`/`VERBOSE`/`FINE*`, `warn`
+for `WARN`/`WARNING` and `severe` for `ERROR`/`FATAL`/`CRITICAL`/`SEVERE`. It
+understands Spring Boot, logback/log4j, Python logging (default and custom
+formats), loguru, level-first lines (`INFO: ...`), logfmt (`level=info`) and
+glog/klog (`I0516 ...`). Position rules keep prose that merely contains an
+uppercase `INFO` word from being classified, and a bare `WARNING: ...` at the
+start of a line is left alone because CLI tools print boilerplate warnings that
+way.
+
+The streaming parser drops `noise` lines unless their text still reads as a
+diagnostic (`INFO ... connection refused` is kept), and floors `warn` and
+`severe` lines at the keep threshold so a level-only message such as
+`WARNING - redis connection lost` is not lost. Bracketed tags (`[INFO]`,
+`[INFO ]`) keep their existing, unconditional handling.
+
+## `isPassingTestLine`
+
+```ts
+import { isPassingTestLine } from 'logstrip';
+
+isPassingTestLine('tests/test_orders.py::test_create PASSED   [ 12%]'); // true
+isPassingTestLine('  ✔ returns an error for an empty cart (12ms)'); // true
+isPassingTestLine('--- PASS: TestCheckout (0.01s)'); // true
+isPassingTestLine('tests/test_orders.py::test_create FAILED'); // false
+```
+
+True for lines that only report a pass: pytest `PASSED` and unittest `... ok`,
+check-mark lines (`✓ ✔ √ ✅`), jest/vitest `PASS path` suite lines, Go
+`--- PASS:` / `PASS` / `ok pkg` / `[no test files]`, xUnit `Passed ...`, Gradle
+`... PASSED` and `UP-TO-DATE`/`NO-SOURCE`/`FROM-CACHE`/`SKIPPED` tasks, and TAP
+`ok N`. The streaming parser drops them as `ci-noise` before scoring, so a
+passing test named "returns an error for bad input" is not mistaken for a
+failure and passing lines next to a failure are no longer promoted as context.
+`=== RUN` lines are kept: when a test aborts the process, the last one is the
+only clue to which test it was. The Go package summary `FAIL<TAB>pkg<TAB>0.4s`
+is scored as a diagnostic.
 
 ## Tested log sources and tools
 

@@ -1,0 +1,6 @@
+# Keep LF on every platform: the passthrough smoke tests compare fixtures
+# byte for byte, and Windows checkouts would otherwise get CRLF.
+* text=auto eol=lf
+*.png binary
+*.webp binary
+*.ico binary

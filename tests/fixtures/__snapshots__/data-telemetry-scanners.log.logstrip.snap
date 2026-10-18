@@ -1,6 +1,6 @@
-[TIME] UTC [42] FATAL:  password authentication failed for user "admin"
-[TIME] UTC [42] DETAIL:  Role "admin" does not exist.
-42:M 15 May 2026 12:00:05.456 # <redis> Error allocating resoures for the AOF rewrite.
+[TIME] [42] FATAL:  password authentication failed for user "admin"
+[TIME] [42] DETAIL:  Role "admin" does not exist.
+42:M [TIME] # <redis> Error allocating resoures for the AOF rewrite.
 [ERROR] [Kafka] ERROR [Consumer clientId=consumer-console-consumer-96860-1, groupId=console-consumer-96860] Connection to node -1 (kafka-broker/[IP]:[PORT]) could not be established. Broker may not be available.
 [ERROR] Sentry: failed to send event [HASH] to https://sentry.io/api/123456/store/
 [ERROR] OpenTelemetry: Error exporting spans: Connection refused to localhost:4317

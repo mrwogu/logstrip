@@ -10,9 +10,7 @@
 [ERROR] aiohttp.server Error: RuntimeError: Session is closed when processing request [ID]
     at aiohttp/client.py:42 in _request
     at aiohttp/connector.py:88 in connect
-[ERROR] aiohttp.server Error: RuntimeError: Session is closed when processing request [ID]
-    at aiohttp/client.py:42 in _request
-    at aiohttp/connector.py:88 in connect
+[... 3 lines repeated from above ...]
 [ERROR] sanic server Error: SanicException: Request timeout on POST /api/checkout
     at sanic/app.py:42 in handle_request
     at sanic/router.py:88 in resolve

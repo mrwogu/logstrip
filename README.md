@@ -14,7 +14,7 @@ _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub
 [![Coverage](https://codecov.io/gh/mrwogu/logstrip/branch/main/graph/badge.svg)](https://codecov.io/gh/mrwogu/logstrip)
 [![License: MIT](https://img.shields.io/badge/license-MIT-white.svg)](https://opensource.org/licenses/MIT)
 
-![80%+ token savings](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-savings.svg)![705+ ecosystems](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-ecosystems.svg)![0 runtime deps](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-deps.svg)![100% coverage](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-coverage.svg)![41 fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-fixtures.svg)![810+ tests](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-tests.svg)
+![token savings on test fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-savings.svg)![705+ ecosystems](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-ecosystems.svg)![0 runtime deps](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-deps.svg)![100% coverage](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-coverage.svg)![test fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-fixtures.svg)![810+ tests](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-tests.svg)
 
 [Install](#install) ·
 [Quick Start](#quick-start) ·
@@ -36,7 +36,7 @@ You paste a 50k-line CI log into your agent. It chews 200k+ tokens on noise - he
 
 ## Install <a id="install"></a>
 
-Requires Node.js 20 or newer.
+Requires Node.js 22 or newer.
 
 ```bash
 npm install --global logstrip
@@ -78,40 +78,52 @@ LogStrip output:
 <a id="benchmarks"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-benchmarks.svg" alt="Benchmarks" width="320">
 
-Compression ratios from the 41 fixture test suite across real-world log sources:
+<!-- bench:readme:start -->
+Measured on the 51 test fixtures in the repository, with LogStrip's own token estimate (words times 1.3): **51.3%** fewer tokens overall (42,705 to 20,805). Per fixture the median is 42.0%, the lowest 16.7% and the highest 87.2%. These are small logs that we wrote, so run `logstrip --stats` on yours.
 
-| Category | Sample fixture | Input lines | Output lines | Token savings |
-|:---|:---|---:|---:|---:|
-| CI platforms | `ci-platforms.log` | 57 | 18 | 68% |
-| Build toolchains | `build-toolchains.log` | 70 | 23 | 67% |
-| Security scanners | `security-scanners.log` | 88 | 25 | 72% |
-| Infra / Cloud | `terraform-ansible-systemd.log` | 41 | 14 | 66% |
-| Serverless | `cloud-serverless.log` | 32 | 11 | 66% |
-| Java enterprise | `java-enterprise.log` | 92 | 28 | 70% |
-| AI/ML ecosystem | `ai-ml-ecosystem.log` | 85 | 22 | 74% |
-| Web frameworks | `web-frameworks-node.log` | 68 | 20 | 71% |
-| Docker build | `docker-build.log` | 54 | 16 | 70% |
-| Kubernetes | `kubernetes-crashloop.log` | 47 | 12 | 74% |
+10 of the 25 single-tool fixtures, best first: the 6 best, the 2 nearest the median and the 2 weakest.
 
-Production logs with millions of lines routinely hit **80%+** token savings because noise ratios scale with log size.
+| Fixture | Lines in / out | Input tokens | Output tokens | Savings |
+| :--- | ---: | ---: | ---: | ---: |
+| `apache-httpd-noisy` | 30 / 4 | 485 | 62 | 87.2% |
+| `docker-build` | 26 / 4 | 309 | 64 | 79.3% |
+| `jest-noisy` | 47 / 8 | 284 | 63 | 77.8% |
+| `maven-downloads-failure` | 13 / 3 | 124 | 32 | 74.2% |
+| `java-spring-boot-realistic` | 25 / 10 | 305 | 95 | 68.8% |
+| `vitest-failure` | 43 / 14 | 257 | 91 | 64.6% |
+| `node-crash-realistic` | 24 / 13 | 181 | 101 | 44.2% |
+| `mocha-spec-failure` | 45 / 24 | 236 | 136 | 42.4% |
+| `server-json` | 11 / 7 | 43 | 34 | 20.9% |
+| `kubernetes-crashloop` | 18 / 15 | 150 | 125 | 16.7% |
+<!-- bench:readme:end -->
 
-> Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) - 41 `.log` files covering 705+ ecosystem signatures. Each fixture has a committed snapshot baseline.
+Measured numbers for every fixture, with the method: [Benchmarks](https://mrwogu.github.io/logstrip/benchmarks/).
+
+Savings depend on the log. Noisy CI output compresses most, and short logs where nearly every line is already a failure compress least.
+
+> Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) - the `.log` fixtures, plus one sample for each of the 705+ detected sources in `tests/fixtures/sources/`. Each fixture has a committed snapshot baseline.
 
 <a id="vs-alternatives"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-competitors.svg" alt="vs Alternatives" width="320">
 
-| | **LogStrip** | `grep -v` / `awk` | LLM summarization | logreduce |
-|:---|:---|:---|:---|:---|
-| **Type** | Streaming log compressor | Line filter | API call + prompt | ML-based anomaly detector |
-| **Token savings** | **80%+** (typical CI logs) | 20-40% (fragile patterns) | 60-80% (expensive, lossy) | ~50% (anomaly-only) |
-| **Streaming** | Yes (readline, bounded memory) | Yes (pipe) | No (buffer entire log) | No (batch) |
-| **Deduplication** | Smart `[xN]` folding with delta values | No | Approximate | No |
-| **Sanitization** | UUIDs, IPs, timestamps, AWS keys, JWTs, GitHub tokens, Slack tokens, connection strings, `Authorization:` headers | Manual regex | Unreliable | Partial |
-| **Stacktrace collapse** | Internal `node_modules` → single marker | No | Often drops context | No |
-| **Runtime deps** | **0** (node:\* built-ins only) | 0 | Heavy (API + tokens) | Python + ML stack |
-| **LLM cost** | **$0** (pure computation) | $0 | $0.01-$1.00+ per log | $0 (compute only) |
-| **Extensible** | `.logstrip.yml` custom config | Shell scripts | Prompt engineering | Plugin system |
-| **CI integration** | CLI + GitHub Action | Shell scripts | API wrapper | CLI |
+Compared on what can be said for a whole category, not on numbers. We have not benchmarked other tools, and "Depends" says why the answer varies.
+
+<!-- compare:readme:start -->
+| | LogStrip | `tail` / `grep` | Model-based compressors | Shippers and platforms |
+| :--- | :--- | :--- | :--- | :--- |
+| **Needs a model** | No | No | Yes | No. Some products add model features. |
+| **Needs network** | No for compression. See the note below. | No | Depends: a local model needs none, a hosted API does | Depends: hosted needs it, self-hosted needs your own network |
+| **Cost per run** | CPU time. No fee, MIT licensed. | None | Compute or API calls, plus the tokens you still send | Depends on the plan, often priced on ingest |
+| **Same input, same output** | Yes, pinned by snapshot tests | Yes | Depends: model version, hardware and settings can change it | Yes for a stored query |
+| **Lines stay whole** | Yes: kept, folded or hidden behind a marker | Yes | No guarantee: tokens are removed inside lines | Yes: events come back as stored |
+| **Stack frames** | Your frames kept, internal library frames hidden | Depends on the pattern: `grep ERROR` drops the frames below the error | No rule keeps a frame whole | Depends: multi-line traces need parsing at ingest |
+| **Identifiers and line numbers** | Masked by rule. `--preserve-id-suffix` keeps an id tail. | Exact | Depends: no rule keeps them | Exact |
+| **Repeats** | Folded into `[xN]` with the values that differed | Only adjacent identical lines fold, with `uniq -c` | Removed as predictable, no count | Yes, as an aggregation query |
+| **Secrets** | Masked in every mode. Not a secret scanner, see [Security](https://mrwogu.github.io/logstrip/guides/security/). | Left in | Not a design goal | Depends: scrubbing rules you configure |
+| **Streams with bounded memory** | Yes, line by line | Yes | Depends: bounded by the compressor model's context window or by chunking | Yes |
+<!-- compare:readme:end -->
+
+Network note: compression never uses the network. In an interactive terminal the CLI checks npm once a day for a newer version. It does not run when stderr is redirected, as in CI, and `LOGSTRIP_NO_UPDATE_CHECK=1` turns it off. More on each category, and the rows left out here: [Compare](https://mrwogu.github.io/logstrip/compare/).
 
 <a id="works-with-every-agent"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-agents.svg" alt="Works with every agent" width="320">
@@ -213,19 +225,21 @@ Aho-Corasick automaton) and applies several cuts to every streamed line:
 
 | Cut | What it does |
 |:---|:---|
-| **Defoliation** | Drops `[INFO]`, `[DEBUG]`, `[TRACE]`, and `[VERBOSE]` lines. |
+| **Defoliation** | Drops `[INFO]`, `[DEBUG]`, `[TRACE]`, and `[VERBOSE]` lines, and the same levels printed without brackets (Spring Boot, logback, Python logging, loguru, logfmt `level=info`, glog) unless the line still reads as a diagnostic. Unbracketed `WARN`/`ERROR` levels are kept even when the message has no error keyword. |
 | **Sanitization** | Replaces UUIDs, timestamps, IPs, AWS keys, GitHub tokens, JWTs, Slack tokens, connection string passwords, `Authorization:` headers, and long hashes with compact placeholders. Groups HTTP status codes (`503` → `[5xx]`). |
 | **Context scoring** | Keeps high-signal diagnostics and nearby context while dampening repeated spam (TF-IDF). |
 | **Smart dedup** | Folds repeated sanitized lines, including same-shape variants, into `[xN] message` with only differing values listed. |
 | **Stack collapse** | Replaces internal `node_modules/` and runtime frames with one marker line. |
 | **Stack-window collapse** _(auto)_ | Folds repeated multi-line stack traces that differ only in addresses, Go offsets, or goroutine ids into a single `[xN]` group. |
+| **Repeated-block references** _(auto)_ | Replaces a run of lines that repeats an earlier run (the same stack trace printed again for the next failure) with one `[... N lines repeated from above ...]` marker. |
 | **Root-cause pruning** _(auto)_ | Drops downstream cascade restatements (`aborting due to previous errors`, `could not compile … due to previous error`, `skipped because the upstream job failed`) so the originating failure stands out. |
 | **Multilingual detection** _(auto)_ | Recognizes error/failure/exception keywords in 8+ languages plus CJK (`erreur`, `Fehler`, `fallo`, `ошибка`, `错误`, …). |
 | **Format voting** _(auto)_ | Locks the fast path onto the first recognizable line, then self-corrects the detected format with a majority vote over the first 50 non-blank lines. |
 | **Instance-counter folding** | Folds enumerated counters (`worker [1 \| 2 \| 3]`, `retry …`) into the repeat signature; labels whose numbers carry meaning (error/code/status/exit) are excluded. |
 | **Multiline joining** | Joins indented continuation lines (Python tracebacks, Node stack frames, Java `Caused by:` chains, Go goroutine dumps) with their parent into a single logical line. |
 | **Severity filtering** | Drops lines below a configurable minimum severity (`fatal` / `error` / `warn` / `info` / `debug` / `trace`). |
-| **CI noise filters** | Drops progress bars, timestamp-only lines, K8s `Normal` events, and rate-limited repetition messages. |
+| **CI noise filters** | Drops progress bars, timestamp-only lines, K8s `Normal` events, rate-limited repetition messages, package transfers (`Downloaded from central: ... (25 kB at 745 kB/s)`, apt `Get:1 ...`, pip `Downloading ... .whl`), and passing-test reports (`PASSED`, `✓`, `--- PASS:`, `ok pkg`, `PASS src/a.test.ts`, idle Gradle tasks) even when the test name mentions an error. |
+| **Non-log guard** | Reads the first 100 non-blank lines and, when the input is prose, markdown, source code or configuration instead of a log, copies it through unchanged (credentials still masked) instead of compressing it. `--force` compresses it anyway. |
 
 Cuts marked _(auto)_ are enabled by default in `auto` mode; disable any of them
 with the matching `--no-*` flag.
@@ -336,7 +350,12 @@ Options:
       --no-root-cause      Disable auto-pruning of downstream cascade restatements (auto on).
       --no-multilingual    Disable auto-detection of non-English error/failure keywords (auto on).
       --no-adaptive-context Disable auto-mode adaptive context windows around errors (auto on).
+      --max-stack-frames <N> Keep at most N consecutive application stack frames per trace; the rest collapse into a marker. 0 keeps every frame. Default: 10.
+      --no-template-mining Disable folding of near-identical lines that differ only in a number after a generic word label (auto on).
+      --no-json-report     Disable auto-detection of structured JSON documents such as test reports and scanner exports (auto on).
+      --no-collapse-repeated-blocks Disable [... N lines repeated from above ...] back-references for repeated blocks (auto on).
       --preserve-id-suffix <N> Keep the last N chars of redacted UUIDs/hashes (0-16, default 0).
+      --force              Compress even when the input does not look like a log (disables text passthrough).
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -350,7 +369,7 @@ Options:
 
 In the default `auto` mode the detection and compression boosters
 (`--collapse-stacks`, `--root-cause`, `--multilingual`, adaptive context
-windows, and majority-vote format detection) are **on automatically** - the
+windows, repeated-block references, and majority-vote format detection) are **on automatically** - the
 `--no-*` flags above are opt-outs for when you want the raw, unboosted pass.
 
 ### Recipes
@@ -385,6 +404,10 @@ logstrip huge.log --sample 50 -o preview.log
 
 # 10. CI time budget - stop after 30 seconds
 logstrip raw.log --timeout 30 -o clean.log
+
+# 11. Not a log (README, YAML, source)? It is copied through unchanged.
+#     Compress it anyway with --force.
+logstrip notes.txt --force -o clean.log
 ```
 
 PowerShell equivalents:
@@ -426,7 +449,7 @@ console.log(`saved ${result.savedTokens} tokens (${result.savingsPercent}%)`);
 - **Dedupe & folding** — `dedupe`, `dedupeWindow`, `collapseBlocks`
 - **Context & sanitization** — `contextBefore`, `contextAfter`, `preserveIdSuffix`
 - **Auto-mode boosters** (default-on; set `false` to disable) — `collapseRepeatedStacks`, `rootCause`, `multilingual`, `adaptiveContext`
-- **Detection & output** — `formatDetectionSampleSize`, `outputFormat`
+- **Detection & output** - `formatDetectionSampleSize`, `outputFormat`, `textPassthrough` (on by default: plain text such as markdown or config is copied through with credentials masked, and `result.contentKind` reports `'text'`; set it to `false` to force compression)
 - **Custom config** — `config` (inline) or `configPath` (path to `.logstrip.yml`)
 - **Programmatic hooks** — `signal` (`AbortSignal`), `onDecision` (per-line decision callback), `tokenEstimator` (custom token counter)
 
@@ -476,6 +499,14 @@ npm install
 npm run typecheck
 npm run test:coverage    # 100/100/100/100 gate
 npm run build
+```
+
+Documentation site (Astro Starlight in `apps/docs`, sources in `docs/`):
+
+```bash
+npm run docs:install     # once
+npm run docs:serve       # preview at http://localhost:4321/logstrip/
+npm run docs:build       # static site in site/
 ```
 
 <div align="center">
