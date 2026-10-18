@@ -13,3 +13,6 @@ test-review-data.json
 # Local preview artifacts
 .playwright-mcp/
 logstrip-hero-*.png
+
+# Docs site (Astro)
+apps/docs/.astro/

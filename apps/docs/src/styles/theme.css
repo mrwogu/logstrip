@@ -1,0 +1,111 @@
+/* LogStrip palette: near-black slate with a mint accent (see home.css for the landing page). */
+:root {
+  --sl-font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sl-font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #12301a;
+  --sl-color-accent: #3dbb5c;
+  --sl-color-accent-high: #a4ffaf;
+  --sl-color-white: #f7f4ea;
+  --sl-color-gray-1: #e4e2d9;
+  --sl-color-gray-2: #c0beb5;
+  --sl-color-gray-3: #8e8d86;
+  --sl-color-gray-4: #4a4d4d;
+  --sl-color-gray-5: #2f3233;
+  --sl-color-gray-6: #1d1f20;
+  --sl-color-black: #161818;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #d6efde;
+  --sl-color-accent: #1f6f38;
+  --sl-color-accent-high: #14482a;
+}
+
+/* Tight headings, like the MkDocs site had */
+.sl-markdown-content :is(h1, h2, h3, h4),
+h1#_top {
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+/* Starlight's desktop heading scale makes h3 almost as large as h2, so long
+   reference pages lose their hierarchy. A tighter scale keeps levels apart. */
+@media (min-width: 50rem) {
+  :root {
+    --sl-text-h1: 2.5rem;
+    --sl-text-h2: 1.75rem;
+    --sl-text-h3: 1.3125rem;
+    --sl-text-h4: 1.125rem;
+  }
+}
+
+/* Supported sources: plain bullet lists rendered as pills */
+.source-list ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0;
+  list-style: none;
+}
+.source-list li {
+  margin: 0;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 999px;
+  background: var(--sl-color-bg-nav);
+  color: var(--sl-color-white);
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-text-xs);
+  line-height: 1.2;
+}
+
+/* Cookbook cards (docs/examples/index.md) */
+.logstrip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.8rem;
+}
+.logstrip-card {
+  padding: 0.95rem 1rem 1.1rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 0.85rem;
+  background: var(--sl-color-bg-nav);
+}
+.logstrip-card h3 {
+  margin-top: 0.4rem;
+  font-size: var(--sl-text-base);
+}
+.logstrip-card p {
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-2);
+}
+.logstrip-metric {
+  display: inline-block;
+  padding: 0.08rem 0.5rem;
+  border-radius: 0.4rem;
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent-high);
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-text-sm);
+  font-weight: 700;
+}
+:where(.logstrip-grid, .logstrip-card, .source-list) * + * {
+  margin-top: 0;
+}
+
+/* Collapsible blocks (<details> in the Markdown) */
+.sl-markdown-content details {
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+.sl-markdown-content details > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.sl-markdown-content details[open] > summary {
+  margin-bottom: 0.75rem;
+}
