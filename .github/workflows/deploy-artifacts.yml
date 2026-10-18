@@ -2,8 +2,10 @@ name: Deploy Artifacts
 
 on:
   push:
+    # Release tags only; the floating vN tag that release-please.yml moves
+    # must not get a release of its own.
     tags:
-      - 'v*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
 
 permissions:
@@ -32,8 +34,9 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
+      # Lifecycle scripts of dependencies stay off; the build needs none.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Validate
         run: |
@@ -60,8 +63,19 @@ jobs:
           path: artifacts/*
           retention-days: 30
 
-      - name: Publish GitHub Release artifacts
+      # A tag pushed again (a rebuild, a rerun) keeps the assets its release
+      # already has; only a release without assets gets them.
+      - name: Check the release for assets
+        id: release
         if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COUNT=$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets | length' 2>/dev/null || echo 0)
+          echo "assets=$COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release artifacts
+        if: startsWith(github.ref, 'refs/tags/v') && steps.release.outputs.assets == '0'
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           files: artifacts/*

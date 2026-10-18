@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions
 
-<!-- PromptScript 2026-10-18T14:20:35.564Z | source: .promptscript/project.prs | target: github - do not edit -->
+<!-- PromptScript 2026-10-18T22:35:49.052Z | source: .promptscript/project.prs | target: github - do not edit -->
 
 ## project
 
@@ -125,6 +125,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 - Every uses: in .github/workflows is pinned to a full commit SHA with a # vX.Y.Z comment and Renovate keeps the SHAs fresh; mrwogu/logstrip@v2 stays floating on purpose because that step dogfoods the published action
 - npm run docs:check (scripts/check-cli-docs.js) fails CI when a --flag from HELP_TEXT is missing from docs/reference/cli.md or README.md - add the flag to both when you add it to the CLI
 - ci.yml also runs on a Monday cron so main is re-validated against the live registry; release-please uses RELEASE_PAT when the secret exists and falls back to GITHUB_TOKEN
+- deploy-artifacts.yml runs on vX.Y.Z tag pushes only (never on the floating vN tag) and uploads the npm tarball and the action bundle to the GitHub release; a release that already has assets is left alone, so a tag pushed again or a rerun stays green
 - release-please.yml has two paths: a main push lets release-please open or update the release PR and create the vX.Y.Z tag (RELEASE_PAT, so the tag push fires the workflow again); a vX.Y.Z tag push or a manual run with tag=vX.Y.Z checks out the tag, validates it (strict name, on main, package.json version), builds, checks that the committed dist/ matches the build, runs npm publish (trusted publishing, no token; skipped when the version is already on the registry) and then a second job that checks out and installs nothing moves the vN tag through the API with RELEASE_PAT (needs the workflow scope, the default token may not move a tag across workflow changes); release-dist.yml builds dist/ on every push to the release-please branch and commits it there with RELEASE_PAT so CI runs on the pushed commit; main is never pushed from a workflow because branch protection requires the CI checks
 
 ### docs
