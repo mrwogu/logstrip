@@ -145,7 +145,11 @@
     }
 
     function classifyContent(lines: readonly string[]): { kind: ContentKind; logLines: number; textLines: number; sampledLines: number };
+    function claimTextContent(lines: AsyncIterable<string>): Promise<{ classification: ContentClassification; replay: AsyncIterable<string> }>;
     function maskSecrets(line: string): string;
+    function stripAnsi(line: string): string;
+    function detectHeaderLogLevel(line: string): 'noise' | 'warn' | 'severe' | undefined;
+    function isPassingTestLine(line: string): boolean;
     function processLogFile(input: string, output: string, options?: LogStripOptions): Promise<LogStripResult>;
     function processLogStream(input: NodeJS.ReadableStream, output: NodeJS.WritableStream, options?: LogStripOptions): Promise<LogStripResult>;
     function parseAggressiveness(value: string): Aggressiveness;
@@ -178,6 +182,19 @@
     function saveTelemetry(store: TelemetryStore): void;
     function formatTelemetrySummary(store: TelemetryStore): string;
   ```
+
+  ## Output markers the pipeline emits
+
+  `[xN] line` folded repeats (template mining merges lines that differ only in a
+  number), `[... hidden internal library frames ...]`, `[... K more application
+  stack frames ...]`, `[... N lines repeated from above ...]` (a block already
+  printed in the last 400 output lines, see BLOCK_REFERENCE_* in constants.ts),
+  `[PEM PRIVATE KEY REDACTED]`, `[REDACTED]`, `[JWT]`, `[HASH]`, `[ID]`,
+  `[TIME]`, `[IP]`, `[PORT]`, `[EMAIL]`, `[AGO]` (only for "N ago" ages; measured
+  durations such as `timed out after 30s` are kept), `[HTTP 4xx]` / `[HTTP 5xx]`.
+  Unbracketed levels (`INFO`, `DEBUG` after a timestamp, `level=info`) are noise
+  like `[INFO]`; passing-test lines (`PASS`, `ok pkg`, `✓ name`) are dropped even
+  when the test name mentions an error. New markers need a smoke fixture.
 
   ## Public action surface
 
