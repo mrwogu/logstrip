@@ -81,12 +81,17 @@ jobs:
           fi
           git fetch --quiet origin main
           if ! git merge-base --is-ancestor "$TAG_NAME" origin/main; then
+            # A tag that was published before sits on a dist/ build commit. Its
+            # parent must be the source commit on main and nothing but dist/
+            # may differ; the build is then redone from that source commit, so
+            # whatever the old tag carried under dist/ is never reused.
             if ! git merge-base --is-ancestor "${TAG_NAME}^" origin/main; then
               echo "::error::$TAG_NAME is not on main"; exit 1
             fi
-            if git diff --name-only "${TAG_NAME}^" "$TAG_NAME" | grep -v '^dist/' | grep -q .; then
+            if git diff --no-renames --name-status "${TAG_NAME}^" "$TAG_NAME" | grep -Ev '^[AMD]	dist/' | grep -q .; then
               echo "::error::$TAG_NAME carries changes outside dist/ that are not on main"; exit 1
             fi
+            git checkout --quiet "${TAG_NAME}^"
           fi
           VERSION=$(node -p "require('./package.json').version")
           if [ "v$VERSION" != "$TAG_NAME" ]; then
