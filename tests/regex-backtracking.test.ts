@@ -68,6 +68,8 @@ const ADVERSARIAL: ReadonlyArray<readonly [string, string]> = [
   ['secret environment reads', repeated('token=process.env.')],
   ['secret environment calls', repeated('token=os.getenv("a')],
   ['secret type wrappers', repeated('token: Optional[')],
+  ['secret environment reads and closers', repeated('token=process.env.X)')],
+  ['secret quoted types', repeated('token: "string" ')],
   ['a secret value that is one long word', repeated('a', 'token=', '(')],
   ['a secret value that is one long dotted word', repeated('a.', 'token=', '(')],
   ['secret key names', repeated('session_key ')],

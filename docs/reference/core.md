@@ -540,22 +540,32 @@ are left alone:
   (`${NAME:-hunter2}`, `$(cat secret)`) or with anything after it
   (`$HOME/x`, `${NAME}extra`, `connect(password=${NAME})`) is masked, because
   the rest of the value may be the secret
-- a type as the whole value, which is what source code has instead of a secret:
-  `string`, `number`, `boolean`, `bigint`, `symbol`, `unknown`, `any`, `never`,
-  `undefined`, `void`, `str`, `int`, `float`, `bool`, `bytes`, `None`, `nil`,
-  `String`, `Integer`, `Boolean`, `Buffer`, `Secret` and `SecretStr`, also as
-  `Optional[...]`, `Option<...>`, `Promise<...>`, followed by `[]` or as
-  `T|null` and `T|undefined`, as in `previousToken: string`
-- a read of one environment variable or config value as the whole value, with
-  no default: `process.env.X`, `process.env["X"]`, `os.environ["X"]`,
-  `os.environ.get("X")`, `os.getenv("X")`, `env("X")`, `getenv("X")`,
-  `ENV["X"]`, `System.getenv("X")`, `$ENV{X}`, `core.getInput("x")` and
-  `secrets.X`. A call with another argument (`os.getenv("X", "hunter2")`), a
-  bare identifier followed by a call (`load()`, `readSecret()`) and a bare
-  word such as `password=hunter` are masked
-- the words `read`, `write` and `none` after a token name, because a GitHub
-  permission such as `id-token: write` is not a token (`password: none` is
-  still masked)
+- an unquoted type as the whole value, which is what source code has instead of
+  a secret: `string`, `number`, `boolean`, `bigint`, `symbol`, `unknown`,
+  `never`, `undefined`, `void`, `str`, `int`, `float`, `bool`, `bytes`, `None`,
+  `nil`, `Integer`, `Boolean`, `Buffer` and `SecretStr`, also as
+  `Optional[...]`, `Option<...>` or `Promise<...>` around those or around
+  `any`, `String` and `Secret`, followed by `[]` or as `T|null` and
+  `T|undefined`, as in `previousToken: string`. `String`, `Secret` and `any`
+  alone are plausible passwords and are masked
+- an unquoted read of one environment variable or config value as the whole
+  value, with no default: `process.env.X`, `process.env["X"]`,
+  `os.environ["X"]`, `os.environ.get("X")`, `os.getenv("X")`, `env("X")`,
+  `getenv("X")`, `ENV["X"]`, `System.getenv("X")`, `$ENV{X}`,
+  `core.getInput("x")` and `secrets.X`. The read must end at white space, a
+  comma, a semicolon or the end of the line, or at one closing bracket or
+  backtick that is followed by one of those (`connect(password=process.env.X)`
+  is kept, `password=process.env.X)hunter2` is masked). A call with another
+  argument (`os.getenv("X", "hunter2")`), a bare identifier followed by a call
+  (`load()`, `readSecret()`) and a bare word such as `password=hunter` are
+  masked
+- the unquoted words `read`, `write` and `none` after a token name, because a
+  GitHub permission such as `id-token: write` is not a token (`password: none`
+  is still masked)
+- A quoted value is a literal, so the three rules above never apply to it:
+  `password: "string"`, `token: "process.env.X"` and `secret: "none"` are
+  masked, while `""`, `"null"`, `"true"`, `"false"`, a quoted number of up to
+  three digits and a quoted reference (`password="${PASS}"`) are kept
 - a JSON object or array under a quoted key (`"auth": {...}`), whose own fields
   are masked on their own
 - a path under the environment variables `PWD` and `OLDPWD`
