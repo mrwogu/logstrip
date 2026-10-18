@@ -32,6 +32,10 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      publish: ${{ steps.plan.outputs.publish }}
+      tag: ${{ steps.plan.outputs.tag }}
+      sha: ${{ steps.dist.outputs.sha }}
     permissions:
       contents: write
       pull-requests: write
@@ -134,6 +138,7 @@ jobs:
       # build is committed on the release tag only and never pushed to main.
       - name: Commit dist/ on the release tag
         if: ${{ steps.plan.outputs.publish == 'true' }}
+        id: dist
         env:
           TAG_NAME: ${{ steps.plan.outputs.tag }}
         run: |
@@ -147,6 +152,7 @@ jobs:
           fi
           git tag -f "${TAG_NAME}" HEAD
           git push origin "refs/tags/${TAG_NAME}" --force
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # npm refuses to publish a version twice, so a run that publishes an
       # existing tag again (to move the major tag, for example) skips it.
@@ -160,26 +166,39 @@ jobs:
             npm publish
           fi
 
-      # The floating vN tag follows the newest vN.x.y release only, so a
-      # re-publish of an older patch never rolls action users back. The ref is
-      # moved through the API with RELEASE_PAT (workflow scope): the default
-      # token may not move a tag when the workflow files differ between its
-      # old and new target (or main, for a new tag), and the floating tag spans
-      # releases that change workflows.
+  # The floating vN tag follows the newest vN.x.y release only, so a
+  # re-publish of an older patch never rolls action users back. The ref is
+  # moved through the API with RELEASE_PAT (workflow scope): the default token
+  # may not move a tag when the workflow files differ between its old and new
+  # target (or main, for a new tag), and the floating tag spans releases that
+  # change workflows. The PAT lives in this job only, which checks out nothing
+  # and installs nothing, so code from the build job never sees it.
+  major-tag:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.publish == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
       - name: Update major action tag
-        if: ${{ steps.plan.outputs.publish == 'true' }}
         env:
-          TAG_NAME: ${{ steps.plan.outputs.tag }}
+          TAG_NAME: ${{ needs.release-please.outputs.tag }}
+          SHA: ${{ needs.release-please.outputs.sha }}
           GH_TOKEN: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
         run: |
-          MAJOR_TAG=$(node -e "const tag = process.env.TAG_NAME; const match = /^v(\\d+)\\./.exec(tag); if (!match) process.exit(1); console.log('v' + match[1]);")
-          git fetch --quiet --tags origin
-          NEWEST=$(git tag -l "${MAJOR_TAG}.*" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          if ! printf '%s' "$TAG_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::not a release tag: $TAG_NAME"; exit 1
+          fi
+          if ! printf '%s' "$SHA" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::no commit to tag"; exit 1
+          fi
+          MAJOR_TAG="${TAG_NAME%%.*}"
+          NEWEST=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/${MAJOR_TAG}." --jq '.[].ref' | sed 's#^refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
           if [ "$NEWEST" != "$TAG_NAME" ]; then
             echo "$MAJOR_TAG stays on $NEWEST, $TAG_NAME is older"
             exit 0
           fi
-          SHA=$(git rev-parse HEAD)
           if gh api --silent "repos/${GITHUB_REPOSITORY}/git/ref/tags/${MAJOR_TAG}" 2>/dev/null; then
             gh api --silent -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/${MAJOR_TAG}" -f sha="$SHA" -F force=true
           else
