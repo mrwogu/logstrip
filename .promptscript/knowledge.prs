@@ -31,8 +31,9 @@
   dist/ is gitignored on main: `npm run build` writes it locally and every CI
   job builds its own. The release workflow builds it once more and commits it
   on the vX.Y.Z and vX tags only (never on main, which is protected), so
-  `uses: mrwogu/logstrip@v2` finds dist/action/index.js. To publish an existing
-  tag again, run the Release Please workflow by hand with tag=vX.Y.Z.
+  `uses: mrwogu/logstrip@v2` finds dist/action/index.js. Publishing runs on the
+  vX.Y.Z tag push (release-please creates the tag with RELEASE_PAT). To publish
+  an existing tag again, run the Release Please workflow with tag=vX.Y.Z.
 
   ## CLI usage cheat sheet
 
