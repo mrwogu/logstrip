@@ -1,5 +1,136 @@
 # Changelog
 
+## [3.0.0](https://github.com/mrwogu/logstrip/compare/v2.0.0...v3.0.0) (2026-10-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* text passthrough, compression tuning, Astro docs, Node 22
+* text passthrough, compression tuning, Astro docs, Node 22 ([#72](https://github.com/mrwogu/logstrip/issues/72))
+* Node.js 20 reached end of life, so engines.node is now >=22, CI tests 22.x and 24.x and the GitHub Action runs on the node24 runtime. vitest moves to 5.x, which needs Node 22.12 or newer. The compiled agent instruction files follow the updated PromptScript sources.
+
+### Features
+
+* adaptive context window in auto mode ([922b29e](https://github.com/mrwogu/logstrip/commit/922b29e3b34f9238d79c786c9dbfc5e079b4af00))
+* add 'auto' aggressiveness to CLI and action, update tests and snapshots ([0ce8265](https://github.com/mrwogu/logstrip/commit/0ce8265309cb463bc00ae8e2abb6810a0a775335))
+* add brand assets, agent logos, and stat badges ([186fad0](https://github.com/mrwogu/logstrip/commit/186fad0d3847b59bc7ce0d27406001513e79fe42))
+* add CI noise filters for progress bars, timestamp-only, K8s Normal, rate-limited ([16dc859](https://github.com/mrwogu/logstrip/commit/16dc8592ae06b536720b84f4c77d9aced9ad04ba))
+* add CLI flags --include, --exclude, --sample, --max-line-length, --timeout, --progress ([5d24036](https://github.com/mrwogu/logstrip/commit/5d2403663eeeff17b3f4169b33e276e54ea6f46f))
+* add Copilot marketplace plugin and fix agent descriptions in README ([7a85535](https://github.com/mrwogu/logstrip/commit/7a85535c50524768e3254efedb40ce04655f351c))
+* add enhanced secret masking for GitHub, JWT, Slack, connection strings ([754af87](https://github.com/mrwogu/logstrip/commit/754af8731a2a2bc0bfc18eee6b074c544c371d54))
+* add format-aware access log compression and extend diagnostic boost patterns ([866f27f](https://github.com/mrwogu/logstrip/commit/866f27fa877f3014436bb923e12c3a43eaa7e494))
+* add local telemetry tracking for cumulative token savings ([7d658ba](https://github.com/mrwogu/logstrip/commit/7d658ba4b3aa6cda7a21c8bc7bfea2a6fe69f88c))
+* add log format detection and HTTP status code grouping ([d26b7e6](https://github.com/mrwogu/logstrip/commit/d26b7e638baf8778860d8901ccaba7b14f371e5d))
+* add multiline log handling (-m flag) ([078922f](https://github.com/mrwogu/logstrip/commit/078922f6e7dc3904595077d5fc72fc2b07b7da79))
+* add PreToolUse/UserPromptSubmit hooks for auto-activating LogStrip on log content ([16b8c7c](https://github.com/mrwogu/logstrip/commit/16b8c7c5d1b22affbe8b32dee87d90b4996d309a))
+* add severity filtering (--severity flag) ([f1da1ad](https://github.com/mrwogu/logstrip/commit/f1da1adf14ecebfcb350db0a90ee49084d005ee2))
+* add streaming log parser, CLI, GitHub Action, and custom config engine ([9c42150](https://github.com/mrwogu/logstrip/commit/9c42150f3796619a1a056765e6b996a50a552649))
+* change default aggressiveness from 'high' to 'auto' across all surfaces ([08654f4](https://github.com/mrwogu/logstrip/commit/08654f481dc88e980533de64a028a55ba781dc67))
+* **cli:** --preserve-id-suffix=N keeps last N chars of UUIDs and hashes for trace correlation ([f3a05cb](https://github.com/mrwogu/logstrip/commit/f3a05cbe454a511e7013206576a07dd7ffe40772))
+* **cli:** add --force to compress non-log input ([90dfaff](https://github.com/mrwogu/logstrip/commit/90dfaffd234cf04365b190db61063210d277b122))
+* **cli:** add --max-stack-frames and --no-template-mining ([ac733dd](https://github.com/mrwogu/logstrip/commit/ac733dda2ee0d56c28bdf3f81ea9e49d8283ff37))
+* **cli:** add --max-tokens budget mode for LLM context limits ([5b21bcd](https://github.com/mrwogu/logstrip/commit/5b21bcd65b6039b7ce5781537d88a6a6ada86848))
+* **cli:** block raw log pastes in UserPromptSubmit hook ([b3c1f33](https://github.com/mrwogu/logstrip/commit/b3c1f33e02d1fba69f60690f72fd93435333b180))
+* **cli:** leave non-log files alone in the agent hooks ([47bec05](https://github.com/mrwogu/logstrip/commit/47bec05aad14abc28bfccb9ae53a0bef639f485e))
+* **cli:** notify when a newer logstrip release is on npm ([aa7f9c9](https://github.com/mrwogu/logstrip/commit/aa7f9c926f34a6a2c645a1c0c755f3af0f8bc161))
+* comprehensive sanitize, scoring, multiline, and perf enhancements ([3e41bba](https://github.com/mrwogu/logstrip/commit/3e41bba4431aa6752649bac6a3810397aecb25bc))
+* **core:** add content kind classifier for log vs plain text ([4e044c4](https://github.com/mrwogu/logstrip/commit/4e044c4972b3458baa11e4f7782a2a812c132fd4))
+* **core:** auto-detect and semantically compress JSON report documents ([f1a046e](https://github.com/mrwogu/logstrip/commit/f1a046edef701f43972243f5da8653a01d4167aa))
+* **core:** enable detection/compression boosters by default in auto mode ([71dae82](https://github.com/mrwogu/logstrip/commit/71dae82d0d8cf875efd326edb55df9b5ff71beb8))
+* **core:** pass non-log text through with credentials masked ([d43c998](https://github.com/mrwogu/logstrip/commit/d43c998d3f2a6e01d86ef036fbe30ce0fa4c22a5))
+* **dedupe:** add --collapse-blocks for repeated multiline blocks ([21ed869](https://github.com/mrwogu/logstrip/commit/21ed8690fca045b80bbdb20e0e3e27b13a1758d1))
+* **dedupe:** add --dedupe-window for non-adjacent duplicate collapsing ([d6a8ae2](https://github.com/mrwogu/logstrip/commit/d6a8ae292d4aabb8ff9bad0bd0f9c92731191c73))
+* **dedupe:** collapse repeated stack-trace windows by error fingerprint ([896b957](https://github.com/mrwogu/logstrip/commit/896b95774a76bc87ff72cefc3b5954417086aa01))
+* **dedupe:** collapse repeated stack-trace windows via --collapse-stacks ([b1e66eb](https://github.com/mrwogu/logstrip/commit/b1e66eb6d99e73fb9ba87da908102c96b0ea8ef9))
+* **dedupe:** fold access-log bursts that differ in size and timing ([fb46550](https://github.com/mrwogu/logstrip/commit/fb46550ffa7605e5e32ff03bcf3c725757c301b8))
+* **dedupe:** fold enumerated instance counters into the repeat signature ([a6e5934](https://github.com/mrwogu/logstrip/commit/a6e5934aadd07c93c65eacc70b836a8f18183b21))
+* **dedupe:** fold retry lines with unit or parenthesized counters ([6d7da1a](https://github.com/mrwogu/logstrip/commit/6d7da1a34a555577329b653ca614106945f7f178))
+* **dedupe:** reference repeated blocks instead of reprinting them ([92c8c23](https://github.com/mrwogu/logstrip/commit/92c8c239b3dc900210f53c5c85835f69140ed816))
+* **dedupe:** template mining for near-identical lines ([40678ac](https://github.com/mrwogu/logstrip/commit/40678ac6438d9260c0823c59255b4d2a0e4fe2e3))
+* **detection:** lower source-active confidence threshold for short logs (&lt;200 lines) ([9302b90](https://github.com/mrwogu/logstrip/commit/9302b90101a8b1eb09e4260d2f76056d83cfb68b))
+* expand log processing APIs ([be5b673](https://github.com/mrwogu/logstrip/commit/be5b673fae89c598c5eab7c072c55832b1490fc3))
+* format-aware access log compression + expanded diagnostic boost patterns ([d4bb6a8](https://github.com/mrwogu/logstrip/commit/d4bb6a88232bd84901e30eed1aeaee7674525b71))
+* **formats:** add --format-sample majority-vote format detection ([d97ae13](https://github.com/mrwogu/logstrip/commit/d97ae133615090d75dadd15ba420c740aa168898))
+* **formats:** re-elect detected format on mid-stream drift ([f6f900a](https://github.com/mrwogu/logstrip/commit/f6f900af07e347d96aaf8ce0462830c8ec43281d))
+* improve apache httpd log compression ([31fae8d](https://github.com/mrwogu/logstrip/commit/31fae8de5cbf63a394155e788662e4da671f7462))
+* **parser:** auto-multiline mode infers from detected sources ([91d2340](https://github.com/mrwogu/logstrip/commit/91d23405ca1c67aaf46e5332f179c0a007f065d9))
+* **parser:** collapse 2xx access-log bursts in context window ([5a74d17](https://github.com/mrwogu/logstrip/commit/5a74d1774d8f664d9cd940e63e46d75481b8fe50))
+* **parser:** structured JSON-line scoring uses level field for pino/winston/bunyan logs ([9f12825](https://github.com/mrwogu/logstrip/commit/9f12825c5c47f02e705fa2fff6f4a66e63880aa3))
+* **parser:** track timestamp spread within repeat groups ([0940633](https://github.com/mrwogu/logstrip/commit/09406337e25c70a4acb9680072f708e5e78a6704))
+* **parser:** truncate long app stacks, wire new pipeline options ([2f9c569](https://github.com/mrwogu/logstrip/commit/2f9c569e1f539c8a0340084ab58f74b21c06900c))
+* require Node.js 22 and run the action on node24 ([c3bebff](https://github.com/mrwogu/logstrip/commit/c3bebffd4add71682861d59bbb354e027b14d8b0))
+* **sanitize:** keep types and env reads, mask more key names ([71f4bcd](https://github.com/mrwogu/logstrip/commit/71f4bcd3ada478c4c7f6537180d27fe4af106508))
+* **sanitize:** mask comma, syslog, bare time and epoch timestamps ([a4880f8](https://github.com/mrwogu/logstrip/commit/a4880f8f0a78e557bd0a901d05c331c6495622f5))
+* **sanitize:** mask high-entropy tokens as secret fallback ([658bf98](https://github.com/mrwogu/logstrip/commit/658bf98da71da1a81c0322454962e4ace3e1a108))
+* **sanitize:** normalize Kubernetes-style relative durations (2m34s) to [AGO] ([572f52c](https://github.com/mrwogu/logstrip/commit/572f52c0d0de1e91c107c1436e694a3961304c3c))
+* **sanitize:** redact IPv6, emails, Stripe/npm/Google/Twilio/SendGrid tokens and PEM private key blocks ([6d03fea](https://github.com/mrwogu/logstrip/commit/6d03fea65db7c6dea8df3ca7e38a3427a1d62549))
+* **scoring:** add --multilingual diagnostic keyword detection ([c852425](https://github.com/mrwogu/logstrip/commit/c852425bad5750c8b2e7a6f22d8b5651c6ca7e70))
+* **scoring:** add --root-cause cascade pruning ([1eef9d0](https://github.com/mrwogu/logstrip/commit/1eef9d0f46e5fb68420d8dceedd49d570248f652))
+* **scoring:** compound exceptions, polyglot frames, rarity boost ([b3b896c](https://github.com/mrwogu/logstrip/commit/b3b896cb75f9c73a1fc52862fcf0db227f01bff9))
+* **scoring:** drop passing-test reports and keep Go package failures ([20f085e](https://github.com/mrwogu/logstrip/commit/20f085e086db2fea356c4d7800181df6fbe38eac))
+* **scoring:** recognize unbracketed log levels in the line header ([4ea41c5](https://github.com/mrwogu/logstrip/commit/4ea41c5ec4420152540a302502a1ce675c37a79f))
+* **scoring:** treat package transfer lines as progress noise ([0bf9e58](https://github.com/mrwogu/logstrip/commit/0bf9e58e17c229a0a986bd51bf5acb9c300d3e2a))
+* text passthrough, compression tuning, Astro docs, Node 22 ([7177d40](https://github.com/mrwogu/logstrip/commit/7177d40f6fae78707b75c43795bfb70696c41cf3))
+* text passthrough, compression tuning, Astro docs, Node 22 ([#72](https://github.com/mrwogu/logstrip/issues/72)) ([7177d40](https://github.com/mrwogu/logstrip/commit/7177d40f6fae78707b75c43795bfb70696c41cf3))
+* wire telemetry into CLI, add --telemetry flag, export from library, add docs ([4eabc64](https://github.com/mrwogu/logstrip/commit/4eabc64c0307c15e340eeff609c6249cd8c3418f))
+
+
+### Bug Fixes
+
+* **action:** load @actions/core with a dynamic import ([178b6fc](https://github.com/mrwogu/logstrip/commit/178b6fcf4ec741b5b42f9e2e3364e826540fe8cb))
+* add .js extension to dynamic import in cli test for node16 moduleResolution ([c01cd46](https://github.com/mrwogu/logstrip/commit/c01cd468af3168c8a8e7a0284ea01526c51378fa))
+* add logstrip wrapper to PATH in hook tests for CI ([3682625](https://github.com/mrwogu/logstrip/commit/368262597eca809f1b61c5c5e456ae2caa4998ee))
+* add NODE_AUTH_TOKEN to publish step for npm authentication ([e6fecb8](https://github.com/mrwogu/logstrip/commit/e6fecb834f239ff488aa99706ea5c8c5e176bbd7))
+* **bench:** ignore compressed outputs left next to the fixtures ([b4b248e](https://github.com/mrwogu/logstrip/commit/b4b248e9991bcc137603cb47b73a4e299d75ff9e))
+* **cli:** exit quietly when the stdout reader closes the pipe ([8f9b9c8](https://github.com/mrwogu/logstrip/commit/8f9b9c83b7208aaafe4d6f338cf5b11c5ff976c3))
+* **core:** match content patterns in linear time ([f05f075](https://github.com/mrwogu/logstrip/commit/f05f07557c3c779b344837d6468bed126750e35d))
+* **core:** stop secret mask at quotes, fix Java frame paren doubling ([d417006](https://github.com/mrwogu/logstrip/commit/d417006dc004218d62aa0b3396a6f3968bac5898))
+* **core:** track PEM key blocks before any noise or ignore filter ([b06b67d](https://github.com/mrwogu/logstrip/commit/b06b67dbfb8ce580e78ae74a3f45b9d1d1658ec3))
+* correct secret masking test inputs and regex patterns for CI ([d0b71a5](https://github.com/mrwogu/logstrip/commit/d0b71a57aedc8c43d729aea4f37c3f78e5760d08))
+* **deps:** refresh devDependencies, patch bundled undici ([eb37451](https://github.com/mrwogu/logstrip/commit/eb37451da176fbd4855f0f5e92449adddbb4ed67))
+* force forward slashes in architecture test for Windows CI ([172838b](https://github.com/mrwogu/logstrip/commit/172838ba8a708fffa68c5c8f9e73033578e6adb5))
+* harden hook loader path quoting ([a7d5336](https://github.com/mrwogu/logstrip/commit/a7d5336b5d764d0f6107c75f0d236fa181f052a1))
+* harden hook loader path quoting ([9884e01](https://github.com/mrwogu/logstrip/commit/9884e0126e8fe7c10f310e71a0861e3e7b19a8b7))
+* harden regexes against ReDoS with bounded quantifiers and unicode flags ([e0d3fdc](https://github.com/mrwogu/logstrip/commit/e0d3fdc58db9a4bd6f5d32a62bac855b8732d555))
+* **hook:** support every targeted agent dialect ([a4c3297](https://github.com/mrwogu/logstrip/commit/a4c3297ec9dff517fc6d0b60436e7c9646d0c3a6))
+* make plugin hooks work on Windows ([f8436b0](https://github.com/mrwogu/logstrip/commit/f8436b0af442a0e23669dd2331a14a693a9516ac))
+* make plugin hooks work on Windows ([8bbe97a](https://github.com/mrwogu/logstrip/commit/8bbe97a59bbfd7ba9dccdd7a4c5483432c31fb13))
+* normalize path separators in architecture test for Windows CI ([e80f260](https://github.com/mrwogu/logstrip/commit/e80f2604e7d25c15530ef8ad9859d0060e033ac4))
+* remove broken npm self-upgrade step from release workflow ([c51cd18](https://github.com/mrwogu/logstrip/commit/c51cd18494558deb6244a248a767c6cf3f2c706d))
+* remove broken npm self-upgrade step from release workflow ([e17536b](https://github.com/mrwogu/logstrip/commit/e17536b0858f36354a29b3efeea141ef5819f9b2))
+* reset 1.2.0 for final OIDC attempt with corrected npmjs trusted publisher config ([57d3f79](https://github.com/mrwogu/logstrip/commit/57d3f79e76d98759d8cb62abd44cc052ea818fd9))
+* reset 1.2.0 for third OIDC attempt, use Node 24 (npm 11) instead of broken npm upgrade ([f8ffff4](https://github.com/mrwogu/logstrip/commit/f8ffff40d20d3d43667c3a8f9694d678a09a5cd4))
+* reset 1.2.0 release for OIDC, fix repo URL for trusted publishing, add npm upgrade step ([2d4e4fe](https://github.com/mrwogu/logstrip/commit/2d4e4fe473792a12095ec0c64003d3b02d11f257))
+* restore hook loading and release workflow ([b968cbf](https://github.com/mrwogu/logstrip/commit/b968cbfa82e87936bd56a5e67414dda38e63a6bd))
+* revert release 1.0.0 + add NPM_TOKEN auth for publish ([a12da74](https://github.com/mrwogu/logstrip/commit/a12da74f6c463e7994b5773ba452857e49c10492))
+* **sanitize:** apply type and env exemptions to unquoted values only ([26470c9](https://github.com/mrwogu/logstrip/commit/26470c90af7cb694fb1d747f2a87a9020494995c))
+* **sanitize:** judge secret field exemptions on the whole value ([6766e6b](https://github.com/mrwogu/logstrip/commit/6766e6b5b8b8e2ef59ad7547e99319c5298652ee))
+* **sanitize:** keep measured durations instead of masking as [AGO] ([9478e5c](https://github.com/mrwogu/logstrip/commit/9478e5c1de63454669bd230d00f025abe4abcd98))
+* **sanitize:** keep parenthesized test runner durations like "(1s)" ([5cec8ca](https://github.com/mrwogu/logstrip/commit/5cec8ca1b99e566718eace280debd9a0a850faba))
+* **sanitize:** mask prefixed and JSON secret fields ([9174b9d](https://github.com/mrwogu/logstrip/commit/9174b9dec6a09975d572d15ea32056c5da7907e2))
+* **sanitize:** mask unterminated quotes and references with bodies ([9e1a023](https://github.com/mrwogu/logstrip/commit/9e1a02373fa46ae1441bffc864409ac3636c50b1))
+* **sanitize:** no control chars in ANSI pattern, linear blank trim ([c0ce69b](https://github.com/mrwogu/logstrip/commit/c0ce69bb874f390b2741f5d547dacbbc7e6d06a1))
+* **sanitize:** strip all ANSI CSI and OSC sequences, not only colors ([98e20e6](https://github.com/mrwogu/logstrip/commit/98e20e620ac50e50b1384da9fb3c3d2b01332db5))
+* **scoring:** keep unbracketed INFO lines that report a non-zero exit ([f90e12f](https://github.com/mrwogu/logstrip/commit/f90e12f74c300e29827ea3d35608885060d0354c))
+* **scoring:** match passing-test lines in linear time ([7f5f65e](https://github.com/mrwogu/logstrip/commit/7f5f65e6cf256d58cbb05df84d3d24740e7231dc))
+* **scoring:** stop scoring logfmt status=200 as a systemd failure ([6820f2c](https://github.com/mrwogu/logstrip/commit/6820f2cf44f5efd4519814684e8a214d24e5173b))
+* switch plugin hooks to logstrip hook subcommand ([d340252](https://github.com/mrwogu/logstrip/commit/d34025269a70a6945286e7d76323d2eea6f76022))
+* **test:** force LF checkouts so passthrough fixtures stay byte exact ([2f3e27f](https://github.com/mrwogu/logstrip/commit/2f3e27f519295481626222af74115048ac183997))
+* use POSIX ERE [0-9] instead of \d in hook grep patterns, skip hook tests on Windows ([56e538d](https://github.com/mrwogu/logstrip/commit/56e538d2c80d2eb11c623d8478ad486c85024960))
+* use vi.hoisted for telemetry env var in CLI tests ([d09f482](https://github.com/mrwogu/logstrip/commit/d09f4827f26cc5d6c74094dcd56c139cda008e70))
+
+
+### Performance Improvements
+
+* **dedupe:** conservative update in Count-Min Sketch ([34f4249](https://github.com/mrwogu/logstrip/commit/34f424931b762f23751d8f5c1247f00beee1bb88))
+* **detection:** match source markers with an Aho-Corasick automaton ([bc744f8](https://github.com/mrwogu/logstrip/commit/bc744f8febb89f9045dede2d0f6a7484e54588f7))
+* **tfidf:** switch frequency map to Count-Min Sketch for memory-stable counting ([676de5b](https://github.com/mrwogu/logstrip/commit/676de5b0cc532b7d8d4f1438e3e35e772be275f1))
+
+
+### Reverts
+
+* reset release-please manifest to 0.0.0 ([993b3e4](https://github.com/mrwogu/logstrip/commit/993b3e4e999f9d422217c66589933d08f7819642))
+
 ## [2.0.0](https://github.com/mrwogu/logstrip/compare/v1.12.0...v2.0.0) (2026-10-18)
 
 
