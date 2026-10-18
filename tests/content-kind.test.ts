@@ -549,164 +549,178 @@ describe('classifyContent: defaults to log when unsure', () => {
 
 // ---- Per-line signals ----
 
-const STRONG_LOG_LINES: ReadonlyArray<readonly [string, string]> = [
-  ['ANSI escape', '\u001b[31mbuild failed\u001b[0m'],
-  ['ISO timestamp', '2024-01-15T10:23:45.123Z worker started'],
-  ['space separated timestamp', '2024-01-15 10:23:45 something happened'],
-  ['slash date timestamp', '2024/01/15 10:23:45 [notice] 1#1: start worker'],
-  ['syslog timestamp', 'Jan 15 10:23:45 host sshd[812]: Accepted publickey'],
-  ['apache error timestamp', '[Mon Jan 15 10:23:45.123456 2024] [core:notice] AH00094'],
-  ['common log format date', 'host - - [15/Jan/2024:10:23:45 +0000] "x" 200 12'],
-  ['clock with milliseconds', 'build step finished at 10:23:45.123'],
-  ['bare leading clock', '[10:23:45] Starting build'],
-  ['epoch seconds', '1700000000 request served'],
-  ['epoch milliseconds in brackets', '[1700000000123] tick'],
-  ['bracketed severity', '[INFO] boot ok'],
-  ['lower-case bracketed severity', '[error] upstream timed out'],
-  ['upper-case severity with colon', 'ERROR: boom'],
-  ['upper-case severity word', 'INFO  Starting service'],
-  ['python logging prefix', 'WARNING:root:disk almost full'],
-  ['compiler error', "error: expected ';' before '}' token"],
-  ['compiler warning with location', "src/main.c:12:5: warning: unused variable 'x'"],
-  ['rust error code', 'error[E0425]: cannot find value `x` in this scope'],
-  ['npm error', 'npm ERR! code ELIFECYCLE'],
-  ['npm warning', 'npm WARN deprecated foo@1.0.0: use bar'],
-  ['yarn error', 'yarn error Command failed with exit code 1.'],
-  ['github actions annotation', '::error::Something broke'],
-  ['github actions group', '##[group]Run npm ci'],
-  ['azure pipelines command', '##vso[task.logissue type=error]failed'],
-  ['jenkins pipeline marker', '[Pipeline] sh'],
-  ['jest FAIL', ' FAIL  tests/a.test.ts'],
-  ['jest PASS', 'PASS src/a.test.ts (1.2 s)'],
-  ['go test ok', 'ok  \texample.com/pkg\t0.004s'],
-  ['vitest RUN banner', ' RUN  v1.0.0 /repo'],
-  ['docker step', 'Step 3/10 : RUN npm ci'],
-  ['make directory', "make[1]: Entering directory '/home/user/proj'"],
-  ['buildkit step', '#5 [2/6] RUN npm ci'],
-  ['go test failure', '--- FAIL: TestFoo (0.00s)'],
-  ['go test run', '=== RUN   TestFoo'],
-  ['gradle task', '> Task :app:compileJava'],
-  ['npm debug log', '12 verbose cli /usr/bin/node /usr/bin/npm'],
-  ['test status mark', '✓ renders the page'],
-  ['TAP ok', 'ok 1 - adds numbers'],
-  ['TAP not ok', 'not ok 2 - subtracts numbers'],
-  ['TAP version', 'TAP version 13'],
-  ['TAP plan', '1..4'],
-  ['TAP summary', '# tests 4'],
-  ['TAP subtest', '# Subtest: math'],
-  ['npm script header', '> logstrip@1.12.0 build'],
-  ['gradle failure summary', '* What went wrong:'],
-  ['gradle build result', 'BUILD FAILED in 4s'],
-  ['gradle task count', '2 actionable tasks: 2 executed'],
-  ['cargo compiling', 'Compiling serde v1.0.193'],
-  ['rustc location', ' --> src/main.rs:4:20'],
-  ['rustc note', '  = note: `#[warn(unused_variables)]` on by default'],
-  ['apt fetch', 'Get:1 http://archive.ubuntu.com/ubuntu jammy/main amd64 curl'],
-  ['apt setup', 'Setting up curl (7.81.0-1ubuntu1.20) ...'],
-  ['apt error', 'E: Unable to locate package foo'],
-  ['terraform plan action', '  # aws_instance.web will be created'],
-  ['terraform plan summary', 'Plan: 1 to add, 0 to change, 0 to destroy.'],
-  ['terraform progress', 'aws_instance.web: Creating...'],
-  ['terraform error box', '│ Error: creating S3 Bucket'],
-  ['pytest banner', '============================= test session starts =============================='],
-  ['progress percentage', 'tests/test_b.py ..F.                      [ 66%]'],
-  ['exit status', 'process exited with code 1'],
-  ['exception header', 'TypeError: Cannot read properties of undefined'],
-  ['qualified exception header', 'java.lang.IllegalStateException: boom'],
-  ['bare error header', 'Error: connect ECONNREFUSED 127.0.0.1:5432'],
-  ['python traceback', 'Traceback (most recent call last):'],
-  ['caused by', 'Caused by: java.io.IOException: disk full'],
-  ['go goroutine', 'goroutine 1 [running]:'],
-  ['rust panic', "thread 'main' panicked at src/main.rs:2:5:"],
-  ['java thread exception', 'Exception in thread "main" java.lang.Error'],
-  ['go panic', 'panic: runtime error: index out of range'],
-  ['elided frames', '... 12 more'],
-  ['syslog process tag', 'sshd[812]: Accepted publickey for deploy'],
-  ['pid bracket', 'worker [pid 4521] ready'],
-  ['thread bracket', '[http-nio-8080-exec-1] handled request'],
-  ['access log', '10.0.0.1 - - "GET /health HTTP/1.1" 200 12'],
-  ['javascript frame', '    at Object.<anonymous> (/repo/src/a.js:10:5)'],
-  ['java frame', '    at com.example.Foo.bar(Foo.java:42)'],
-  ['python frame', '  File "/repo/a.py", line 3, in main'],
-  ['internal library path', 'Error in node_modules/foo/lib/index.js while loading'],
-  ['json log line', '{"level":"info","msg":"started"}'],
-  ['syslog record', '<34>1 2024-01-15T10:23:45Z host app - - - hello'],
-  ['logfmt record', 'level=info msg=started port=8080'],
-  ['two-pair logfmt record', 'level=info msg=started'],
-  ['json property that mentions a failure', '      "status": "failed",'],
-];
+// A table of one-line samples is written as text, one case per line:
+// "name | text". The text is everything after the first " | ", so it may
+// contain more of them. Rows of the same shape in a long array make the file
+// read as copy and paste to a duplication detector.
+function lineCases(table: string): ReadonlyArray<readonly [string, string]> {
+  return table
+    .split('\n')
+    .filter((row) => row !== '')
+    .map((row) => {
+      const at = row.indexOf(' | ');
+      return [row.slice(0, at), row.slice(at + 3)] as const;
+    });
+}
 
-const TEXT_LINES: ReadonlyArray<readonly [string, string]> = [
-  ['markdown heading', '## Installation'],
-  ['markdown table row', '| Flag | Meaning |'],
-  ['markdown table separator', '--- | ---'],
-  ['markdown bullet', '- first point'],
-  ['markdown numbered item', '2. Run the tests'],
-  ['markdown blockquote', '> Note that this is a quote.'],
-  ['markdown link', 'See [the guide](https://example.com/guide) for details'],
-  ['markdown image', '![logo](assets/logo.svg)'],
-  ['markdown autolink', 'Docs live at <https://example.com/docs>'],
-  ['markdown bold', 'Use **strict mode** everywhere'],
-  ['markdown rule', '---'],
-  ['const declaration', 'const answer = 42;'],
-  ['export function', 'export function run(): void {'],
-  ['class declaration', 'class Parser extends Base {'],
-  ['interface declaration', 'interface Options'],
-  ['type alias', 'export type Mode = "a" | "b";'],
-  ['es import', "import { readFile } from 'node:fs';"],
-  ['python import', 'from pathlib import Path'],
-  ['c include', '#include <stdio.h>'],
-  ['rust use', 'use std::collections::HashMap;'],
-  ['python def', 'def main(argv):'],
-  ['rust fn', 'pub fn run() -> Result<()> {'],
-  ['access modifier', '  public static void main(String[] args) {'],
-  ['else branch', '} else {'],
-  ['if statement', '  if (value === undefined) {'],
-  ['python if', '    if not path.exists():'],
-  ['return statement', '    return result;'],
-  ['raise statement', '        raise ValueError(message)'],
-  ['ruby attr', '    attr_reader :options'],
-  ['lone end', '  end'],
-  ['semicolon ending', 'let total = 0;'],
-  ['lone closing brace', '  }'],
-  ['lone closing bracket with comma', '],'],
-  ['slash comment', '  // keep the sample small'],
-  ['block comment line', ' * @returns the kind'],
-  ['hash comment', '    # explain the next step'],
-  ['decorator', '@Component({ selector: "app" })'],
-  ['arrow function', 'const add = (a, b) => a + b'],
-  ['import list entry', '  createReadStream,'],
-  ['string literal entry', "  'low', 'medium', 'high',"],
-  ['quoted key', "  'max-tokens': { type: 'string' },"],
-  ['ternary continuation', '      ? parsed.values.config'],
-  ['bare call', 'print(value)'],
-  ['html tag', '<div class="container">'],
-  ['html closing tag', '</section>'],
-  ['yaml key', 'site_name: LogStrip'],
-  ['yaml list item', '- name: checkout'],
-  ['indented yaml key', '  runs-on: ubuntu-latest'],
-  ['json property', '  "version": "1.2.3",'],
-  ['ini section', '[database]'],
-  ['array literal line', "  ['ava', ['ava test']],"],
-  ['assignment', 'timeout = 30'],
-  ['env assignment', 'LOG_LEVEL=debug'],
-  ['dependency spec', 'numpy>=1.24'],
-  ['path line', 'node_modules/'],
-  ['glob line', '*.tgz'],
-  ['dotfile line', '.DS_Store'],
-  ['cli usage line', '  -o, --output <path>   Write the result to path'],
-  ['sql select', 'SELECT id, email FROM users'],
-  ['dockerfile instruction', 'COPY package*.json ./'],
-  ['shebang', '#!/usr/bin/env bash'],
-  ['shell strict mode', 'set -euo pipefail'],
-  ['shell for loop', 'for file in *.log; do'],
-  ['shell continuation', '    --no-cache \\'],
-  ['shell chained command', '    && npm run build'],
-  ['prose sentence', 'The parser keeps the first sample of every stream in memory.'],
-  ['hard-wrapped prose', 'before it continues on its long journey towards the mountains in the north'],
-  ['csv row', 'a,b,c,d'],
-  ['padded csv row', '0, 0xc816921f'],
-];
+const STRONG_LOG_LINES = lineCases(`
+ANSI escape | \u001b[31mbuild failed\u001b[0m
+ISO timestamp | 2024-01-15T10:23:45.123Z worker started
+space separated timestamp | 2024-01-15 10:23:45 something happened
+slash date timestamp | 2024/01/15 10:23:45 [notice] 1#1: start worker
+syslog timestamp | Jan 15 10:23:45 host sshd[812]: Accepted publickey
+apache error timestamp | [Mon Jan 15 10:23:45.123456 2024] [core:notice] AH00094
+common log format date | host - - [15/Jan/2024:10:23:45 +0000] "x" 200 12
+clock with milliseconds | build step finished at 10:23:45.123
+bare leading clock | [10:23:45] Starting build
+epoch seconds | 1700000000 request served
+epoch milliseconds in brackets | [1700000000123] tick
+bracketed severity | [INFO] boot ok
+lower-case bracketed severity | [error] upstream timed out
+upper-case severity with colon | ERROR: boom
+upper-case severity word | INFO  Starting service
+python logging prefix | WARNING:root:disk almost full
+compiler error | error: expected ';' before '}' token
+compiler warning with location | src/main.c:12:5: warning: unused variable 'x'
+rust error code | error[E0425]: cannot find value \`x\` in this scope
+npm error | npm ERR! code ELIFECYCLE
+npm warning | npm WARN deprecated foo@1.0.0: use bar
+yarn error | yarn error Command failed with exit code 1.
+github actions annotation | ::error::Something broke
+github actions group | ##[group]Run npm ci
+azure pipelines command | ##vso[task.logissue type=error]failed
+jenkins pipeline marker | [Pipeline] sh
+jest FAIL |  FAIL  tests/a.test.ts
+jest PASS | PASS src/a.test.ts (1.2 s)
+go test ok | ok  \texample.com/pkg\t0.004s
+vitest RUN banner |  RUN  v1.0.0 /repo
+docker step | Step 3/10 : RUN npm ci
+make directory | make[1]: Entering directory '/home/user/proj'
+buildkit step | #5 [2/6] RUN npm ci
+go test failure | --- FAIL: TestFoo (0.00s)
+go test run | === RUN   TestFoo
+gradle task | > Task :app:compileJava
+npm debug log | 12 verbose cli /usr/bin/node /usr/bin/npm
+test status mark | ✓ renders the page
+TAP ok | ok 1 - adds numbers
+TAP not ok | not ok 2 - subtracts numbers
+TAP version | TAP version 13
+TAP plan | 1..4
+TAP summary | # tests 4
+TAP subtest | # Subtest: math
+npm script header | > logstrip@1.12.0 build
+gradle failure summary | * What went wrong:
+gradle build result | BUILD FAILED in 4s
+gradle task count | 2 actionable tasks: 2 executed
+cargo compiling | Compiling serde v1.0.193
+rustc location |  --> src/main.rs:4:20
+rustc note |   = note: \`#[warn(unused_variables)]\` on by default
+apt fetch | Get:1 http://archive.ubuntu.com/ubuntu jammy/main amd64 curl
+apt setup | Setting up curl (7.81.0-1ubuntu1.20) ...
+apt error | E: Unable to locate package foo
+terraform plan action |   # aws_instance.web will be created
+terraform plan summary | Plan: 1 to add, 0 to change, 0 to destroy.
+terraform progress | aws_instance.web: Creating...
+terraform error box | │ Error: creating S3 Bucket
+pytest banner | ============================= test session starts ==============================
+progress percentage | tests/test_b.py ..F.                      [ 66%]
+exit status | process exited with code 1
+exception header | TypeError: Cannot read properties of undefined
+qualified exception header | java.lang.IllegalStateException: boom
+bare error header | Error: connect ECONNREFUSED 127.0.0.1:5432
+python traceback | Traceback (most recent call last):
+caused by | Caused by: java.io.IOException: disk full
+go goroutine | goroutine 1 [running]:
+rust panic | thread 'main' panicked at src/main.rs:2:5:
+java thread exception | Exception in thread "main" java.lang.Error
+go panic | panic: runtime error: index out of range
+elided frames | ... 12 more
+syslog process tag | sshd[812]: Accepted publickey for deploy
+pid bracket | worker [pid 4521] ready
+thread bracket | [http-nio-8080-exec-1] handled request
+access log | 10.0.0.1 - - "GET /health HTTP/1.1" 200 12
+javascript frame |     at Object.<anonymous> (/repo/src/a.js:10:5)
+java frame |     at com.example.Foo.bar(Foo.java:42)
+python frame |   File "/repo/a.py", line 3, in main
+internal library path | Error in node_modules/foo/lib/index.js while loading
+json log line | {"level":"info","msg":"started"}
+syslog record | <34>1 2024-01-15T10:23:45Z host app - - - hello
+logfmt record | level=info msg=started port=8080
+two-pair logfmt record | level=info msg=started
+json property that mentions a failure |       "status": "failed",
+`);
+
+const TEXT_LINES = lineCases(`
+markdown heading | ## Installation
+markdown table row | | Flag | Meaning |
+markdown table separator | --- | ---
+markdown bullet | - first point
+markdown numbered item | 2. Run the tests
+markdown blockquote | > Note that this is a quote.
+markdown link | See [the guide](https://example.com/guide) for details
+markdown image | ![logo](assets/logo.svg)
+markdown autolink | Docs live at <https://example.com/docs>
+markdown bold | Use **strict mode** everywhere
+markdown rule | ---
+const declaration | const answer = 42;
+export function | export function run(): void {
+class declaration | class Parser extends Base {
+interface declaration | interface Options
+type alias | export type Mode = "a" | "b";
+es import | import { readFile } from 'node:fs';
+python import | from pathlib import Path
+c include | #include <stdio.h>
+rust use | use std::collections::HashMap;
+python def | def main(argv):
+rust fn | pub fn run() -> Result<()> {
+access modifier |   public static void main(String[] args) {
+else branch | } else {
+if statement |   if (value === undefined) {
+python if |     if not path.exists():
+return statement |     return result;
+raise statement |         raise ValueError(message)
+ruby attr |     attr_reader :options
+lone end |   end
+semicolon ending | let total = 0;
+lone closing brace |   }
+lone closing bracket with comma | ],
+slash comment |   // keep the sample small
+block comment line |  * @returns the kind
+hash comment |     # explain the next step
+decorator | @Component({ selector: "app" })
+arrow function | const add = (a, b) => a + b
+import list entry |   createReadStream,
+string literal entry |   'low', 'medium', 'high',
+quoted key |   'max-tokens': { type: 'string' },
+ternary continuation |       ? parsed.values.config
+bare call | print(value)
+html tag | <div class="container">
+html closing tag | </section>
+yaml key | site_name: LogStrip
+yaml list item | - name: checkout
+indented yaml key |   runs-on: ubuntu-latest
+json property |   "version": "1.2.3",
+ini section | [database]
+array literal line |   ['ava', ['ava test']],
+assignment | timeout = 30
+env assignment | LOG_LEVEL=debug
+dependency spec | numpy>=1.24
+path line | node_modules/
+glob line | *.tgz
+dotfile line | .DS_Store
+cli usage line |   -o, --output <path>   Write the result to path
+sql select | SELECT id, email FROM users
+dockerfile instruction | COPY package*.json ./
+shebang | #!/usr/bin/env bash
+shell strict mode | set -euo pipefail
+shell for loop | for file in *.log; do
+shell continuation |     --no-cache \\
+shell chained command |     && npm run build
+prose sentence | The parser keeps the first sample of every stream in memory.
+hard-wrapped prose | before it continues on its long journey towards the mountains in the north
+csv row | a,b,c,d
+padded csv row | 0, 0xc816921f
+`);
 
 describe('classifyContent: log signals', () => {
   it.each(STRONG_LOG_LINES)('treats %s as a log line', (_name, line) => {

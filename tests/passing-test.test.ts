@@ -8,85 +8,133 @@ import {
 } from '../src/core/logstrip-parser';
 import { stripAnsi } from '../src/core/sanitize/sanitize-line';
 
+type LineGroup = readonly [name: string, lines: readonly string[]];
+
+// Reports of a passing test, which isPassingTestLine drops whatever the test is called.
+const PASSING_TEST_LINES: readonly LineGroup[] = [
+  [
+    'Go test pass reports',
+    [
+      '--- PASS: TestCheckout (0.01s)',
+      '    --- PASS: TestCheckout/empty_cart (0.00s)',
+      'PASS',
+      'ok  \tgithub.com/acme/checkout/orders\t0.123s',
+      'ok  \tgithub.com/acme/checkout/orders\t(cached)',
+      '?   \tgithub.com/acme/checkout/tools\t[no test files]',
+    ],
+  ],
+  [
+    'pytest and unittest pass reports',
+    [
+      'tests/test_orders.py::test_create PASSED                [ 12%]',
+      'tests/test_orders.py::test_create[a-b] PASSED',
+      '[gw0] [ 12%] PASSED tests/test_orders.py::test_create',
+      'PASSED tests/test_orders.py::test_create',
+      'test_create (tests.test_orders.OrderTests.test_create) ... ok',
+    ],
+  ],
+  [
+    'check-mark lines whatever the test name says',
+    [
+      '      ✓ creates an order (45ms)',
+      '      ✔ returns an error for an empty cart',
+      '  √ rejects a failed payment with a 422',
+      ' ✅ handles a timeout from the gateway',
+      ' ✓',
+    ],
+  ],
+  [
+    'jest and vitest suite pass lines',
+    [
+      ' PASS  src/api.test.ts (123ms)',
+      'PASS src/api.test.ts',
+    ],
+  ],
+  [
+    'xUnit, Gradle test events, TAP and idle Gradle tasks',
+    [
+      '  Passed Checkout.Tests.CartTests.Total [12 ms]',
+      'OrderServiceTest > creates an order() PASSED',
+      'ok 3 - creates an order',
+      '> Task :app:processResources UP-TO-DATE',
+      '> Task :app:compileJava NO-SOURCE',
+      '> Task :app:compileKotlin FROM-CACHE',
+      '> Task :app:test SKIPPED',
+    ],
+  ],
+  [
+    'lines wrapped in ANSI color codes',
+    [
+      '\u001b[32m ✓ creates an order\u001b[39m',
+      '\u001b[0m\u001b[7m\u001b[1m\u001b[32m PASS \u001b[39m\u001b[22m\u001b[27m\u001b[0m src/api.test.ts',
+      '\u001b[32m✓ creates an order\u001b[39m',
+    ],
+  ],
+];
+
+// What it keeps: failures, the RUN lines that identify an aborted test, and ordinary log lines.
+const KEPT_LINES: readonly LineGroup[] = [
+  [
+    'Go failures and the RUN lines that identify an aborted test',
+    [
+      '--- FAIL: TestCheckout (0.01s)',
+      'FAIL\tgithub.com/acme/checkout/orders\t0.123s',
+      '=== RUN   TestCheckout',
+      'PASSWORD rotated',
+    ],
+  ],
+  [
+    'pytest failures',
+    [
+      'tests/test_orders.py::test_create FAILED               [ 12%]',
+      'FAILED tests/test_orders.py::test_create - assert 500 == 201',
+      'test_create (tests.test_orders.OrderTests.test_create) ... FAIL',
+    ],
+  ],
+  [
+    'failure marks',
+    [
+      '      ✗ creates an order',
+      '      ✕ creates an order (45ms)',
+      '      1) creates an order',
+      '✓creates',
+    ],
+  ],
+  [
+    'jest and vitest FAIL lines and prose that starts with PASS',
+    [
+      ' FAIL  src/payments.test.ts (412ms)',
+      'PASS rate limiter looks fine',
+    ],
+  ],
+  [
+    'xUnit, Gradle and TAP failures and Gradle tasks that did work',
+    [
+      '  Failed Checkout.Tests.CartTests.Total [12 ms]',
+      'OrderServiceTest > creates an order() FAILED',
+      'not ok 4 - rejects an order',
+      '> Task :app:compileJava',
+      '> Task :app:compileJava FAILED',
+    ],
+  ],
+  [
+    'ordinary log lines',
+    [
+      '',
+      'Tests: 3 failed, 14 passed, 17 total',
+      'ok to proceed with deploy',
+      '[ERROR] build failed',
+    ],
+  ],
+];
+
 describe('isPassingTestLine', () => {
-  it('matches Go test pass reports', () => {
-    expect(isPassingTestLine('--- PASS: TestCheckout (0.01s)')).toBe(true);
-    expect(isPassingTestLine('    --- PASS: TestCheckout/empty_cart (0.00s)')).toBe(true);
-    expect(isPassingTestLine('PASS')).toBe(true);
-    expect(isPassingTestLine('ok  \tgithub.com/acme/checkout/orders\t0.123s')).toBe(true);
-    expect(isPassingTestLine('ok  \tgithub.com/acme/checkout/orders\t(cached)')).toBe(true);
-    expect(isPassingTestLine('?   \tgithub.com/acme/checkout/tools\t[no test files]')).toBe(true);
+  it.each(PASSING_TEST_LINES)('matches %s', (_name, lines) => {
+    for (const line of lines) expect(isPassingTestLine(line), line).toBe(true);
   });
 
-  it('keeps Go failures and the RUN lines that identify an aborted test', () => {
-    expect(isPassingTestLine('--- FAIL: TestCheckout (0.01s)')).toBe(false);
-    expect(isPassingTestLine('FAIL\tgithub.com/acme/checkout/orders\t0.123s')).toBe(false);
-    expect(isPassingTestLine('=== RUN   TestCheckout')).toBe(false);
-    expect(isPassingTestLine('PASSWORD rotated')).toBe(false);
-  });
-
-  it('matches pytest and unittest pass reports', () => {
-    expect(isPassingTestLine('tests/test_orders.py::test_create PASSED                [ 12%]')).toBe(true);
-    expect(isPassingTestLine('tests/test_orders.py::test_create[a-b] PASSED')).toBe(true);
-    expect(isPassingTestLine('[gw0] [ 12%] PASSED tests/test_orders.py::test_create')).toBe(true);
-    expect(isPassingTestLine('PASSED tests/test_orders.py::test_create')).toBe(true);
-    expect(isPassingTestLine('test_create (tests.test_orders.OrderTests.test_create) ... ok')).toBe(true);
-  });
-
-  it('keeps pytest failures', () => {
-    expect(isPassingTestLine('tests/test_orders.py::test_create FAILED               [ 12%]')).toBe(false);
-    expect(isPassingTestLine('FAILED tests/test_orders.py::test_create - assert 500 == 201')).toBe(false);
-    expect(isPassingTestLine('test_create (tests.test_orders.OrderTests.test_create) ... FAIL')).toBe(false);
-  });
-
-  it('matches check-mark lines whatever the test name says', () => {
-    expect(isPassingTestLine('      ✓ creates an order (45ms)')).toBe(true);
-    expect(isPassingTestLine('      ✔ returns an error for an empty cart')).toBe(true);
-    expect(isPassingTestLine('  √ rejects a failed payment with a 422')).toBe(true);
-    expect(isPassingTestLine(' ✅ handles a timeout from the gateway')).toBe(true);
-    expect(isPassingTestLine(' ✓')).toBe(true);
-  });
-
-  it('keeps failure marks', () => {
-    expect(isPassingTestLine('      ✗ creates an order')).toBe(false);
-    expect(isPassingTestLine('      ✕ creates an order (45ms)')).toBe(false);
-    expect(isPassingTestLine('      1) creates an order')).toBe(false);
-    expect(isPassingTestLine('✓creates')).toBe(false);
-  });
-
-  it('matches jest and vitest suite pass lines', () => {
-    expect(isPassingTestLine(' PASS  src/api.test.ts (123ms)')).toBe(true);
-    expect(isPassingTestLine('PASS src/api.test.ts')).toBe(true);
-    expect(isPassingTestLine(' FAIL  src/payments.test.ts (412ms)')).toBe(false);
-    expect(isPassingTestLine('PASS rate limiter looks fine')).toBe(false);
-  });
-
-  it('matches xUnit, Gradle test events, TAP and idle Gradle tasks', () => {
-    expect(isPassingTestLine('  Passed Checkout.Tests.CartTests.Total [12 ms]')).toBe(true);
-    expect(isPassingTestLine('  Failed Checkout.Tests.CartTests.Total [12 ms]')).toBe(false);
-    expect(isPassingTestLine('OrderServiceTest > creates an order() PASSED')).toBe(true);
-    expect(isPassingTestLine('OrderServiceTest > creates an order() FAILED')).toBe(false);
-    expect(isPassingTestLine('ok 3 - creates an order')).toBe(true);
-    expect(isPassingTestLine('not ok 4 - rejects an order')).toBe(false);
-    expect(isPassingTestLine('> Task :app:processResources UP-TO-DATE')).toBe(true);
-    expect(isPassingTestLine('> Task :app:compileJava NO-SOURCE')).toBe(true);
-    expect(isPassingTestLine('> Task :app:compileKotlin FROM-CACHE')).toBe(true);
-    expect(isPassingTestLine('> Task :app:test SKIPPED')).toBe(true);
-    expect(isPassingTestLine('> Task :app:compileJava')).toBe(false);
-    expect(isPassingTestLine('> Task :app:compileJava FAILED')).toBe(false);
-  });
-
-  it('sees through ANSI color codes', () => {
-    expect(isPassingTestLine('\u001b[32m ✓ creates an order\u001b[39m')).toBe(true);
-    expect(isPassingTestLine('\u001b[0m\u001b[7m\u001b[1m\u001b[32m PASS \u001b[39m\u001b[22m\u001b[27m\u001b[0m src/api.test.ts')).toBe(true);
-    expect(isPassingTestLine('\u001b[32m✓ creates an order\u001b[39m')).toBe(true);
-  });
-
-  it('does not match ordinary log lines', () => {
-    expect(isPassingTestLine('')).toBe(false);
-    expect(isPassingTestLine('Tests: 3 failed, 14 passed, 17 total')).toBe(false);
-    expect(isPassingTestLine('ok to proceed with deploy')).toBe(false);
-    expect(isPassingTestLine('[ERROR] build failed')).toBe(false);
+  it.each(KEPT_LINES)('keeps %s', (_name, lines) => {
+    for (const line of lines) expect(isPassingTestLine(line), line).toBe(false);
   });
 });
 
