@@ -219,6 +219,7 @@ Aho-Corasick automaton) and applies several cuts to every streamed line:
 | **Smart dedup** | Folds repeated sanitized lines, including same-shape variants, into `[xN] message` with only differing values listed. |
 | **Stack collapse** | Replaces internal `node_modules/` and runtime frames with one marker line. |
 | **Stack-window collapse** _(auto)_ | Folds repeated multi-line stack traces that differ only in addresses, Go offsets, or goroutine ids into a single `[xN]` group. |
+| **Repeated-block references** _(auto)_ | Replaces a run of lines that repeats an earlier run (the same stack trace printed again for the next failure) with one `[... N lines repeated from above ...]` marker. |
 | **Root-cause pruning** _(auto)_ | Drops downstream cascade restatements (`aborting due to previous errors`, `could not compile … due to previous error`, `skipped because the upstream job failed`) so the originating failure stands out. |
 | **Multilingual detection** _(auto)_ | Recognizes error/failure/exception keywords in 8+ languages plus CJK (`erreur`, `Fehler`, `fallo`, `ошибка`, `错误`, …). |
 | **Format voting** _(auto)_ | Locks the fast path onto the first recognizable line, then self-corrects the detected format with a majority vote over the first 50 non-blank lines. |
@@ -336,6 +337,7 @@ Options:
       --no-root-cause      Disable auto-pruning of downstream cascade restatements (auto on).
       --no-multilingual    Disable auto-detection of non-English error/failure keywords (auto on).
       --no-adaptive-context Disable auto-mode adaptive context windows around errors (auto on).
+      --no-collapse-repeated-blocks Disable [... N lines repeated from above ...] back-references for repeated blocks (auto on).
       --preserve-id-suffix <N> Keep the last N chars of redacted UUIDs/hashes (0-16, default 0).
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
@@ -350,7 +352,7 @@ Options:
 
 In the default `auto` mode the detection and compression boosters
 (`--collapse-stacks`, `--root-cause`, `--multilingual`, adaptive context
-windows, and majority-vote format detection) are **on automatically** - the
+windows, repeated-block references, and majority-vote format detection) are **on automatically** - the
 `--no-*` flags above are opt-outs for when you want the raw, unboosted pass.
 
 ### Recipes

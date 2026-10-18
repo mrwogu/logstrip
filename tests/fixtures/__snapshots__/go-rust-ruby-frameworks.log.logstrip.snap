@@ -25,9 +25,7 @@
 [ERROR] puma starting Error: Errno::EADDRINUSE - bind failed for [IP]:[PORT]
     at puma/webserver.rb:42 in add_tcp_listener
     at puma/worker.rb:88 in run
-[ERROR] puma starting Error: Errno::EADDRINUSE - bind failed for [IP]:[PORT]
-    at puma/webserver.rb:42 in add_tcp_listener
-    at puma/worker.rb:88 in run
+[... 3 lines repeated from above ...]
 [ERROR] unicorn worker timeout Error: Unicorn::WorkerKiller::MemoryQuota at 512MB
     at unicorn/worker.rb:42 in process_client
     at unicorn/http_server.rb:88 in worker_loop

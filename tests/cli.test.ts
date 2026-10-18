@@ -376,6 +376,27 @@ describe('runCli', () => {
     );
   });
 
+  it('references repeated blocks by default and keeps them with --no-collapse-repeated-blocks', async () => {
+    const block = [
+      'Traceback (most recent call last):',
+      '  File "/repo/app/worker.py", line [NN], in run_task',
+      '    result = self.handler(task)',
+      'requests.exceptions.ConnectionError: connection aborted by the peer',
+    ];
+    const log = ['[ERROR] first failure', ...block, '[ERROR] second failure', ...block, ''].join('\n');
+    await writeFile(inputPath, log, 'utf8');
+
+    const collapsed = makeIo(new PassThrough());
+    expect(await runCli([inputPath], collapsed.io)).toBe(0);
+    expect(collapsed.stdout.value()).toContain('[... 4 lines repeated from above ...]');
+    expect(collapsed.stdout.value().match(/Traceback/gu)).toHaveLength(1);
+
+    const full = makeIo(new PassThrough());
+    expect(await runCli([inputPath, '--no-collapse-repeated-blocks'], full.io)).toBe(0);
+    expect(full.stdout.value()).not.toContain('repeated from above');
+    expect(full.stdout.value().match(/Traceback/gu)).toHaveLength(2);
+  });
+
   it('rejects identical input and output paths before truncating the log', async () => {
     const original = await readFile(inputPath, 'utf8');
     const { io, stderr } = makeIo(new PassThrough());
@@ -723,6 +744,14 @@ describe('runCli', () => {
 
     const opts2 = parseCliOptions(['raw.log', '--no-template-mining']);
     expect(opts2.templateMining).toBe(false);
+  });
+
+  it('enables repeated-block references by default and disables them via --no-collapse-repeated-blocks', () => {
+    const opts = parseCliOptions(['raw.log']);
+    expect(opts.collapseRepeatedBlocks).toBe(true);
+
+    const opts2 = parseCliOptions(['raw.log', '--no-collapse-repeated-blocks']);
+    expect(opts2.collapseRepeatedBlocks).toBe(false);
   });
 
   it('enables JSON report detection by default and disables it via --no-json-report', () => {

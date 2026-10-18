@@ -865,6 +865,23 @@ const cases: readonly SmokeCase[] = [
     ],
     mustDetectSources: ['go-test'],
   },
+  {
+    fixture: 'node-repeated-stack.log',
+    minSavingsPercent: 32,
+    expectDeduplication: false,
+    expectInternalStackHidden: true,
+    mustContain: [
+      '[ERROR] [TIME] failed to reserve inventory for order ord-88421',
+      '[ERROR] [TIME] failed to reserve inventory for order ord-88423',
+      "TypeError: Cannot read properties of undefined (reading 'available')",
+      'at InventoryClient.reserve (/srv/app/src/inventory/client.ts:[NN]:[NN])',
+      '[... 5 lines repeated from above ...]',
+      '[FATAL] [TIME] inventory client unusable, shutting down',
+      'Error: Cannot recover checkout worker after repeated reservation failures',
+    ],
+    mustNotContain: ['[INFO]', 'GET /healthz'],
+    mustDetectSources: [],
+  },
 ];
 
 let workDir: string;
@@ -966,6 +983,16 @@ describe('smoke: realistic CI log fixtures', () => {
       }
     });
   }
+});
+
+describe('smoke: repeated stack traces', () => {
+  it('prints a stack trace that repeats later only once', async () => {
+    const { result, outputContent } = await compress('node-repeated-stack.log');
+
+    expect(outputContent.match(/TypeError: Cannot read properties/gu)).toHaveLength(1);
+    expect(outputContent.match(/repeated from above/gu)).toHaveLength(2);
+    expect(result.stats.duplicateLines).toBe(10);
+  });
 });
 
 describe('smoke: stream resilience', () => {

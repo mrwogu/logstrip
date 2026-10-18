@@ -53,6 +53,10 @@ import {
 import { applyTokenBudget, type BudgetLine } from './budget/token-budget.js';
 import { planBlockDedupe } from './dedupe/block-deduper.js';
 import {
+  BlockReferenceCollapser,
+  type BlockReferenceItem,
+} from './dedupe/block-reference.js';
+import {
   accessBucketPush,
   flushAccessBucket,
   type AccessBucket,
@@ -499,7 +503,15 @@ export async function processLogStream(
     recordLineDecision(dynamicAggressiveness, decision);
   };
 
-  const emitOutputLine = async (line: string, score = 0): Promise<boolean> => {
+  // Repeated multi-line blocks (the same stack trace printed again later)
+  // collapse into one back-reference marker. Needs the repeat grouper's
+  // output, so it is tied to deduplication.
+  const blockCollapser =
+    dedupeEnabled && options.collapseRepeatedBlocks !== false
+      ? new BlockReferenceCollapser()
+      : null;
+
+  const writeFinalLine = async (line: string, score: number): Promise<void> => {
     if (sampleSize !== undefined && outputLineCount >= sampleSize) {
       stats.droppedLines += line.split('\n').length;
       recordDecision({
@@ -510,18 +522,34 @@ export async function processLogStream(
         repeated: false,
         reason: 'sample-limit',
       });
-      return false;
+      return;
     }
     outputLineCount += 1;
     if (outputBuffer !== null) {
       outputBuffer.push({ text: line, score, tokens: estimateOutputLineTokens(line) });
-      return true;
+      return;
     }
     if (tokenEstimator !== undefined) {
       outputTokensFromEstimator += estimateLineTokens(tokenEstimator, `${line}\n`);
     }
     await writeOutputLine(output, line, stats);
-    return true;
+  };
+
+  const writeCollapsed = async (items: readonly BlockReferenceItem[]): Promise<void> => {
+    for (const item of items) {
+      if (item.elidedLines !== undefined) {
+        stats.duplicateLines += item.elidedLines;
+      }
+      await writeFinalLine(item.text, item.score);
+    }
+  };
+
+  const emitOutputLine = async (line: string, score = 0): Promise<void> => {
+    if (blockCollapser === null) {
+      await writeFinalLine(line, score);
+      return;
+    }
+    await writeCollapsed(blockCollapser.push(line, score));
   };
 
   const estimateOutputLineTokens = (line: string): number =>
@@ -1022,6 +1050,10 @@ export async function processLogStream(
   }
 
   await flushPendingGroups();
+
+  if (blockCollapser !== null) {
+    await writeCollapsed(blockCollapser.flush());
+  }
 
   if (outputBuffer !== null) {
     let buffered: BudgetLine[] = outputBuffer;

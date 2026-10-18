@@ -29,3 +29,18 @@ export const ADAPTIVE_CONTEXT_DENSE_GAP = 2;
 export const ADAPTIVE_CONTEXT_SPARSE_GAP = 12;
 // Extra after-context lines granted to an isolated error (on top of the base).
 export const ADAPTIVE_CONTEXT_AFTER_EXPANSION = 2;
+
+// Repeated-block references: a run of at least BLOCK_REFERENCE_MIN_LINES output
+// lines (and BLOCK_REFERENCE_MIN_WORDS words, so the marker is always cheaper)
+// that repeats an earlier run from the last BLOCK_REFERENCE_WINDOW_LINES lines
+// collapses into one "[... N lines repeated from above ...]" marker. A run is
+// held back at most BLOCK_REFERENCE_MAX_RUN_LINES lines, at most
+// BLOCK_REFERENCE_MAX_CANDIDATES earlier occurrences are followed at once, and
+// lines longer than BLOCK_REFERENCE_MAX_LINE_CHARS are never matched, which
+// keeps memory and time bounded on any input.
+export const BLOCK_REFERENCE_MIN_LINES = 3;
+export const BLOCK_REFERENCE_MIN_WORDS = 12;
+export const BLOCK_REFERENCE_WINDOW_LINES = 400;
+export const BLOCK_REFERENCE_MAX_RUN_LINES = 64;
+export const BLOCK_REFERENCE_MAX_CANDIDATES = 16;
+export const BLOCK_REFERENCE_MAX_LINE_CHARS = 4096;

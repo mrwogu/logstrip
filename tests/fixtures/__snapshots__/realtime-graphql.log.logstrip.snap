@@ -1,9 +1,7 @@
 [ERROR] socket.io server Error: TransportCloseError: transport closed unexpectedly for client [ID]
     at socketio/engine.io.js:42 in onClose
     at socketio/server.js:88 in handle
-[ERROR] socket.io server Error: TransportCloseError: transport closed unexpectedly for client [ID]
-    at socketio/engine.io.js:42 in onClose
-    at socketio/server.js:88 in handle
+[... 3 lines repeated from above ...]
 [ERROR] pusher channel Error: PusherAuthenticationError: invalid app key abc123 at [IP]
     at pusher/lib/channel.js:42 in subscribe
     at pusher/lib/pusher.js:88 in trigger

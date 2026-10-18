@@ -286,6 +286,9 @@ const result = await processLogStream(input, output, {
   adaptiveContext: true,        // size the after-error context by error density
   templateMining: true,         // fold near-identical lines differing only in a
                                 //   number after a generic word label
+  collapseRepeatedBlocks: true, // replace a run of lines that repeats earlier
+                                //   output with a "[... N lines repeated ...]"
+                                //   marker
 
   // Numeric tuning / budget options:
   maxTokens: 8_000,             // trim to the highest-scoring lines within a
@@ -311,6 +314,7 @@ const result = await processLogStream(input, output, {
 | `collapseBlocks` | `number` | _(off)_ | Collapses consecutive repeats of a multi-line block (up to _N_ lines) into one copy plus a `[block xM]` marker. |
 | `formatDetectionSampleSize` | `number` | `50` | Number of leading non-blank lines sampled before the first-line format guess may be corrected by majority vote. After the vote locks, a sustained run of differently-formatted lines (20 consecutive) re-elects the format, so mixed streams that switch format mid-file stay correctly classified. |
 | `templateMining` | `boolean` | auto-on | Folds near-identical lines whose only difference is a number after a generic word label (`Retrying upload 17` / `… 18` → `[x2] Retrying upload [17 \| 18] …`). Numbers with a duration or size unit (`took 120ms`, `12MB`, `45%`) and parenthesized counters (`(attempt 3)`) merge too, and the wrapping punctuation is kept. Numbers after diagnostic labels (`code`, `status`, `exit`, `signal`, `line`, `version`, `errno`, `error`) never merge. |
+| `collapseRepeatedBlocks` | `boolean` | auto-on | Replaces a run of at least 3 output lines (and 12 words, so the marker always pays for itself) that repeats an earlier run from the last 400 output lines with one `[... N lines repeated from above ...]` marker. Back-to-back copies of the same block share one marker, a different block gets its own, and the marker counts toward `stats.duplicateLines`. Lines that cannot start a repeat are written immediately; only lines that match an earlier run so far are held back, so memory stays bounded. Ignored when `dedupe` is `false`. A token budget (`maxTokens`) drops these markers before any other line. |
 | `maxStackFrames` | `number` | `10` | Keeps at most _N_ consecutive application stack frames per trace; the remainder collapses into a `[... K more application stack frames ...]` marker. `0` keeps every frame. Internal library frames are hidden separately by the internal-stack collapser. |
 
 ```ts
