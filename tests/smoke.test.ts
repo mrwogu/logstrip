@@ -882,6 +882,20 @@ const cases: readonly SmokeCase[] = [
     mustNotContain: ['[INFO]', 'GET /healthz'],
     mustDetectSources: [],
   },
+  {
+    fixture: 'nginx-502-burst.log',
+    minSavingsPercent: 34,
+    expectDeduplication: true,
+    expectInternalStackHidden: false,
+    mustContain: [
+      '[x5] [IP] - - [[TIME]] "POST /api/checkout HTTP/1.1" 502 [157 | 159 | 161]',
+      '[x2] [IP] - - [[TIME]] "POST /api/checkout HTTP/1.1" 504 168',
+      'rt=[60.001 | 60.002]',
+      'upstream timed out (110: Connection timed out)',
+    ],
+    mustNotContain: ['10.40.1.', '16/May/2026'],
+    mustDetectSources: [],
+  },
 ];
 
 let workDir: string;

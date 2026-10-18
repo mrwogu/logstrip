@@ -1,0 +1,6 @@
+[IP] - - [[TIME]] "GET /api/cart HTTP/1.1" 200 912 "https://shop.example.com/cart" "Mozilla/5.0 (X11; Linux x86_64)" rt=0.012 urt=0.011
+[IP] - - [[TIME]] "GET /api/products?page=2 HTTP/1.1" 200 4838 "https://shop.example.com/" "Mozilla/5.0 (X11; Linux x86_64)" rt=0.034 urt=0.033
+[x5] [IP] - - [[TIME]] "POST /api/checkout HTTP/1.1" 502 [157 | 159 | 161] "https://shop.example.com/cart" "Mozilla/5.0 (X11; Linux x86_64)" rt=[0.201 | 0.198 | 0.215 | …] urt=[0.200 | 0.197 | 0.214 | …]
+[x2] [IP] - - [[TIME]] "POST /api/checkout HTTP/1.1" 504 168 "https://shop.example.com/cart" "Mozilla/5.0 (X11; Linux x86_64)" rt=[60.001 | 60.002] urt=[60.000 | 60.001]
+[IP] - - [[TIME]] "GET /api/cart HTTP/1.1" 200 914 "https://shop.example.com/cart" "Mozilla/5.0 (X11; Linux x86_64)" rt=0.011 urt=0.010
+[TIME] [error] 142#142: *935 upstream timed out (110: Connection timed out) while reading response header from upstream, client: [IP], server: shop.example.com, request: "POST /api/checkout HTTP/1.1", upstream: "http://[IP]:[PORT]/api/checkout"

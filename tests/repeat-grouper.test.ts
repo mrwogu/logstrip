@@ -140,3 +140,34 @@ describe('template mining with units and punctuation', () => {
     );
   });
 });
+
+describe('template mining for access-log response sizes', () => {
+  const access = (status: number, bytes: number, rt: string): string =>
+    `[IP] - - [[TIME]] "POST /api/checkout HTTP/1.1" ${status} ${bytes} "-" "curl/8.0" rt=${rt}`;
+
+  it('wildcards the response size that follows an HTTP status code', () => {
+    expect(createRepeatSignature(access(502, 157, '0.201'), true)).toBe(
+      createRepeatSignature(access(502, 161, '0.250'), true),
+    );
+  });
+
+  it('keeps different status codes apart', () => {
+    expect(createRepeatSignature(access(502, 157, '0.2'), true)).not.toBe(
+      createRepeatSignature(access(504, 157, '0.2'), true),
+    );
+  });
+
+  it('does not wildcard a number after a non-status three-digit token', () => {
+    expect(createRepeatSignature('opened 999 12 times', true)).toBe('opened [VALUE] 12 times');
+    expect(createRepeatSignature('opened 600 12 times', true)).toBe('opened [VALUE] 12 times');
+  });
+
+  it('folds an access-log burst into one group with the sizes listed', async () => {
+    const lines = [157, 159, 161, 163].map((bytes, i) => access(502, bytes, `0.2${i}`));
+    const { output } = await processLogString(`${lines.join('\n')}\n`);
+
+    expect(output).toBe(
+      '[x4] [IP] - - [[TIME]] "POST /api/checkout HTTP/1.1" 502 [157 | 159 | 161 | …] "-" "curl/8.0" rt=[0.20 | 0.21 | 0.22 | …]\n',
+    );
+  });
+});

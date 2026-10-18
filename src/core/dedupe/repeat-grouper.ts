@@ -259,7 +259,14 @@ function splitRepeatToken(
   return undefined;
 }
 
+// A response size follows the status code in common/combined access logs:
+// '"GET /x HTTP/1.1" 502 150 ...'. Sizes differ on every line of a burst.
+const HTTP_STATUS_TOKEN_PATTERN = /^[1-5]\d{2}$/u;
+
 function isTemplateMergeLabel(previousToken: string): boolean {
+  if (HTTP_STATUS_TOKEN_PATTERN.test(previousToken)) {
+    return true;
+  }
   if (!TEMPLATE_LABEL_PATTERN.test(previousToken)) {
     return false;
   }
