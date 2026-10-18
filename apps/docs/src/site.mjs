@@ -27,42 +27,42 @@ export function stripBase(pathname) {
   return pathname.startsWith(`${BASE}/`) ? pathname.slice(BASE.length) : pathname;
 }
 
-// Top-level groups map to the header tabs in src/nav.ts.
-export const SIDEBAR = [
-  {
-    label: 'Start',
-    items: [
-      { label: 'Getting Started', slug: 'getting-started' },
-      { label: 'Supported Sources', slug: 'reference/sources' },
-    ],
+// Sidebar groups as data: group label -> { page label: slug }. src/nav.ts builds
+// the header tabs from this table, one tab per group, so a group is added here
+// and nowhere else. The first page of a group is the landing page of its tab.
+const GROUPS = {
+  'Get Started': {
+    'Getting Started': 'getting-started',
+    'Supported Sources': 'reference/sources',
   },
-  {
-    label: 'Reference',
-    items: [
-      { label: 'CLI', slug: 'reference/cli' },
-      { label: 'Core API', slug: 'reference/core' },
-      { label: 'GitHub Action', slug: 'reference/action' },
-    ],
+  Evaluate: {
+    'Why LogStrip': 'why-logstrip',
+    Benchmarks: 'benchmarks',
+    Compare: 'compare',
   },
-  {
-    label: 'Guides',
-    items: [
-      { label: 'Compression Flow', slug: 'guides/compression-flow' },
-      { label: 'Configuration', slug: 'guides/configuration' },
-      { label: 'Agent Plugins', slug: 'guides/plugins' },
-      { label: 'Security', slug: 'guides/security' },
-      { label: 'Troubleshooting', slug: 'guides/troubleshooting' },
-    ],
+  Reference: {
+    CLI: 'reference/cli',
+    'Core API': 'reference/core',
+    'GitHub Action': 'reference/action',
   },
-  {
-    label: 'Examples',
-    items: [
-      { label: 'Cookbook', slug: 'examples' },
-      { label: 'npm test', slug: 'examples/npm-test' },
-      { label: 'pytest', slug: 'examples/pytest' },
-      { label: 'docker compose', slug: 'examples/docker-compose' },
-      { label: 'Kubernetes', slug: 'examples/k8s' },
-      { label: 'Jenkins', slug: 'examples/jenkins' },
-    ],
+  Guides: {
+    'Compression Flow': 'guides/compression-flow',
+    Configuration: 'guides/configuration',
+    'Agent Plugins': 'guides/plugins',
+    Security: 'guides/security',
+    Troubleshooting: 'guides/troubleshooting',
   },
-];
+  Examples: {
+    Cookbook: 'examples',
+    'npm test': 'examples/npm-test',
+    pytest: 'examples/pytest',
+    'docker compose': 'examples/docker-compose',
+    Kubernetes: 'examples/k8s',
+    Jenkins: 'examples/jenkins',
+  },
+};
+
+export const SIDEBAR = Object.entries(GROUPS).map(([label, pages]) => ({
+  label,
+  items: Object.entries(pages).map(([title, slug]) => ({ label: title, slug })),
+}));

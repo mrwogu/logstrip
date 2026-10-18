@@ -34,11 +34,13 @@ export function gitLastModified() {
   if (cached) return cached;
   try {
     // `:/` pathspecs are repo-root relative, so this works from apps/docs.
-    // git from PATH on purpose: this runs only at build time on a dev machine
-    // or CI runner, like Starlight's own "Last updated" lookup.
+    // git from PATH on purpose (NOSONAR S4036 below): this runs only at build
+    // time on a dev machine or CI runner, like Starlight's own "Last updated"
+    // lookup, with fixed arguments and no user input.
     const args = ['log', '--format=%x00%cI', '--name-only', '--', ':/docs', `:/${HOME_SOURCE}`];
     const options = { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 };
-    cached = lastModifiedByPath(execFileSync('git', args, options));
+    const log = execFileSync('git', args, options); // NOSONAR
+    cached = lastModifiedByPath(log);
   } catch {
     // No git (e.g. a source tarball): pages just have no date.
     cached = new Map();

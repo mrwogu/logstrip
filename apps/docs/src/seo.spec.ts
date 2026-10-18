@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { homeJsonLd, jsonLdTag, pageJsonLd } from './seo';
+import { faqJsonLd, homeJsonLd, jsonLdTag, pageJsonLd } from './seo';
 
 const parse = (content: string): { '@graph': Record<string, unknown>[] } => JSON.parse(content);
 
@@ -22,7 +22,27 @@ describe('homeJsonLd', () => {
       softwareVersion: '1.2.3',
       url: 'https://mrwogu.github.io/logstrip/',
       installUrl: 'https://www.npmjs.com/package/logstrip',
+      runtimePlatform: 'Node.js 22+',
     });
+  });
+});
+
+describe('faqJsonLd', () => {
+  it('lists each question with its accepted answer', () => {
+    const graph = parse(faqJsonLd([{ question: 'Q1?', answer: 'A1 </script>' }]).content)['@graph'];
+
+    expect(graph).toEqual([
+      {
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: 'Q1?', acceptedAnswer: { '@type': 'Answer', text: 'A1 </script>' } },
+        ],
+      },
+    ]);
+  });
+
+  it('keeps the answer text from closing the script tag', () => {
+    expect(faqJsonLd([{ question: 'Q', answer: '</script>' }]).content).not.toContain('<');
   });
 });
 

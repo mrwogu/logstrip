@@ -5,7 +5,7 @@ import { rewriteDocLinkFrom } from './plugins/remark-mkdocs-compat.mjs';
 import { DOCS_BASE, NPM, REPO, SIDEBAR, SITE, SITE_DESCRIPTION, stripBase } from './site.mjs';
 
 export const LLMS_SUMMARY =
-  'LogStrip is a stream-based CLI that trims noisy CI, server, scanner and container logs down to the diagnostic context an LLM needs: it scores lines, folds repeats, masks secrets and keeps JSON valid. It ships as an npm CLI, a TypeScript library and a GitHub Action.';
+  'LogStrip is a stream-based CLI that trims noisy CI, server, scanner and container logs down to the diagnostic context an LLM needs: it scores lines, folds repeats, masks secrets and keeps JSON valid, with no model and no network. It ships as an npm CLI, a TypeScript library and a GitHub Action.';
 
 /** The part of a docs collection entry this module needs. */
 export interface DocPage {
@@ -82,7 +82,8 @@ export function pageMarkdown(page: DocPage): string {
       const match = /^\/([^#]*)(#.*)?$/.exec(target);
       if (!match) return `](${target})`;
       const id = match[1].replace(/\/$/, '');
-      return `](${id ? markdownUrl(id) : `${SITE}/`}${match[2] ?? ''})`;
+      const docUrl = id ? markdownUrl(id) : `${SITE}/`;
+      return `](${docUrl}${match[2] ?? ''})`;
     }
   );
   const trimmed = body.trimStart();

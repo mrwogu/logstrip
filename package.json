@@ -63,6 +63,7 @@
     "build": "tsc -p tsconfig.build.json && node scripts/bundle-action.js && node scripts/post-build.js",
     "build:plugins": "node scripts/build-plugins.js",
     "docs:build": "npm --prefix apps/docs run build",
+    "docs:bench": "node scripts/export-benchmarks.mjs",
     "docs:check": "node scripts/check-cli-docs.js",
     "docs:install": "npm --prefix apps/docs ci",
     "docs:serve": "npm --prefix apps/docs run dev",
@@ -74,7 +75,7 @@
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm run typecheck && npm run test:coverage && npm run build && npm run docs:check && npm audit && npm run docs:build"
+    "verify": "npm run typecheck && npm run test:coverage && npm run build && npm run docs:check && npm run docs:bench -- --check && node scripts/export-hero-scenarios.mjs --check && npm audit && npm run docs:build"
   },
   "devDependencies": {
     "@actions/core": "^2.0.3",

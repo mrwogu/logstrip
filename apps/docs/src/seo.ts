@@ -36,7 +36,7 @@ export function jsonLdTag(graph: readonly object[]): HeadTag {
     content: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': graph,
-    }).replaceAll('<', '\\u003c'),
+    }).replaceAll('<', String.raw`\u003c`),
   };
 }
 
@@ -55,7 +55,7 @@ export function homeJsonLd(version: string): HeadTag {
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       installUrl: NPM,
       programmingLanguage: 'TypeScript',
-      runtimePlatform: 'Node.js >= 22',
+      runtimePlatform: 'Node.js 22+',
       license: 'https://opensource.org/licenses/MIT',
       author: {
         '@type': 'Person',
@@ -64,15 +64,29 @@ export function homeJsonLd(version: string): HeadTag {
       },
       sameAs: [REPO, NPM],
       featureList: [
-        'Stream-based log compression',
-        '705+ detected log ecosystems',
-        'Automatic source detection',
-        'Sanitization of UUIDs, timestamps, hashes, IPs',
-        'TF-IDF dampening and duplicate folding',
-        'Internal stack frame collapsing',
-        'JSON and stats output',
-        'GitHub Action wrapper',
+        'Stream-based log compression with bounded memory',
+        '705+ detected log sources',
+        'Deterministic output: no model and no network',
+        'Secret masking in every mode',
+        'Duplicate folding and internal stack frame hiding',
+        'Token budget with --max-tokens',
+        'Semantic compression of JSON reports',
+        'Agent plugins and hooks for Claude Code, Cursor, GitHub Copilot, Codex, OpenCode and Factory Droid',
+        'TypeScript library and GitHub Action',
       ],
+    },
+  ]);
+}
+
+export function faqJsonLd(items: readonly { question: string; answer: string }[]): HeadTag {
+  return jsonLdTag([
+    {
+      '@type': 'FAQPage',
+      mainEntity: items.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: { '@type': 'Answer', text: item.answer },
+      })),
     },
   ]);
 }

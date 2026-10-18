@@ -1,0 +1,130 @@
+<!doctype html>
+<!--
+  Source of apps/docs/public/assets/images/og-image-1200x630.png (and .webp).
+  To regenerate, open this file in a browser at 1200x630 and take a screenshot,
+  for example with Playwright: page.setViewportSize({ width: 1200, height: 630 }).
+  The bars and the headline number are the measured savings in
+  apps/docs/src/data/benchmarks.json (npm run docs:bench). Update them by hand
+  when that file changes.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>LogStrip OG image</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        width: 1200px;
+        height: 630px;
+        margin: 0;
+        overflow: hidden;
+        background: #161818;
+        color: #f7f4ea;
+        font-family: Inter, 'Segoe UI', system-ui, sans-serif;
+      }
+      .wrap {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 64px;
+        height: 100%;
+        padding: 64px 72px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 30px;
+        font-weight: 700;
+        color: #a4ffaf;
+      }
+      .brand img {
+        width: 52px;
+        height: 52px;
+      }
+      h1 {
+        margin: 44px 0 0;
+        font-size: 76px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.05em;
+      }
+      p {
+        margin: 28px 0 0;
+        max-width: 520px;
+        color: #bdbbb1;
+        font-size: 26px;
+        line-height: 1.4;
+      }
+      .left {
+        display: flex;
+        flex-direction: column;
+      }
+      .total {
+        margin-top: auto;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 21px;
+        color: #bdbbb1;
+      }
+      .total strong {
+        color: #a4ffaf;
+        font-size: 26px;
+      }
+      .right {
+        align-self: center;
+        padding: 36px 36px 28px;
+        border: 1px solid #34373a;
+        border-radius: 16px;
+        background: #1d1f20;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 74px;
+        gap: 8px 12px;
+        margin-bottom: 22px;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 19px;
+      }
+      .row b {
+        text-align: right;
+      }
+      .bar {
+        grid-column: 1 / -1;
+        height: 14px;
+        border: 1px solid #4a4e51;
+        border-radius: 2px;
+        background: repeating-linear-gradient(135deg, #4a4e51 0 2px, transparent 2px 7px);
+      }
+      .bar i {
+        display: block;
+        height: 100%;
+        background: #a4ffaf;
+      }
+      .legend {
+        margin: 4px 0 0;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 16px;
+        color: #9a998f;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="left">
+        <div class="brand"><img src="../public/assets/images/logo-icon-256.png" alt="" />LogStrip</div>
+        <h1>send agents the failure, not the log.</h1>
+        <p>Cuts CI, server and scanner logs down to the lines an agent needs.</p>
+        <div class="total"><strong>51.4%</strong> fewer tokens across 50 fixtures</div>
+      </div>
+      <div class="right">
+        <div class="row"><span>apache-httpd-noisy</span><b>87.2%</b><span class="bar"><i style="width: 12.8%"></i></span></div>
+        <div class="row"><span>jest-noisy</span><b>77.8%</b><span class="bar"><i style="width: 22.2%"></i></span></div>
+        <div class="row"><span>vitest-failure</span><b>64.6%</b><span class="bar"><i style="width: 35.4%"></i></span></div>
+        <div class="row"><span>maven-failure</span><b>47.9%</b><span class="bar"><i style="width: 52.1%"></i></span></div>
+        <div class="row"><span>kubernetes-crashloop</span><b>16.7%</b><span class="bar"><i style="width: 83.3%"></i></span></div>
+        <p class="legend">solid: kept. hatched: stripped.</p>
+      </div>
+    </div>
+  </body>
+</html>
