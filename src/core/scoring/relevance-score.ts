@@ -7,7 +7,7 @@ import {
 } from '../constants.js';
 import type { Aggressiveness } from '../types.js';
 import { isAccessLogNoiseLine } from '../formats/access-log-classifier.js';
-import { DIAGNOSTIC_BOOSTERS } from './diagnostic-boosters.js';
+import { DIAGNOSTIC_BOOSTERS, HTTP_5XX_FIELD_PATTERN } from './diagnostic-boosters.js';
 import { detectHeaderLogLevel } from './log-level.js';
 
 // "[INFO ]" with trailing padding comes from "[%-5p]" style layouts.
@@ -47,8 +47,11 @@ const GRADLE_FAILURE_PATTERN =
   /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/iu;
 const MAKE_ERROR_PATTERN = /^make[:\s*]+/u;
 const GO_TEST_FAIL_PATTERN = /---\s*FAIL:/u;
+// Exit status is only a failure when non-zero and followed by systemd's
+// uppercase result name ("status=1/FAILURE"); logfmt "status=200 duration=..."
+// is a request log, not a failure.
 const SYSTEMD_STATUS_PATTERN =
-  /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/iu;
+  /\b(?:[Ff]ailed to (?:start|load|listen|mount|open|connect)|status=(?!0\b)\d+(?:\/|\s+)[A-Z][A-Z_]{2,})\b/u;
 const CIRCLECI_STEP_PATTERN = /\b(?:Spin Cancelled|Step failed|job was not approved)\b/iu;
 const JENKINS_MARKER_PATTERN = /\[(?:Pipeline|Checks|FCMaker)\]/u;
 const AZURE_PIPELINE_PATTERN = /^##vso\[task\.(?:LogIssue|Complete)\b/u;
@@ -147,6 +150,8 @@ export function looksLikeDiagnosticLine(line: string): boolean {
     YARN_ERROR_PATTERN.test(line) ||
     SCANNER_FINDING_PATTERN.test(line) ||
     CONTAINER_FAILURE_PATTERN.test(line) ||
+    HTTP_5XX_PATTERN.test(line) ||
+    HTTP_5XX_FIELD_PATTERN.test(line) ||
     GITHUB_ACTIONS_ANNOTATION_PATTERN.test(line) ||
     GRADLE_FAILURE_PATTERN.test(line) ||
     MAKE_ERROR_PATTERN.test(line) ||
