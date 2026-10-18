@@ -13,6 +13,9 @@ export const DOCS_BASE = '../../docs';
 export const REPO = 'https://github.com/mrwogu/logstrip';
 export const NPM = 'https://www.npmjs.com/package/logstrip';
 
+export const SITE_DESCRIPTION =
+  'Free, zero-dependency CLI that compresses noisy logs into high-signal AI context. 705+ detected ecosystems, stream-safe, deterministic output.';
+
 /** Site path (starting with /) with the base in front. */
 export function withBase(path) {
   return `${BASE}${path}`;

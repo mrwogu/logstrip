@@ -3,8 +3,21 @@ import { unified } from '@astrojs/markdown-remark';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import sitemap from '@astrojs/sitemap';
+import { gitLastModified } from './src/plugins/git-lastmod.mjs';
 import { remarkMkdocsCompat } from './src/plugins/remark-mkdocs-compat.mjs';
-import { BASE, ORIGIN, REPO, SIDEBAR } from './src/site.mjs';
+import {
+  BASE,
+  NPM,
+  ORIGIN,
+  REPO,
+  SIDEBAR,
+  SITE,
+  SITE_DESCRIPTION,
+  stripBase,
+} from './src/site.mjs';
+
+const lastModified = gitLastModified();
+const ogImage = `${SITE}/assets/images/og-image-1200x630.png`;
 
 export default defineConfig({
   site: ORIGIN,
@@ -17,16 +30,23 @@ export default defineConfig({
   },
   integrations: [
     // Starlight skips its own sitemap when this one is present.
-    sitemap(),
+    sitemap({
+      serialize(item) {
+        const lastmod = lastModified.get(stripBase(new URL(item.url).pathname));
+        return lastmod ? { ...item, lastmod } : item;
+      },
+    }),
     starlight({
       title: 'LogStrip',
-      description:
-        'Free, zero-dependency CLI that compresses noisy logs into high-signal AI context. 705+ detected ecosystems, stream-safe, deterministic output.',
-      logo: { src: './public/assets/images/logo-icon-256.webp', alt: 'LogStrip' },
+      description: SITE_DESCRIPTION,
+      logo: {
+        src: './public/assets/images/logo-icon-256.webp',
+        alt: 'LogStrip',
+      },
       favicon: '/assets/images/favicon.ico',
       social: [
         { icon: 'github', label: 'GitHub', href: REPO },
-        { icon: 'npm', label: 'npm', href: 'https://www.npmjs.com/package/logstrip' },
+        { icon: 'npm', label: 'npm', href: NPM },
       ],
       editLink: { baseUrl: `${REPO}/edit/main/apps/docs/` },
       lastUpdated: true,
@@ -34,11 +54,32 @@ export default defineConfig({
       // unless told about other directories. Our sources live in docs/.
       markdown: { processedDirs: ['../../docs'] },
       customCss: ['./src/styles/theme.css'],
+      components: {
+        PageTitle: './src/components/PageTitle.astro',
+        Header: './src/components/Header.astro',
+        Footer: './src/components/Footer.astro',
+      },
+      routeMiddleware: './src/route-middleware.ts',
       head: [
-        { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },
+        { tag: 'meta', attrs: { property: 'og:image', content: ogImage } },
+        { tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
+        { tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
+        {
+          tag: 'meta',
+          attrs: { property: 'og:image:type', content: 'image/png' },
+        },
+        { tag: 'meta', attrs: { name: 'twitter:image', content: ogImage } },
         {
           tag: 'link',
-          attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+          attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'preconnect',
+            href: 'https://fonts.gstatic.com',
+            crossorigin: '',
+          },
         },
         {
           tag: 'link',
