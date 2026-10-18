@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { lineGroups } from './helpers/tables';
 import {
   CONTENT_EARLY_LOG_MIN_LINES,
   CONTENT_EARLY_LOG_MIN_RATIO,
@@ -290,156 +291,116 @@ const BANNER_LOG_LINES = Array.from(
     `2024-01-15 10:23:${String(index % 60).padStart(2, '0')}.${String(index).padStart(3, '0')} [${index % 3 === 0 ? 'ERROR' : 'INFO'}] step ${index} finished`,
 );
 
-const UNSTRUCTURED_LOGS: ReadonlyArray<readonly [string, readonly string[]]> = [
-  [
-    'apt-get install',
-    [
-      'Reading package lists... Done',
-      'Building dependency tree... Done',
-      'The following NEW packages will be installed:',
-      '  curl libbrotli1 libcurl4 libnghttp2-14',
-      '0 upgraded, 4 newly installed, 0 to remove and 3 not upgraded.',
-      'Get:1 http://archive.ubuntu.com/ubuntu jammy/main amd64 libbrotli1 amd64 1.0.9-2build6 [315 kB]',
-      'Fetched 1,053 kB in 1s (1,208 kB/s)',
-      'Selecting previously unselected package libbrotli1:amd64.',
-      'Unpacking libbrotli1:amd64 (1.0.9-2build6) ...',
-      'Setting up curl (7.81.0-1ubuntu1.20) ...',
-      'E: Unable to locate package nonexistent',
-    ],
-  ],
-  [
-    'terraform plan',
-    [
-      'Terraform will perform the following actions:',
-      '',
-      '  # aws_instance.web will be created',
-      '  + resource "aws_instance" "web" {',
-      '      + ami           = "ami-0c55b159cbfafe1f0"',
-      '      + instance_type = "t2.micro"',
-      '    }',
-      '',
-      'Plan: 1 to add, 0 to change, 0 to destroy.',
-      'aws_instance.web: Creating...',
-      'aws_instance.web: Creation complete after 14s [id=i-0abc123]',
-    ],
-  ],
-  [
-    'cargo build',
-    [
-      '   Compiling libc v0.2.150',
-      '   Compiling myapp v0.1.0 (/home/user/myapp)',
-      'error[E0425]: cannot find value `x` in this scope',
-      ' --> src/main.rs:4:20',
-      '  |',
-      '4 |     println!("{}", x);',
-      '  |                    ^ not found in this scope',
-      '  = note: `#[warn(unused_variables)]` on by default',
-      'error: could not compile `myapp` due to 1 previous error',
-    ],
-  ],
-  [
-    'gradle failure',
-    [
-      '> Task :app:compileJava FAILED',
-      '',
-      'FAILURE: Build failed with an exception.',
-      '',
-      '* What went wrong:',
-      "Execution failed for task ':app:compileJava'.",
-      '> Compilation failed; see the compiler error output for details.',
-      '',
-      '* Try:',
-      '> Run with --stacktrace option to get the stack trace.',
-      'BUILD FAILED in 4s',
-    ],
-  ],
-  [
-    'pytest session',
-    [
-      '============================= test session starts ==============================',
-      'platform linux -- Python 3.12.1, pytest-8.0.0, pluggy-1.4.0',
-      'collected 12 items',
-      '',
-      'tests/test_a.py ....                                                     [ 33%]',
-      'tests/test_b.py ..F.                                                     [ 66%]',
-      '=================================== FAILURES ===================================',
-      '    def test_create_order(client):',
-      '>       response = client.post("/orders", json={"qty": 1})',
-      'E       assert 500 == 201',
-      'tests/test_b.py:42: AssertionError',
-      '========================= 1 failed, 11 passed in 0.52s =========================',
-    ],
-  ],
-  [
-    'go test',
-    [
-      '=== RUN   TestAdd',
-      '--- PASS: TestAdd (0.00s)',
-      '=== RUN   TestDivide',
-      '    calc_test.go:21: expected 2, got 0',
-      '--- FAIL: TestDivide (0.00s)',
-      'FAIL',
-      'exit status 1',
-      'FAIL\texample.com/calc\t0.004s',
-    ],
-  ],
-  [
-    'node crash with an object dump',
-    [
-      'node:internal/modules/cjs/loader:1386',
-      '  throw err;',
-      '  ^',
-      "Error: Cannot find module './missing'",
-      'Require stack:',
-      '- /repo/index.js',
-      '    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)',
-      '    at Function._load (node:internal/modules/cjs/loader:1192:37)',
-      '    at Module.require (node:internal/modules/cjs/loader:1463:12) {',
-      "  code: 'MODULE_NOT_FOUND',",
-      "  requireStack: [ '/repo/index.js' ]",
-      '}',
-      'Node.js v22.22.0',
-    ],
-  ],
-  [
-    'node:test TAP output',
-    [
-      'TAP version 13',
-      '# Subtest: tests',
-      'not ok 1 - tests',
-      '  ---',
-      '  duration_ms: 64.09',
-      "  failureType: 'testCodeFailure'",
-      '  ...',
-      '1..1',
-      '# tests 1',
-      '# pass 0',
-      '# fail 1',
-      '# duration_ms 79.12',
-    ],
-  ],
-  [
-    'unstructured application output',
-    [
-      'Starting application server',
-      'Loading configuration from /etc/app/config.yaml',
-      'Connecting to database',
-      'Connection established',
-      'Listening on port 3000',
-      'Processing background job number 42',
-      'Shutting down the application server gracefully',
-    ],
-  ],
-  [
-    'npm script echo',
-    [
-      '> logstrip@1.12.0 build',
-      '> tsc -p tsconfig.build.json && node scripts/post-build.js',
-      '',
-      'src/index.ts(12,5): error TS2322: Type string is not assignable to type number.',
-    ],
-  ],
-];
+const UNSTRUCTURED_LOGS: ReadonlyArray<readonly [string, readonly string[]]> = lineGroups(String.raw`
+@@ apt-get install
+Reading package lists... Done
+Building dependency tree... Done
+The following NEW packages will be installed:
+  curl libbrotli1 libcurl4 libnghttp2-14
+0 upgraded, 4 newly installed, 0 to remove and 3 not upgraded.
+Get:1 http://archive.ubuntu.com/ubuntu jammy/main amd64 libbrotli1 amd64 1.0.9-2build6 [315 kB]
+Fetched 1,053 kB in 1s (1,208 kB/s)
+Selecting previously unselected package libbrotli1:amd64.
+Unpacking libbrotli1:amd64 (1.0.9-2build6) ...
+Setting up curl (7.81.0-1ubuntu1.20) ...
+E: Unable to locate package nonexistent
+@@ terraform plan
+Terraform will perform the following actions:
+
+  # aws_instance.web will be created
+  + resource \"aws_instance\" \"web\" {
+      + ami           = \"ami-0c55b159cbfafe1f0\"
+      + instance_type = \"t2.micro\"
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+aws_instance.web: Creating...
+aws_instance.web: Creation complete after 14s [id=i-0abc123]
+@@ cargo build
+   Compiling libc v0.2.150
+   Compiling myapp v0.1.0 (/home/user/myapp)
+error[E0425]: cannot find value \u0060x\u0060 in this scope
+ --> src/main.rs:4:20
+  |
+4 |     println!(\"{}\", x);
+  |                    ^ not found in this scope
+  = note: \u0060#[warn(unused_variables)]\u0060 on by default
+error: could not compile \u0060myapp\u0060 due to 1 previous error
+@@ gradle failure
+> Task :app:compileJava FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileJava'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+BUILD FAILED in 4s
+@@ pytest session
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-8.0.0, pluggy-1.4.0
+collected 12 items
+
+tests/test_a.py ....                                                     [ 33%]
+tests/test_b.py ..F.                                                     [ 66%]
+=================================== FAILURES ===================================
+    def test_create_order(client):
+>       response = client.post(\"/orders\", json={\"qty\": 1})
+E       assert 500 == 201
+tests/test_b.py:42: AssertionError
+========================= 1 failed, 11 passed in 0.52s =========================
+@@ go test
+=== RUN   TestAdd
+--- PASS: TestAdd (0.00s)
+=== RUN   TestDivide
+    calc_test.go:21: expected 2, got 0
+--- FAIL: TestDivide (0.00s)
+FAIL
+exit status 1
+FAIL\texample.com/calc\t0.004s
+@@ node crash with an object dump
+node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+Error: Cannot find module './missing'
+Require stack:
+- /repo/index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at Module.require (node:internal/modules/cjs/loader:1463:12) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/repo/index.js' ]
+}
+Node.js v22.22.0
+@@ node:test TAP output
+TAP version 13
+# Subtest: tests
+not ok 1 - tests
+  ---
+  duration_ms: 64.09
+  failureType: 'testCodeFailure'
+  ...
+1..1
+# tests 1
+# pass 0
+# fail 1
+# duration_ms 79.12
+@@ unstructured application output
+Starting application server
+Loading configuration from /etc/app/config.yaml
+Connecting to database
+Connection established
+Listening on port 3000
+Processing background job number 42
+Shutting down the application server gracefully
+@@ npm script echo
+> logstrip@1.12.0 build
+> tsc -p tsconfig.build.json && node scripts/post-build.js
+
+src/index.ts(12,5): error TS2322: Type string is not assignable to type number.
+`);
 
 describe('classifyContent: log corpus', () => {
   it.each(FIXTURE_FILES.map((file) => [file.slice(ROOT_DIR.length + 1), file]))(

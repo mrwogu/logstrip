@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { lineGroups } from './helpers/tables';
 import {
   explainLogLine,
   isPassingTestLine,
@@ -11,122 +12,74 @@ import { stripAnsi } from '../src/core/sanitize/sanitize-line';
 type LineGroup = readonly [name: string, lines: readonly string[]];
 
 // Reports of a passing test, which isPassingTestLine drops whatever the test is called.
-const PASSING_TEST_LINES: readonly LineGroup[] = [
-  [
-    'Go test pass reports',
-    [
-      '--- PASS: TestCheckout (0.01s)',
-      '    --- PASS: TestCheckout/empty_cart (0.00s)',
-      'PASS',
-      'ok  \tgithub.com/acme/checkout/orders\t0.123s',
-      'ok  \tgithub.com/acme/checkout/orders\t(cached)',
-      '?   \tgithub.com/acme/checkout/tools\t[no test files]',
-    ],
-  ],
-  [
-    'pytest and unittest pass reports',
-    [
-      'tests/test_orders.py::test_create PASSED                [ 12%]',
-      'tests/test_orders.py::test_create[a-b] PASSED',
-      '[gw0] [ 12%] PASSED tests/test_orders.py::test_create',
-      'PASSED tests/test_orders.py::test_create',
-      'test_create (tests.test_orders.OrderTests.test_create) ... ok',
-    ],
-  ],
-  [
-    'check-mark lines whatever the test name says',
-    [
-      '      ✓ creates an order (45ms)',
-      '      ✔ returns an error for an empty cart',
-      '  √ rejects a failed payment with a 422',
-      ' ✅ handles a timeout from the gateway',
-      ' ✓',
-    ],
-  ],
-  [
-    'jest and vitest suite pass lines',
-    [
-      ' PASS  src/api.test.ts (123ms)',
-      'PASS src/api.test.ts',
-    ],
-  ],
-  [
-    'xUnit, Gradle test events, TAP and idle Gradle tasks',
-    [
-      '  Passed Checkout.Tests.CartTests.Total [12 ms]',
-      'OrderServiceTest > creates an order() PASSED',
-      'ok 3 - creates an order',
-      '> Task :app:processResources UP-TO-DATE',
-      '> Task :app:compileJava NO-SOURCE',
-      '> Task :app:compileKotlin FROM-CACHE',
-      '> Task :app:test SKIPPED',
-    ],
-  ],
-  [
-    'lines wrapped in ANSI color codes',
-    [
-      '\u001b[32m ✓ creates an order\u001b[39m',
-      '\u001b[0m\u001b[7m\u001b[1m\u001b[32m PASS \u001b[39m\u001b[22m\u001b[27m\u001b[0m src/api.test.ts',
-      '\u001b[32m✓ creates an order\u001b[39m',
-    ],
-  ],
-];
+const PASSING_TEST_LINES: readonly LineGroup[] = lineGroups(String.raw`
+@@ Go test pass reports
+--- PASS: TestCheckout (0.01s)
+    --- PASS: TestCheckout/empty_cart (0.00s)
+PASS
+ok  \tgithub.com/acme/checkout/orders\t0.123s
+ok  \tgithub.com/acme/checkout/orders\t(cached)
+?   \tgithub.com/acme/checkout/tools\t[no test files]
+@@ pytest and unittest pass reports
+tests/test_orders.py::test_create PASSED                [ 12%]
+tests/test_orders.py::test_create[a-b] PASSED
+[gw0] [ 12%] PASSED tests/test_orders.py::test_create
+PASSED tests/test_orders.py::test_create
+test_create (tests.test_orders.OrderTests.test_create) ... ok
+@@ check-mark lines whatever the test name says
+      ✓ creates an order (45ms)
+      ✔ returns an error for an empty cart
+  √ rejects a failed payment with a 422
+ ✅ handles a timeout from the gateway
+ ✓
+@@ jest and vitest suite pass lines
+ PASS  src/api.test.ts (123ms)
+PASS src/api.test.ts
+@@ xUnit, Gradle test events, TAP and idle Gradle tasks
+  Passed Checkout.Tests.CartTests.Total [12 ms]
+OrderServiceTest > creates an order() PASSED
+ok 3 - creates an order
+> Task :app:processResources UP-TO-DATE
+> Task :app:compileJava NO-SOURCE
+> Task :app:compileKotlin FROM-CACHE
+> Task :app:test SKIPPED
+@@ lines wrapped in ANSI color codes
+\u001b[32m ✓ creates an order\u001b[39m
+\u001b[0m\u001b[7m\u001b[1m\u001b[32m PASS \u001b[39m\u001b[22m\u001b[27m\u001b[0m src/api.test.ts
+\u001b[32m✓ creates an order\u001b[39m
+`);
 
 // What it keeps: failures, the RUN lines that identify an aborted test, and ordinary log lines.
-const KEPT_LINES: readonly LineGroup[] = [
-  [
-    'Go failures and the RUN lines that identify an aborted test',
-    [
-      '--- FAIL: TestCheckout (0.01s)',
-      'FAIL\tgithub.com/acme/checkout/orders\t0.123s',
-      '=== RUN   TestCheckout',
-      'PASSWORD rotated',
-    ],
-  ],
-  [
-    'pytest failures',
-    [
-      'tests/test_orders.py::test_create FAILED               [ 12%]',
-      'FAILED tests/test_orders.py::test_create - assert 500 == 201',
-      'test_create (tests.test_orders.OrderTests.test_create) ... FAIL',
-    ],
-  ],
-  [
-    'failure marks',
-    [
-      '      ✗ creates an order',
-      '      ✕ creates an order (45ms)',
-      '      1) creates an order',
-      '✓creates',
-    ],
-  ],
-  [
-    'jest and vitest FAIL lines and prose that starts with PASS',
-    [
-      ' FAIL  src/payments.test.ts (412ms)',
-      'PASS rate limiter looks fine',
-    ],
-  ],
-  [
-    'xUnit, Gradle and TAP failures and Gradle tasks that did work',
-    [
-      '  Failed Checkout.Tests.CartTests.Total [12 ms]',
-      'OrderServiceTest > creates an order() FAILED',
-      'not ok 4 - rejects an order',
-      '> Task :app:compileJava',
-      '> Task :app:compileJava FAILED',
-    ],
-  ],
-  [
-    'ordinary log lines',
-    [
-      '',
-      'Tests: 3 failed, 14 passed, 17 total',
-      'ok to proceed with deploy',
-      '[ERROR] build failed',
-    ],
-  ],
-];
+const KEPT_LINES: readonly LineGroup[] = lineGroups(String.raw`
+@@ Go failures and the RUN lines that identify an aborted test
+--- FAIL: TestCheckout (0.01s)
+FAIL\tgithub.com/acme/checkout/orders\t0.123s
+=== RUN   TestCheckout
+PASSWORD rotated
+@@ pytest failures
+tests/test_orders.py::test_create FAILED               [ 12%]
+FAILED tests/test_orders.py::test_create - assert 500 == 201
+test_create (tests.test_orders.OrderTests.test_create) ... FAIL
+@@ failure marks
+      ✗ creates an order
+      ✕ creates an order (45ms)
+      1) creates an order
+✓creates
+@@ jest and vitest FAIL lines and prose that starts with PASS
+ FAIL  src/payments.test.ts (412ms)
+PASS rate limiter looks fine
+@@ xUnit, Gradle and TAP failures and Gradle tasks that did work
+  Failed Checkout.Tests.CartTests.Total [12 ms]
+OrderServiceTest > creates an order() FAILED
+not ok 4 - rejects an order
+> Task :app:compileJava
+> Task :app:compileJava FAILED
+@@ ordinary log lines
+
+Tests: 3 failed, 14 passed, 17 total
+ok to proceed with deploy
+[ERROR] build failed
+`);
 
 describe('isPassingTestLine', () => {
   it.each(PASSING_TEST_LINES)('matches %s', (_name, lines) => {

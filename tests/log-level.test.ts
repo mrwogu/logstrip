@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { pairGroups } from './helpers/tables';
 import {
   explainLogLine,
   processLogString,
@@ -12,101 +13,61 @@ import { detectHeaderLogLevel } from '../src/core/logstrip-parser';
 type HeaderLevel = ReturnType<typeof detectHeaderLogLevel>;
 type LevelGroup = readonly [name: string, rows: ReadonlyArray<readonly [line: string, level: HeaderLevel]>];
 
-const HEADER_LEVELS: readonly LevelGroup[] = [
-  [
-    'classifies Spring Boot lines',
-    [
-      ['2026-05-16T10:18:07.141Z  INFO 181 --- [checkout-api] [nio-8080-exec-3] c.e.checkout.web.CartController : GET /cart', 'noise'],
-      ['2026-05-16T10:18:07.141Z DEBUG 181 --- [app] [main] org.hibernate.SQL : select 1', 'noise'],
-      ['[TIME]  WARN 181 --- [app] [main] c.e.Inventory : slow reservation', 'warn'],
-      ['[TIME] ERROR 181 --- [app] [main] c.e.Checkout : request rejected', 'severe'],
-    ],
-  ],
-  [
-    'classifies logback and log4j lines with a thread between time and level',
-    [
-      ['10:24:31.044 [main] DEBUG c.a.Foo - hi', 'noise'],
-      ['2026-05-16 10:24:31,044 [http-nio-8080-exec-3] INFO  c.a.Foo - hi', 'noise'],
-      ['2026-05-16 10:24:31,044 [main] ERROR c.a.Foo - hi', 'severe'],
-      ['2026-05-16 10:24:31,044 INFO  [org.jboss.as] (main) started', 'noise'],
-    ],
-  ],
-  [
-    'classifies Python logging lines',
-    [
-      ['2026-05-16 10:24:31,044 - app.worker - INFO - started', 'noise'],
-      ['2026-05-16 10:24:31,044 - app.worker - WARNING - slow', 'warn'],
-      ['2026-05-16 10:24:31,044 - app.worker - ERROR - boom', 'severe'],
-      ['DEBUG:urllib3.connectionpool:Starting new HTTPS connection', 'noise'],
-      ['INFO:     127.0.0.1:52344 - "GET /health HTTP/1.1" 200 OK', 'noise'],
-      ['WARNING:root:cache is cold', 'warn'],
-    ],
-  ],
-  [
-    'classifies loguru lines separated by pipes',
-    [
-      ['2026-05-16 10:24:31.044 | INFO     | app.main:run:42 - started', 'noise'],
-      ['2026-05-16 10:24:31.044 | CRITICAL | app.main:run:42 - down', 'severe'],
-    ],
-  ],
-  [
-    'classifies level-first lines',
-    [
-      ['INFO  Starting service', 'noise'],
-      ['[main] INFO c.a.Foo - started', 'noise'],
-      ['ERROR: Could not find a version that satisfies the requirement', 'severe'],
-      ['FATAL | database unreachable', 'severe'],
-      ['info: Microsoft.Hosting.Lifetime[14]', 'noise'],
-      ['dbug: Microsoft.EntityFrameworkCore[1]', 'noise'],
-    ],
-  ],
-  [
-    'does not treat a bare level-first WARNING as a log framework warning',
-    [
-      ['WARNING: Running pip as the root user can result in broken permissions', undefined],
-      ['WARNING: apt does not have a stable CLI interface.', undefined],
-    ],
-  ],
-  [
-    'classifies logfmt lines in any key order',
-    [
-      ['time=2026-05-16T10:24:31Z level=info msg="server started"', 'noise'],
-      ['ts=1 lvl=debug caller=main.go:42 msg=x', 'noise'],
-      ['level=warn msg="slow"', 'warn'],
-      ['level="error" msg="failed"', 'severe'],
-      ['severity=CRITICAL msg=down', 'severe'],
-    ],
-  ],
-  [
-    'classifies glog and klog lines by their level letter',
-    [
-      ['I0516 10:24:31.011234   12345 server.go:42] started', 'noise'],
-      ['W0516 [TIME]   12345 server.go:42] slow', 'warn'],
-      ['E0516 10:24:31.011234   12345 server.go:42] failed', 'severe'],
-      ['F0516 10:24:31.011234   12345 server.go:42] fatal', 'severe'],
-    ],
-  ],
-  [
-    'accepts syslog month-name timestamps before the level',
-    [
-      ['May 16 10:24:31 INFO started', 'noise'],
-    ],
-  ],
-  [
-    'ignores levels outside the header position',
-    [
-      ['Server started with DEBUG flag enabled for all modules today', undefined],
-      ['Processing request for the INFO page', undefined],
-      ['DEBUG=1 npm test', undefined],
-      ['NODE_DEBUG=http node server.js', undefined],
-      ['INFO.plist missing', undefined],
-      ['2026-05-16 10:24:31 msg="a b" INFO later', undefined],
-      ['[INFO] already bracketed', undefined],
-      ['--log-level=info', undefined],
-      ['', undefined],
-    ],
-  ],
-];
+const HEADER_LEVELS: readonly LevelGroup[] = pairGroups(String.raw`
+@@ classifies Spring Boot lines
+2026-05-16T10:18:07.141Z  INFO 181 --- [checkout-api] [nio-8080-exec-3] c.e.checkout.web.CartController : GET /cart => noise
+2026-05-16T10:18:07.141Z DEBUG 181 --- [app] [main] org.hibernate.SQL : select 1 => noise
+[TIME]  WARN 181 --- [app] [main] c.e.Inventory : slow reservation => warn
+[TIME] ERROR 181 --- [app] [main] c.e.Checkout : request rejected => severe
+@@ classifies logback and log4j lines with a thread between time and level
+10:24:31.044 [main] DEBUG c.a.Foo - hi => noise
+2026-05-16 10:24:31,044 [http-nio-8080-exec-3] INFO  c.a.Foo - hi => noise
+2026-05-16 10:24:31,044 [main] ERROR c.a.Foo - hi => severe
+2026-05-16 10:24:31,044 INFO  [org.jboss.as] (main) started => noise
+@@ classifies Python logging lines
+2026-05-16 10:24:31,044 - app.worker - INFO - started => noise
+2026-05-16 10:24:31,044 - app.worker - WARNING - slow => warn
+2026-05-16 10:24:31,044 - app.worker - ERROR - boom => severe
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection => noise
+INFO:     127.0.0.1:52344 - \"GET /health HTTP/1.1\" 200 OK => noise
+WARNING:root:cache is cold => warn
+@@ classifies loguru lines separated by pipes
+2026-05-16 10:24:31.044 | INFO     | app.main:run:42 - started => noise
+2026-05-16 10:24:31.044 | CRITICAL | app.main:run:42 - down => severe
+@@ classifies level-first lines
+INFO  Starting service => noise
+[main] INFO c.a.Foo - started => noise
+ERROR: Could not find a version that satisfies the requirement => severe
+FATAL | database unreachable => severe
+info: Microsoft.Hosting.Lifetime[14] => noise
+dbug: Microsoft.EntityFrameworkCore[1] => noise
+@@ does not treat a bare level-first WARNING as a log framework warning
+WARNING: Running pip as the root user can result in broken permissions => undefined
+WARNING: apt does not have a stable CLI interface. => undefined
+@@ classifies logfmt lines in any key order
+time=2026-05-16T10:24:31Z level=info msg=\"server started\" => noise
+ts=1 lvl=debug caller=main.go:42 msg=x => noise
+level=warn msg=\"slow\" => warn
+level=\"error\" msg=\"failed\" => severe
+severity=CRITICAL msg=down => severe
+@@ classifies glog and klog lines by their level letter
+I0516 10:24:31.011234   12345 server.go:42] started => noise
+W0516 [TIME]   12345 server.go:42] slow => warn
+E0516 10:24:31.011234   12345 server.go:42] failed => severe
+F0516 10:24:31.011234   12345 server.go:42] fatal => severe
+@@ accepts syslog month-name timestamps before the level
+May 16 10:24:31 INFO started => noise
+@@ ignores levels outside the header position
+Server started with DEBUG flag enabled for all modules today => undefined
+Processing request for the INFO page => undefined
+DEBUG=1 npm test => undefined
+NODE_DEBUG=http node server.js => undefined
+INFO.plist missing => undefined
+2026-05-16 10:24:31 msg=\"a b\" INFO later => undefined
+[INFO] already bracketed => undefined
+--log-level=info => undefined
+ => undefined
+`, (text) => (text === 'undefined' ? undefined : (text as HeaderLevel)));
 
 describe('detectHeaderLogLevel', () => {
   it.each(HEADER_LEVELS)('%s', (_name, rows) => {
