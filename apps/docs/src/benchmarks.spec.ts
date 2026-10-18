@@ -1,17 +1,29 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { pickProofRows, type BenchmarkDocument } from './benchmarks';
 import {
+  BADGES,
   BLOCKS,
+  COMPARE_PATH,
   JSON_PATH,
   PAGE_PATH,
+  README_COMPARE_ROWS,
+  README_PATH,
+  absoluteDocLinks,
   bySavings,
   buildDocument,
   injectBlock,
   kindOf,
   percent,
+  pickReadmeRows,
+  renderBadge,
+  renderBadges,
   renderFixtureTable,
   renderKindTable,
   renderPage,
+  renderReadme,
+  renderReadmeBenchmarks,
+  renderReadmeComparison,
   renderSummary,
   summarize,
 } from '../../../scripts/export-benchmarks.mjs';
@@ -107,7 +119,93 @@ describe('injectBlock', () => {
   });
 
   it('fails loudly when a marker is missing', () => {
-    expect(() => injectBlock('no markers', 'x', 'new')).toThrow(/"x" markers/);
+    expect(() => injectBlock('no markers', 'x', 'new')).toThrow(/"bench:x" markers/);
+  });
+
+  it('works with another marker prefix, as the README comparison block does', () => {
+    const page = '<!-- compare:t:start -->\nold\n<!-- compare:t:end -->';
+
+    expect(injectBlock(page, 't', 'new', 'compare')).toBe(
+      '<!-- compare:t:start -->\nnew\n<!-- compare:t:end -->'
+    );
+  });
+});
+
+describe('README output', () => {
+  const doc = JSON.parse(readFileSync(JSON_PATH, 'utf8')) as BenchmarkDocument;
+
+  it('shows the same fixtures as the homepage, picked by the same rule', () => {
+    expect(pickReadmeRows(doc).map((row: { id: string }) => row.id)).toEqual(
+      pickProofRows(doc).map((row) => row.id)
+    );
+  });
+
+  it('quotes the totals, the median and ten rows, best first', () => {
+    const block = renderReadmeBenchmarks(doc);
+
+    expect(block).toContain(`**${doc.totals.savingsPercent.toFixed(1)}%** fewer tokens overall`);
+    expect(block).toContain(`the median is ${doc.totals.medianSavingsPercent.toFixed(1)}%`);
+    expect(block.match(/^\| `/gm)).toHaveLength(10);
+  });
+
+  const COMPARE = [
+    '| | LogStrip | Other |',
+    '| :--- | :--- | :--- |',
+    ...README_COMPARE_ROWS.map(
+      (label: string) => `| **${label}** | yes, see [Security](guides/security.md#x) | no |`
+    ),
+    '| **Extra row** | left out | left out |',
+  ].join('\n');
+
+  it('copies the chosen comparison rows from compare.md and points links at the site', () => {
+    const lines = renderReadmeComparison(COMPARE).split('\n');
+
+    expect(lines).toHaveLength(2 + README_COMPARE_ROWS.length);
+    expect(lines[0]).toBe('| | LogStrip | Other |');
+    expect(lines[2]).toContain('**Needs a model**');
+    expect(lines.join('\n')).not.toContain('Extra row');
+    expect(lines[2]).toContain('(https://mrwogu.github.io/logstrip/guides/security/#x)');
+  });
+
+  it('fails when compare.md loses a row or its table', () => {
+    expect(() => renderReadmeComparison(COMPARE.replace('**Repeats**', '**Renamed**'))).toThrow(/"Repeats"/);
+    expect(() => renderReadmeComparison('no table')).toThrow(/no comparison table/);
+  });
+
+  it('only rewrites relative Markdown links', () => {
+    expect(absoluteDocLinks('[a](x/y.md) [b](https://e.com/z.md) [c](#top)')).toBe(
+      '[a](https://mrwogu.github.io/logstrip/x/y/) [b](https://e.com/z.md) [c](#top)'
+    );
+  });
+
+  it('keeps the badge format of the other stat badges', () => {
+    expect(renderBadge({ width: 150, split: 85, label: 'FIXTURES', value: '41', valueColor: '#f4e7a1' })).toBe(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="28" viewBox="0 0 150 28">
+  <rect width="150" height="28" rx="4" fill="#161818"/>
+  <rect x="0" y="0" width="85" height="28" rx="4" fill="#1d1f20"/>
+  <text x="43" y="18" text-anchor="middle" fill="#a4a298" font-family="system-ui,sans-serif" font-size="11" font-weight="600">FIXTURES</text>
+  <text x="118" y="18" text-anchor="middle" fill="#f4e7a1" font-family="system-ui,sans-serif" font-size="12" font-weight="700">41</text>
+</svg>
+`
+    );
+  });
+
+  it('has the README, the comparison source and the badges in sync with the data', () => {
+    const readme = readFileSync(README_PATH, 'utf8');
+
+    expect(renderReadme(readme, doc, readFileSync(COMPARE_PATH, 'utf8'))).toBe(readme);
+    for (const [file, svg] of Object.entries(renderBadges(doc))) {
+      expect(readFileSync(file, 'utf8')).toBe(svg);
+    }
+    expect(Object.keys(renderBadges(doc))).toEqual(Object.values(BADGES));
+  });
+
+  it('no longer carries the unsupported claims', () => {
+    const readme = readFileSync(README_PATH, 'utf8');
+
+    expect(readme).not.toMatch(/80%\+|41 fixture|60-80%|20-40%|\$0\.01-\$1\.00/);
+    expect(readme).toContain('Requires Node.js 22 or newer.');
+    expect(readme).not.toMatch(/Node(\.js)? 20/);
   });
 });
 

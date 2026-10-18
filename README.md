@@ -14,7 +14,7 @@ _A zero-dependency Node.js CLI (with a TypeScript library and an optional GitHub
 [![Coverage](https://codecov.io/gh/mrwogu/logstrip/branch/main/graph/badge.svg)](https://codecov.io/gh/mrwogu/logstrip)
 [![License: MIT](https://img.shields.io/badge/license-MIT-white.svg)](https://opensource.org/licenses/MIT)
 
-![80%+ token savings](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-savings.svg)![705+ ecosystems](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-ecosystems.svg)![0 runtime deps](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-deps.svg)![100% coverage](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-coverage.svg)![41 fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-fixtures.svg)![810+ tests](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-tests.svg)
+![token savings on test fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-savings.svg)![705+ ecosystems](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-ecosystems.svg)![0 runtime deps](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-deps.svg)![100% coverage](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-coverage.svg)![test fixtures](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-fixtures.svg)![810+ tests](https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/stat-tests.svg)
 
 [Install](#install) ·
 [Quick Start](#quick-start) ·
@@ -36,7 +36,7 @@ You paste a 50k-line CI log into your agent. It chews 200k+ tokens on noise - he
 
 ## Install <a id="install"></a>
 
-Requires Node.js 20 or newer.
+Requires Node.js 22 or newer.
 
 ```bash
 npm install --global logstrip
@@ -78,42 +78,52 @@ LogStrip output:
 <a id="benchmarks"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-benchmarks.svg" alt="Benchmarks" width="320">
 
-Compression ratios from the 41 fixture test suite across real-world log sources:
+<!-- bench:readme:start -->
+Measured on the 50 test fixtures in the repository, with LogStrip's own token estimate (words times 1.3): **51.4%** fewer tokens overall (42,455 to 20,617). Per fixture the median is 42.1%, the lowest 16.7% and the highest 87.2%. These are small logs that we wrote, so run `logstrip --stats` on yours.
 
-| Category | Sample fixture | Input lines | Output lines | Token savings |
-|:---|:---|---:|---:|---:|
-| CI platforms | `ci-platforms.log` | 57 | 18 | 68% |
-| Build toolchains | `build-toolchains.log` | 70 | 23 | 67% |
-| Security scanners | `security-scanners.log` | 88 | 25 | 72% |
-| Infra / Cloud | `terraform-ansible-systemd.log` | 41 | 14 | 66% |
-| Serverless | `cloud-serverless.log` | 32 | 11 | 66% |
-| Java enterprise | `java-enterprise.log` | 92 | 28 | 70% |
-| AI/ML ecosystem | `ai-ml-ecosystem.log` | 85 | 22 | 74% |
-| Web frameworks | `web-frameworks-node.log` | 68 | 20 | 71% |
-| Docker build | `docker-build.log` | 54 | 16 | 70% |
-| Kubernetes | `kubernetes-crashloop.log` | 47 | 12 | 74% |
+10 of the 24 single-tool fixtures, best first: the 6 best, the 2 nearest the median and the 2 weakest.
+
+| Fixture | Lines in / out | Input tokens | Output tokens | Savings |
+| :--- | ---: | ---: | ---: | ---: |
+| `apache-httpd-noisy` | 30 / 4 | 485 | 62 | 87.2% |
+| `docker-build` | 26 / 4 | 309 | 64 | 79.3% |
+| `jest-noisy` | 47 / 8 | 284 | 63 | 77.8% |
+| `maven-downloads-failure` | 13 / 3 | 124 | 32 | 74.2% |
+| `java-spring-boot-realistic` | 25 / 10 | 305 | 95 | 68.8% |
+| `vitest-failure` | 43 / 14 | 257 | 91 | 64.6% |
+| `maven-failure` | 41 / 15 | 286 | 149 | 47.9% |
+| `node-crash-realistic` | 24 / 13 | 181 | 101 | 44.2% |
+| `server-json` | 11 / 7 | 43 | 34 | 20.9% |
+| `kubernetes-crashloop` | 18 / 15 | 150 | 125 | 16.7% |
+<!-- bench:readme:end -->
 
 Measured numbers for every fixture, with the method: [Benchmarks](https://mrwogu.github.io/logstrip/benchmarks/).
 
-Production logs with millions of lines routinely hit **80%+** token savings because noise ratios scale with log size.
+Savings depend on the log. Noisy CI output compresses most, and short logs where nearly every line is already a failure compress least.
 
-> Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) - 41 `.log` files covering 705+ ecosystem signatures. Each fixture has a committed snapshot baseline.
+> Full fixture catalogue: [`tests/fixtures/`](tests/fixtures/) - the `.log` fixtures, plus one sample for each of the 705+ detected sources in `tests/fixtures/sources/`. Each fixture has a committed snapshot baseline.
 
 <a id="vs-alternatives"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-competitors.svg" alt="vs Alternatives" width="320">
 
-| | **LogStrip** | `grep -v` / `awk` | LLM summarization | logreduce |
-|:---|:---|:---|:---|:---|
-| **Type** | Streaming log compressor | Line filter | API call + prompt | ML-based anomaly detector |
-| **Token savings** | **80%+** (typical CI logs) | 20-40% (fragile patterns) | 60-80% (expensive, lossy) | ~50% (anomaly-only) |
-| **Streaming** | Yes (readline, bounded memory) | Yes (pipe) | No (buffer entire log) | No (batch) |
-| **Deduplication** | Smart `[xN]` folding with delta values | No | Approximate | No |
-| **Sanitization** | UUIDs, IPs, timestamps, AWS keys, JWTs, GitHub tokens, Slack tokens, connection strings, `Authorization:` headers | Manual regex | Unreliable | Partial |
-| **Stacktrace collapse** | Internal `node_modules` → single marker | No | Often drops context | No |
-| **Runtime deps** | **0** (node:\* built-ins only) | 0 | Heavy (API + tokens) | Python + ML stack |
-| **LLM cost** | **$0** (pure computation) | $0 | $0.01-$1.00+ per log | $0 (compute only) |
-| **Extensible** | `.logstrip.yml` custom config | Shell scripts | Prompt engineering | Plugin system |
-| **CI integration** | CLI + GitHub Action | Shell scripts | API wrapper | CLI |
+Compared on what can be said for a whole category, not on numbers. We have not benchmarked other tools, and "Depends" says why the answer varies.
+
+<!-- compare:readme:start -->
+| | LogStrip | `tail` / `grep` | Model-based compressors | Shippers and platforms |
+| :--- | :--- | :--- | :--- | :--- |
+| **Needs a model** | No | No | Yes | No. Some products add model features. |
+| **Needs network** | No for compression. See the note below. | No | Depends: a local model needs none, a hosted API does | Depends: hosted needs it, self-hosted needs your own network |
+| **Cost per run** | CPU time. No fee, MIT licensed. | None | Compute or API calls, plus the tokens you still send | Depends on the plan, often priced on ingest |
+| **Same input, same output** | Yes, pinned by snapshot tests | Yes | Depends: model version, hardware and settings can change it | Yes for a stored query |
+| **Lines stay whole** | Yes: kept, folded or hidden behind a marker | Yes | No guarantee: tokens are removed inside lines | Yes: events come back as stored |
+| **Stack frames** | Your frames kept, internal library frames hidden | Depends on the pattern: `grep ERROR` drops the frames below the error | No rule keeps a frame whole | Depends: multi-line traces need parsing at ingest |
+| **Identifiers and line numbers** | Masked by rule. `--preserve-id-suffix` keeps an id tail. | Exact | Depends: no rule keeps them | Exact |
+| **Repeats** | Folded into `[xN]` with the values that differed | Only adjacent identical lines fold, with `uniq -c` | Removed as predictable, no count | Yes, as an aggregation query |
+| **Secrets** | Masked in every mode. Not a secret scanner, see [Security](https://mrwogu.github.io/logstrip/guides/security/). | Left in | Not a design goal | Depends: scrubbing rules you configure |
+| **Streams with bounded memory** | Yes, line by line | Yes | Depends: bounded by the compressor model's context window or by chunking | Yes |
+<!-- compare:readme:end -->
+
+Network note: compression never uses the network. In an interactive terminal the CLI checks npm once a day for a newer version. It does not run when stderr is redirected, as in CI, and `LOGSTRIP_NO_UPDATE_CHECK=1` turns it off. More on each category, and the rows left out here: [Compare](https://mrwogu.github.io/logstrip/compare/).
 
 <a id="works-with-every-agent"></a>
 <img src="https://raw.githubusercontent.com/mrwogu/logstrip/main/assets/tags/section-agents.svg" alt="Works with every agent" width="320">

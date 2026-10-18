@@ -151,12 +151,13 @@ cd logstrip
 npm ci
 npm run build
 npm run bench        # per-fixture table with drop reasons and timings
-npm run docs:bench   # rewrites this table and the homepage numbers
+npm run docs:bench   # rewrites this table, the homepage numbers, the README and its badges
 ```
 
 `npm run bench` accepts a name filter, for example `npm run bench -- jest`.
 `npm run docs:bench -- --check` exits with an error when the committed numbers
-are stale.
+are stale. CI runs it after the build, so a change to a fixture or to the parser
+needs `npm run docs:bench` in the same pull request.
 
 To measure your own log:
 

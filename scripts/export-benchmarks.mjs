@@ -4,13 +4,19 @@
 //
 //   apps/docs/src/data/benchmarks.json   read by the homepage at build time
 //   docs/benchmarks.md                   generated blocks between bench markers
+//   README.md                            benchmark block and comparison table
+//   assets/tags/stat-*.svg               the savings and fixture-count badges
 //
-// Both come from one run, so the homepage and the benchmarks page cannot
-// disagree. The output holds no timestamps and no timings: the same parser on
-// the same fixtures writes the same bytes.
+// All of it comes from one run, so the homepage, the benchmarks page and the
+// README cannot disagree. The README comparison table is copied from
+// docs/compare.md. The output holds no timestamps and no timings: the same
+// parser on the same fixtures writes the same bytes.
 //
 //   npm run build && npm run docs:bench
 //   node scripts/export-benchmarks.mjs --check   # exit 1 when files are stale
+//
+// --check compares numbers only. It keeps the LogStrip version already in the
+// committed data, so a release PR that bumps package.json does not fail it.
 //
 // Token counts are the project's own estimate (words * 1.3, the same number
 // `--stats` prints), not a model tokenizer.
@@ -26,6 +32,13 @@ const root = path.resolve(here, '..');
 const FIXTURES_DIR = path.join(root, 'tests/fixtures');
 export const JSON_PATH = path.join(root, 'apps/docs/src/data/benchmarks.json');
 export const PAGE_PATH = path.join(root, 'docs/benchmarks.md');
+export const README_PATH = path.join(root, 'README.md');
+export const COMPARE_PATH = path.join(root, 'docs/compare.md');
+export const BADGES = {
+  savings: path.join(root, 'assets/tags/stat-savings.svg'),
+  fixtures: path.join(root, 'assets/tags/stat-fixtures.svg'),
+};
+const SITE = 'https://mrwogu.github.io/logstrip';
 
 export const KIND_LABELS = {
   single: 'Single-tool logs',
@@ -189,17 +202,17 @@ export const BLOCKS = {
   fixtures: renderFixtureTable,
 };
 
-const markerStart = (name) => `<!-- bench:${name}:start -->`;
-const markerEnd = (name) => `<!-- bench:${name}:end -->`;
+const markerStart = (prefix, name) => `<!-- ${prefix}:${name}:start -->`;
+const markerEnd = (prefix, name) => `<!-- ${prefix}:${name}:end -->`;
 
 /** Replaces the text between the start and end markers of one block. */
-export function injectBlock(markdown, name, content) {
-  const start = markdown.indexOf(markerStart(name));
-  const end = markdown.indexOf(markerEnd(name));
+export function injectBlock(markdown, name, content, prefix = 'bench') {
+  const start = markdown.indexOf(markerStart(prefix, name));
+  const end = markdown.indexOf(markerEnd(prefix, name));
   if (start === -1 || end === -1 || end < start) {
-    throw new Error(`benchmarks page is missing the "${name}" markers`);
+    throw new Error(`missing the "${prefix}:${name}" markers`);
   }
-  const head = markdown.slice(0, start + markerStart(name).length);
+  const head = markdown.slice(0, start + markerStart(prefix, name).length);
   return `${head}\n${content}\n${markdown.slice(end)}`;
 }
 
@@ -209,6 +222,137 @@ export function renderPage(markdown, doc) {
     (page, [name, render]) => injectBlock(page, name, render(doc)),
     markdown,
   );
+}
+
+// The README shows the same ten rows as the homepage. The rule is the one in
+// apps/docs/src/benchmarks.ts (a spec checks both pick the same fixtures): from
+// the single-tool fixtures, the best few, the few nearest their median and the
+// weakest few, so the list cannot be cherry-picked by hand.
+export const README_SELECTION = { best: 6, middle: 2, weakest: 2 };
+
+function medianOf(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+export function pickReadmeRows(doc, selection = README_SELECTION) {
+  const single = doc.fixtures.filter((row) => row.kind === 'single');
+  const ordered = bySavings(single);
+  const best = ordered.slice(0, selection.best);
+  const weakest = ordered.slice(Math.max(ordered.length - selection.weakest, 0));
+  const taken = new Set([...best, ...weakest].map((row) => row.id));
+  const median = medianOf(single.map((row) => row.savingsPercent));
+  const middle = single
+    .filter((row) => !taken.has(row.id))
+    .sort(
+      (a, b) =>
+        Math.abs(a.savingsPercent - median) - Math.abs(b.savingsPercent - median) ||
+        a.id.localeCompare(b.id),
+    )
+    .slice(0, selection.middle);
+  return bySavings([...best, ...middle, ...weakest]);
+}
+
+export function renderReadmeBenchmarks(doc) {
+  const { totals } = doc;
+  const rows = pickReadmeRows(doc);
+  const single = doc.fixtures.filter((row) => row.kind === 'single').length;
+  const { best, middle, weakest } = README_SELECTION;
+  const intro =
+    `Measured on the ${totals.fixtures} test fixtures in the repository, with LogStrip's own token estimate (words times 1.3): ` +
+    `**${pct(totals.savingsPercent)}** fewer tokens overall (${number(totals.inputTokens)} to ${number(totals.outputTokens)}). ` +
+    `Per fixture the median is ${pct(totals.medianSavingsPercent)}, the lowest ${pct(totals.minSavingsPercent)} and the highest ${pct(totals.maxSavingsPercent)}. ` +
+    'These are small logs that we wrote, so run `logstrip --stats` on yours.';
+  const note = `${rows.length} of the ${single} single-tool fixtures, best first: the ${best} best, the ${middle} nearest the median and the ${weakest} weakest.`;
+  const body = table(
+    ['Fixture', 'Lines in / out', 'Input tokens', 'Output tokens', 'Savings'],
+    [':---', '---:', '---:', '---:', '---:'],
+    rows.map((row) => [
+      `\`${row.id}\``,
+      `${number(row.inputLines)} / ${number(row.outputLines)}`,
+      number(row.inputTokens),
+      number(row.outputTokens),
+      pct(row.savingsPercent),
+    ]),
+  );
+  return `${intro}\n\n${note}\n\n${body}`;
+}
+
+// Rows of docs/compare.md that the README repeats, in this order.
+export const README_COMPARE_ROWS = [
+  'Needs a model',
+  'Needs network',
+  'Cost per run',
+  'Same input, same output',
+  'Lines stay whole',
+  'Stack frames',
+  'Identifiers and line numbers',
+  'Repeats',
+  'Secrets',
+  'Streams with bounded memory',
+];
+
+/** `[text](guides/x.md)` becomes a link to the published page, so it works on npm. */
+export function absoluteDocLinks(markdown) {
+  return markdown.replaceAll(
+    /\]\((?!https?:|#)([^)\s]+?)\.md(#[^)\s]*)?\)/g,
+    (_link, page, hash = '') => `](${SITE}/${page}/${hash})`,
+  );
+}
+
+/** The README comparison table, copied row by row from docs/compare.md. */
+export function renderReadmeComparison(compareMarkdown) {
+  const lines = compareMarkdown.split('\n');
+  const headerAt = lines.findIndex((line) => line.startsWith('| | '));
+  if (headerAt === -1) throw new Error('docs/compare.md has no comparison table');
+  const rows = new Map();
+  for (const line of lines) {
+    const label = /^\| \*\*(.+?)\*\* \|/.exec(line)?.[1];
+    if (label) rows.set(label, line);
+  }
+  const picked = README_COMPARE_ROWS.map((label) => {
+    const row = rows.get(label);
+    if (!row) throw new Error(`docs/compare.md has no "${label}" row`);
+    return row;
+  });
+  return absoluteDocLinks([lines[headerAt], lines[headerAt + 1], ...picked].join('\n'));
+}
+
+/** README with the benchmark block and the comparison table refreshed. */
+export function renderReadme(readme, doc, compareMarkdown) {
+  const withBenchmarks = injectBlock(readme, 'readme', renderReadmeBenchmarks(doc));
+  return injectBlock(withBenchmarks, 'readme', renderReadmeComparison(compareMarkdown), 'compare');
+}
+
+/** A stat badge in the style of the other assets/tags/stat-*.svg files. */
+export function renderBadge({ width, split, label, value, valueColor }) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="28" viewBox="0 0 ${width} 28">
+  <rect width="${width}" height="28" rx="4" fill="#161818"/>
+  <rect x="0" y="0" width="${split}" height="28" rx="4" fill="#1d1f20"/>
+  <text x="${Math.round(split / 2)}" y="18" text-anchor="middle" fill="#a4a298" font-family="system-ui,sans-serif" font-size="11" font-weight="600">${label}</text>
+  <text x="${Math.round(split + (width - split) / 2)}" y="18" text-anchor="middle" fill="${valueColor}" font-family="system-ui,sans-serif" font-size="12" font-weight="700">${value}</text>
+</svg>
+`;
+}
+
+export function renderBadges(doc) {
+  return {
+    [BADGES.savings]: renderBadge({
+      width: 200,
+      split: 122,
+      label: 'FIXTURE SAVINGS',
+      value: pct(doc.totals.savingsPercent),
+      valueColor: '#a4ffaf',
+    }),
+    [BADGES.fixtures]: renderBadge({
+      width: 150,
+      split: 85,
+      label: 'FIXTURES',
+      value: String(doc.totals.fixtures),
+      valueColor: '#f4e7a1',
+    }),
+  };
 }
 
 export function serializeDocument(doc) {
@@ -243,17 +387,33 @@ async function measure() {
   return rows;
 }
 
+/** Every generated file and its new content. */
+export function renderOutputs(doc) {
+  return {
+    [JSON_PATH]: serializeDocument(doc),
+    [PAGE_PATH]: renderPage(readFileSync(PAGE_PATH, 'utf8'), doc),
+    [README_PATH]: renderReadme(
+      readFileSync(README_PATH, 'utf8'),
+      doc,
+      readFileSync(COMPARE_PATH, 'utf8'),
+    ),
+    ...renderBadges(doc),
+  };
+}
+
 async function main() {
   const check = process.argv.includes('--check');
-  const { version } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
-  const doc = buildDocument(await measure(), version);
-  const json = serializeDocument(doc);
-  const page = renderPage(readFileSync(PAGE_PATH, 'utf8'), doc);
+  const rows = await measure();
+  const version = check
+    ? JSON.parse(readFileSync(JSON_PATH, 'utf8')).logstripVersion
+    : JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')).version;
+  const doc = buildDocument(rows, version);
+  const outputs = renderOutputs(doc);
 
   if (check) {
-    const stale = [];
-    if (readFileSync(JSON_PATH, 'utf8') !== json) stale.push(path.relative(root, JSON_PATH));
-    if (readFileSync(PAGE_PATH, 'utf8') !== page) stale.push(path.relative(root, PAGE_PATH));
+    const stale = Object.entries(outputs)
+      .filter(([file, content]) => readFileSync(file, 'utf8') !== content)
+      .map(([file]) => path.relative(root, file));
     if (stale.length > 0) {
       process.stderr.write(`export-benchmarks: stale, run "npm run docs:bench": ${stale.join(', ')}\n`);
       process.exit(1);
@@ -262,10 +422,9 @@ async function main() {
     return;
   }
 
-  writeFileSync(JSON_PATH, json);
-  writeFileSync(PAGE_PATH, page);
+  for (const [file, content] of Object.entries(outputs)) writeFileSync(file, content);
   process.stdout.write(
-    `export-benchmarks: ${doc.totals.fixtures} fixtures, ${pct(doc.totals.savingsPercent)} saved overall\n`,
+    `export-benchmarks: ${doc.totals.fixtures} fixtures, ${pct(doc.totals.savingsPercent)} saved overall, ${Object.keys(outputs).length} files written\n`,
   );
 }
 
