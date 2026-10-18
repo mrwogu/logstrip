@@ -56,7 +56,8 @@ too, and so is an assignment in source code such as `const accessToken = load()`
 Values that carry no secret stay as they are: an empty value, `null`, `true`,
 `false`, a number under four digits and a plain reference such as
 `token: ${{ secrets.NPM_TOKEN }}` or `DB_PASSWORD=${DB_PASSWORD}`. A reference
-with a default or a command (`${NAME:-x}`, `$(cat file)`) is masked. The original file is never modified; only
+with a default, a command or anything after it (`${NAME:-x}`, `$(cat file)`,
+`$HOME/x`, or a closing bracket or backtick right behind it) is masked. The original file is never modified; only
 the copy is. Read the file directly when you need the exact text.
 
 ## The CLI exits with code `2`

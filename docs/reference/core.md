@@ -531,14 +531,15 @@ are left alone:
 
 - values that carry no secret: an empty or quoted-empty value, `null`, `true`,
   `false`, a bare number under four digits and a reference that is the whole
-  value: `$NAME`, `${NAME}` or a GitHub expression, as in
-  `token: ${{ secrets.NPM_TOKEN }}` or `DB_PASSWORD=${DB_PASSWORD}`. A
-  reference with a default or a command (`${NAME:-hunter2}`, `$(cat secret)`)
-  or with characters after it (`${NAME}extra`) is masked, because the rest of
-  the value may be the secret
+  value, with one pair of quotes removed: `$NAME`, `${NAME}` or a GitHub
+  expression, as in `token: ${{ secrets.NPM_TOKEN }}` or
+  `DB_PASSWORD=${DB_PASSWORD}`. A reference with a default or a command
+  (`${NAME:-hunter2}`, `$(cat secret)`) or with anything after it
+  (`$HOME/x`, `${NAME}extra`, `connect(password=${NAME})`) is masked, because
+  the rest of the value may be the secret
 - a JSON object or array under a quoted key (`"auth": {...}`), whose own fields
   are masked on their own
-- a path under `PWD` and `OLDPWD`
+- a path under the environment variables `PWD` and `OLDPWD`
 - a bare `auth:` or `credentials:` label such as `supabase auth: gotrue started`;
   `auth` and `credentials` count at the end of a longer key (`basic_auth`,
   `x-auth`), as a quoted key or with `=`

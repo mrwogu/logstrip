@@ -78,16 +78,11 @@ const SLACK_TOKEN_PATTERN =
 const AUTHORIZATION_HEADER_PATTERN =
   /\bAuthorization\s*:\s*\S+(?:\s+\S+)*/giu;
 
-// What may follow a value for it to be the whole value: the end of the line,
-// white space, a closing quote (also the backslash-escaped one of JSON that was
-// logged inside a string), a closing backtick (Markdown inline code) or a
-// closing bracket or separator.
-const SECRET_VALUE_END = String.raw`(?=[\s"',;)}\]\x60]|\\["']|$)`;
-
 // Generic secret fields: KEY=value, key: value, key := value and quoted JSON /
 // dict properties ("key": "value"). The pieces are joined into one pattern
 // with three groups: 1 the name, 2 the quote around the key (if any) and 3 the
-// value.
+// raw value. The pattern only finds the value; maskSecretField decides whether
+// it is a secret, so what is judged is always exactly what is replaced.
 const SECRET_FIELD_PATTERN = new RegExp(
   [
     // A key that ENDS in a name matches (DB_PASSWORD, apiKey, x-api-key,
@@ -101,15 +96,9 @@ const SECRET_FIELD_PATTERN = new RegExp(
     // The (?![=>]) keeps "token === x" and "token => x" (comparisons and arrow
     // functions) out, and stops the separator from backing off into the value.
     String.raw`(\\?["'])?[ \t]*(?::=|=|:)(?![=>])[ \t]*`,
-    // Values that carry no secret, when they are the whole value: a reference
-    // to a variable ($NAME, ${NAME}) or a GitHub expression (${{ ... }}), also
-    // inside quotes, but not one with a default or a command (${NAME:-x},
-    // $(cmd)) or with characters after it (${NAME}x); an empty or quoted-empty
-    // value; null, true, false and a bare number under four digits.
-    String.raw`(?!(?:(?:\\?["'])?(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_.]*\}|\$\{\{[^}]{0,200}\}\})|""|''|\\"\\"|null|true|false|\d{1,3})${SECRET_VALUE_END})`,
     // A quoted string, or a bare token that stops at quotes and commas so the
     // surrounding syntax survives. After an opening quote there is always a
-    // match: a missing closing quote or an odd escape masks to the end of the
+    // match: a missing closing quote or an odd escape takes the rest of the
     // line instead of leaking. The escaped form is JSON logged inside a string.
     // A ${...} or $(...) body may hold spaces, so it is taken whole (bounded
     // so that a crafted line cannot make the scan quadratic).
@@ -121,6 +110,18 @@ const SECRET_FIELD_PATTERN = new RegExp(
   ].join(''),
   'giu',
 );
+
+// Values of a secret field that carry no secret, judged on the whole value
+// with one pair of quotes removed: empty, null, true, false, a number of up to
+// three digits, or a plain reference to a variable ($NAME, ${NAME}) or a
+// GitHub expression (${{ ... }}). A reference with a default or a command
+// (${NAME:-x}, $(cmd)) or with anything after it ($HOME/x, ${NAME}x) is not.
+const SECRET_PLAIN_VALUE_PATTERN = /^(?:null|true|false|\d{1,3})$/iu;
+const SECRET_REFERENCE_PATTERN =
+  /^\$(?:[A-Za-z_]\w*|\{[A-Za-z_][\w.]*\}|\{\{[^}]{0,200}\}\})$/u;
+const QUOTED_VALUE_PATTERN = /^(\\"|"|')([\s\S]*)\1$/u;
+// PWD and OLDPWD hold a directory in every environment dump, not a password.
+const ENV_PWD_PATTERN = /(?<![\w.-])(?:OLD)?PWD$/u;
 
 // Stripe API keys (sk_live_, pk_live_, rk_live_, sk_test_, etc.)
 const STRIPE_KEY_PATTERN =
@@ -170,21 +171,43 @@ function maskAge(match: string, offset: number, whole: string): string {
 // consume them, while the AWS keys and the entropy fallback run on whatever
 // the hash rules left behind. maskSecrets applies both halves in that order.
 
+function isHarmlessValue(value: string): boolean {
+  const inner = QUOTED_VALUE_PATTERN.exec(value)?.[2] ?? value;
+  return (
+    inner === '' ||
+    SECRET_PLAIN_VALUE_PATTERN.test(inner) ||
+    SECRET_REFERENCE_PATTERN.test(inner)
+  );
+}
+
 function maskSecretField(
   match: string,
   name: string,
   keyQuote: string | undefined,
   value: string,
+  offset: number,
+  whole: string,
 ): string {
-  // PWD and OLDPWD hold a directory in every environment dump, not a password.
-  if (name.toLowerCase() === 'pwd' && value.startsWith('/')) return match;
+  // The last 7 characters up to the end of the name hold "OLDPWD" and the
+  // character before it, which is all the pattern looks at.
+  const nameEnd = offset + name.length;
+  if (
+    value.startsWith('/') &&
+    ENV_PWD_PATTERN.test(whole.slice(Math.max(0, nameEnd - 7), nameEnd))
+  ) {
+    return match;
+  }
   const head = match.slice(0, match.length - value.length);
-  if (keyQuote === undefined) return `${head}[REDACTED]`;
+  if (keyQuote === undefined) {
+    return isHarmlessValue(value) ? match : `${head}[REDACTED]`;
+  }
   // "auth": {...} is an object; its own fields are masked on their own.
   if (value.startsWith('{') || value.startsWith('[')) return match;
-  // A quoted key marks JSON or a dict: keep the value a string and keep the
-  // brace or bracket that closed the pair, so the line stays parseable.
+  // A quoted key marks JSON or a dict: the brace or bracket that closed the
+  // pair is not part of the value, and the value stays a string so the line
+  // still parses.
   const closing = /[}\]]*$/u.exec(value)![0];
+  if (isHarmlessValue(value.slice(0, value.length - closing.length))) return match;
   return `${head}${keyQuote}[REDACTED]${keyQuote}${closing}`;
 }
 
