@@ -32,6 +32,12 @@ export const KIND_LABELS = {
   mixed: 'Multi-tool samples',
 };
 
+// The per-fixture table is narrow, so it uses the short form.
+const KIND_SHORT = {
+  single: 'Single-tool',
+  mixed: 'Multi-tool',
+};
+
 // Fixtures that mix a few lines from many tools. They were written to test
 // source detection, so they hold little repetition. Every other fixture is one
 // tool and one failure story, which is closer to what gets pasted into a chat.
@@ -164,7 +170,7 @@ export function renderKindTable(doc) {
 export function renderFixtureTable(doc) {
   const rows = bySavings(doc.fixtures).map((fixture) => [
     `\`${fixture.id}\``,
-    KIND_LABELS[fixture.kind],
+    KIND_SHORT[fixture.kind],
     `${number(fixture.inputLines)} / ${number(fixture.outputLines)}`,
     number(fixture.inputTokens),
     number(fixture.outputTokens),

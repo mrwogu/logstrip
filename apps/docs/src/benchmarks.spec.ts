@@ -82,7 +82,7 @@ describe('rendering', () => {
     const table = renderFixtureTable(doc).split('\n');
 
     expect(table).toHaveLength(2 + 3);
-    expect(table[2]).toBe('| `jest-noisy` | Single-tool logs | 10 / 4 | 284 | 63 | 77.8% |');
+    expect(table[2]).toBe('| `jest-noisy` | Single-tool | 10 / 4 | 284 | 63 | 77.8% |');
   });
 
   it('renders the two groups and the summary list', () => {
