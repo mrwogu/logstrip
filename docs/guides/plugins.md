@@ -52,6 +52,33 @@ logstrip <input-log> -o <output-log> --stats
 If global installs are not allowed, use `npx -y logstrip` in the command
 or prompt template for your agent.
 
+## Hooks
+
+The Claude Code, Factory Droid, GitHub Copilot, Codex and Cursor bundles also
+register a hook (`logstrip hook`) so compression happens without the agent
+having to remember it. The hook reads a JSON event from stdin and prints the
+matching decision.
+
+| Event | What the hook does |
+| :--- | :--- |
+| `PreToolUse` on `Read` / `view` | For a file ending in `.log`, `.out`, `.txt`, `.trace` or `.err`, writes `<file>.logstrip.log` and denies the read with a pointer to the compressed file. |
+| `UserPromptSubmit` / `beforeSubmitPrompt` | Blocks a pasted raw log (5 or more lines) and writes a compressed copy to a temporary file. |
+
+Both hooks use the same log-or-text check as the CLI, so they leave anything
+that is not a log alone:
+
+- **Files.** The hook reads only the head of the file (the first 100 non-blank
+  lines or 256 KiB) before it decides. `notes.txt`, `requirements.txt`,
+  `CMakeLists.txt` or a markdown file saved as `changes.log` are not
+  compressed, the read is not denied and no `.logstrip.log` is left behind.
+  A log saved under a `.txt` name is still compressed.
+- **Pastes.** A prompt is blocked only when at least 3 of its lines, and at
+  least 40% of the sampled lines, look like log output, and compression
+  shrinks it by at least 15%. Source code, YAML, markdown, prose, and pastes
+  with nothing to drop go through.
+- **Failures.** If compression fails the hook lets the read through with a
+  hint to analyse the raw content.
+
 ## Claude Code
 
 Add the Git-backed marketplace, then install the plugin:
@@ -286,6 +313,11 @@ PATH after `npm i -g logstrip`. Verify with `logstrip --version`.
 reading the marketplace file for that ecosystem: `.github/plugin/marketplace.json`
 for Copilot, `.cursor-plugin/marketplace.json` for Cursor, or
 `.agents/plugins/marketplace.json` for Codex.
+
+**A `.txt` or `.log` file was not compressed** - The hook only compresses
+files that look like logs. A file that reads as prose, markdown, source code
+or configuration is left alone on purpose. To compress it anyway, run
+`logstrip <file> --force -o <file>.logstrip.log`.
 
 **No savings reported** - The log may already be compact, or the
 aggressiveness level may be too low. Try `aggressive` for maximum compression.

@@ -23,7 +23,7 @@ logstrip [INPUT] [options]
 
 | Argument | Description |
 | :--- | :--- |
-| `INPUT` | Path to a raw log file. When omitted, the CLI reads from `stdin`. |
+| `INPUT` | Path to a raw log file. When omitted, the CLI reads from `stdin`. Input that is plain text rather than a log is copied through (see [Input that is not a log](#input-that-is-not-a-log)). |
 
 ### Options
 
@@ -47,6 +47,7 @@ logstrip [INPUT] [options]
 | `--max-stack-frames <N>` | Keep at most _N_ consecutive application stack frames per trace; the rest collapse into a single `[... K more application stack frames ...]` marker. `0` keeps every frame. Internal library frames are still hidden separately. | `10` |
 | `--no-template-mining` | Disable template mining: by default near-identical lines that differ only in a number after a generic word label (e.g. `Retrying job 17` / `Retrying job 18`) fold into one `[xN]` group with a delta list. Numbers after diagnostic labels (`code`, `status`, `exit`, `signal`, `line`, `version`, `errno`, `error`) never merge. | _(auto on)_ |
 | `--no-json-report` | Disable structured JSON document detection. By default an input that is a whole JSON document (test-runner report, scanner export) is compressed semantically instead of line-by-line: string values are sanitized, empty fields pruned, a field repeating an earlier sibling becomes a `[logstrip:= field]` reference, and array entries identical except for unique identifier fields collapse into one entry with a `[logstrip:group]` header listing each grouped entry's identifiers. The output stays valid JSON. Inputs larger than 8 MiB, JSONL streams (pino/bunyan) and lone JSON log lines with a `level` field keep using the line pipeline. | _(auto on)_ |
+| `--force` | Compress even when the input does not look like a log. Disables the text passthrough that copies prose, markdown, source code and configuration files through (see [Input that is not a log](#input-that-is-not-a-log)). | off |
 | `--preserve-id-suffix <N>` | Keep the last _N_ characters of redacted UUIDs and hashes (e.g. `[ID:174000]`, `[HASH:0a1b2c]`) instead of fully masking them to `[ID]` / `[HASH]`. Useful when trailing identifier digits help correlate events across lines. Range `0`–`16`; `0` masks fully. | `0` |
 | `--max-line-length <n>` | Truncate lines longer than _n_ characters. Very long lines (e.g. minified bundles) are replaced with `[TRUNCATED]`. | `100000` |
 | `--timeout <s>` | Stop processing after _s_ seconds. The output is flushed and `timedOut: true` is set in the result. | _(off)_ |
@@ -67,6 +68,13 @@ logstrip [INPUT] [options]
   contamination, `--json` requires `--output`.
 - When `INPUT` is omitted and `stdin` is a terminal (TTY), the CLI exits with
   code `2` rather than waiting forever for input.
+- Output starts once the first lines have been classified as log or text. A
+  log with recognizable structure (timestamps, severity tags, stack frames) is
+  settled after about 8 non-blank lines, so `tail -f app.log | logstrip` starts
+  almost at once. Text, and a log with little structure, can wait for the full
+  sample: up to 100 non-blank lines or 256 KiB, whichever comes first, which is
+  the worst case. With `--force` nothing is buffered and output starts with the
+  first line.
 
 ## Exit codes
 
@@ -132,6 +140,7 @@ logstrip raw.log -o clean.log --json
   "savingsPercent": 80.71,
   "detectedSources": ["webpack", "npm", "kubernetes"],
   "detectedFormat": "node",
+  "contentKind": "log",
   "timedOut": false,
   "outputPath": "clean.log"
 }
@@ -140,8 +149,64 @@ logstrip raw.log -o clean.log --json
 `detectedSources` is ranked by lightweight source fingerprints gathered during
 streaming. It is informational and does not change the compressed log output.
 `detectedFormat` indicates the inferred log format (e.g. `node`, `python`,
-`java`, `go`). `timedOut` is `true` when `--timeout` was reached before the
-full stream was processed.
+`java`, `go`). `contentKind` is `log` when the input went through the
+compression pipeline and `text` when it was copied through unchanged (see
+below); it is absent when `--timeout` fired before the input was classified.
+`timedOut` is `true` when `--timeout` was reached before the full stream was
+processed.
+
+### Input that is not a log
+
+LogStrip scores every line as noise or signal, which is right for build and
+server logs and destructive for a README, a YAML file or a source file. So it
+looks at the first 100 non-blank lines of the input (at most 256 KiB) and
+decides whether it is a log or plain text:
+
+- **Log signals**: timestamps, severity tags (`[INFO]`, `ERROR:`), CI markers
+  (`npm ERR!`, `::error::`, `FAIL`, `make[1]`), stack frames and tracebacks,
+  logfmt / JSON-line / syslog records, access-log lines, ANSI escapes and
+  known tool output.
+- **Text signals**: markdown (headings, lists, tables, links, fences), prose
+  sentences, source code, YAML / INI / JSON configuration, shell scripts and
+  Dockerfiles, HTML, CSV.
+
+Plain text is copied through line by line, nothing is dropped and the savings
+are `0%`. Anything that is not clearly text is still compressed as a log, so
+logs in formats LogStrip does not recognise keep working, and a log that opens
+with a short prose banner stays a log.
+
+```bash
+logstrip README.md --stats > copy.md
+# stderr: ... content kind    : text (passed through, secrets masked)
+```
+
+Passthrough leaves the text unchanged except for credentials. Tokens,
+passwords and secret fields, connection-string passwords, `Authorization`
+headers, AWS and other vendor keys, high-entropy tokens and PEM private key
+blocks are masked with the same rules the compressor uses (a private key's
+lines are dropped and counted). Identifiers, timestamps, IP addresses, emails
+and prose are not touched, so a file without secrets comes out as it went in,
+apart from line endings being normalized to `\n` and a final newline being
+added. The masking favours safety over fidelity, so a placeholder such as
+`token: ${{ secrets.NPM_TOKEN }}`, a permission such as `id-token: write` or a
+sentence that mentions an `Authorization:` header is masked too. A page that
+only names the private key header (`-----BEGIN PRIVATE KEY-----`) inside a
+sentence or table is left alone; only a header that ends its line opens a key
+block. Filters such as `--include`, `--exclude`, `--severity`, `--sample`,
+`--max-tokens` and `--max-line-length` do not apply to passed-through text;
+custom `sanitizePatterns` from `.logstrip.yml` do.
+
+The decision is made from the first sampled lines only. If LogStrip takes a
+log for text (for example a log that begins with a long stretch of
+configuration-like output), or you want a text file compressed anyway, pass
+`--force`:
+
+```bash
+logstrip output.txt --force -o clean.log
+```
+
+The hooks of the agent plugins use the same check, see
+[Plugins](../guides/plugins.md).
 
 ### Multiline traceback joining
 
@@ -302,6 +367,7 @@ LogStrip compression report
   output tokens   : <int>
   saved tokens    : <int>
   savings         : <float>%
+  content kind    : <log | text (passed through, secrets masked)>
   output path     : <path>   # only when --output was set
 ```
 
@@ -339,7 +405,9 @@ LogStrip Telemetry
 ```
 
 The store keeps at most 1,000 entries; older entries are pruned
-automatically.
+automatically. A run that copied text through (see
+[Input that is not a log](#input-that-is-not-a-log)) saves nothing and is not
+recorded, so it does not drag down the average savings.
 
 ## Update notifications
 

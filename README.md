@@ -226,6 +226,7 @@ Aho-Corasick automaton) and applies several cuts to every streamed line:
 | **Multiline joining** | Joins indented continuation lines (Python tracebacks, Node stack frames, Java `Caused by:` chains, Go goroutine dumps) with their parent into a single logical line. |
 | **Severity filtering** | Drops lines below a configurable minimum severity (`fatal` / `error` / `warn` / `info` / `debug` / `trace`). |
 | **CI noise filters** | Drops progress bars, timestamp-only lines, K8s `Normal` events, and rate-limited repetition messages. |
+| **Non-log guard** | Reads the first 100 non-blank lines and, when the input is prose, markdown, source code or configuration instead of a log, copies it through unchanged (credentials still masked) instead of compressing it. `--force` compresses it anyway. |
 
 Cuts marked _(auto)_ are enabled by default in `auto` mode; disable any of them
 with the matching `--no-*` flag.
@@ -337,6 +338,7 @@ Options:
       --no-multilingual    Disable auto-detection of non-English error/failure keywords (auto on).
       --no-adaptive-context Disable auto-mode adaptive context windows around errors (auto on).
       --preserve-id-suffix <N> Keep the last N chars of redacted UUIDs/hashes (0-16, default 0).
+      --force              Compress even when the input does not look like a log (disables text passthrough).
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
       --progress           Show progress bar (file input only, requires --output).
@@ -385,6 +387,10 @@ logstrip huge.log --sample 50 -o preview.log
 
 # 10. CI time budget - stop after 30 seconds
 logstrip raw.log --timeout 30 -o clean.log
+
+# 11. Not a log (README, YAML, source)? It is copied through unchanged.
+#     Compress it anyway with --force.
+logstrip notes.txt --force -o clean.log
 ```
 
 PowerShell equivalents:
@@ -426,7 +432,7 @@ console.log(`saved ${result.savedTokens} tokens (${result.savingsPercent}%)`);
 - **Dedupe & folding** — `dedupe`, `dedupeWindow`, `collapseBlocks`
 - **Context & sanitization** — `contextBefore`, `contextAfter`, `preserveIdSuffix`
 - **Auto-mode boosters** (default-on; set `false` to disable) — `collapseRepeatedStacks`, `rootCause`, `multilingual`, `adaptiveContext`
-- **Detection & output** — `formatDetectionSampleSize`, `outputFormat`
+- **Detection & output** - `formatDetectionSampleSize`, `outputFormat`, `textPassthrough` (on by default: plain text such as markdown or config is copied through with credentials masked, and `result.contentKind` reports `'text'`; set it to `false` to force compression)
 - **Custom config** — `config` (inline) or `configPath` (path to `.logstrip.yml`)
 - **Programmatic hooks** — `signal` (`AbortSignal`), `onDecision` (per-line decision callback), `tokenEstimator` (custom token counter)
 
