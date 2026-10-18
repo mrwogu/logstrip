@@ -4,7 +4,20 @@ description: Install LogStrip plugins for Claude Code, Copilot, Cursor, Factory 
 ---
 # Agent Plugins
 
-LogStrip is CLI-first, but the repository ships plugin/config bundles for
+**In 30 seconds.** Install the plugin for your agent and it runs `logstrip`
+on logs before it reads them. You get smaller log context, and the raw file
+stays untouched next to the compressed copy.
+
+```bash
+npm i -g logstrip
+```
+
+Then add the plugin for your agent from [Choose your agent](#choose-your-agent).
+Claude Code, Factory Droid, GitHub Copilot, Codex and Cursor also get a
+[hook](#hooks) that compresses a log when the agent tries to read it or when you
+paste one. OpenCode gets a skill and a command.
+
+LogStrip is CLI-first, but the repository ships plugin and config bundles for
 every agent shown on the documentation homepage: Claude Code, Factory Droid,
 GitHub Copilot, Cursor, Codex, and OpenCode.
 
