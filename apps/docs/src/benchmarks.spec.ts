@@ -223,7 +223,7 @@ describe('committed benchmark files', () => {
 
   it('have totals that match the rows', () => {
     expect(doc.totals).toEqual(summarize(doc.fixtures));
-    expect(doc.totals.fixtures).toBe(50);
+    expect(doc.totals.fixtures).toBe(doc.fixtures.length);
   });
 
   it('are the source of every generated block on the benchmarks page', () => {

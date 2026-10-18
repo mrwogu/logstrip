@@ -1,6 +1,6 @@
 ---
 title: Benchmarks
-description: Measured token savings for all 50 LogStrip test fixtures, how the numbers are produced, what they do not tell you, and how to reproduce them with one command.
+description: Measured token savings for every LogStrip test fixture, how the numbers are produced, what they do not tell you, and how to reproduce them with one command.
 ---
 # Benchmarks
 
