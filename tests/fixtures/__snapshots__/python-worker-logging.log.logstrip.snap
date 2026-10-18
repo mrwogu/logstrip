@@ -1,0 +1,14 @@
+[x4] [TIME] - app.worker - WARNING - Redis connection lost, retrying in 2s (attempt [1 | 2 | 3 | …])
+[TIME] - app.worker - ERROR - Task charge-4823 failed: connection reset by peer
+Traceback (most recent call last):
+  File "/repo/app/worker.py", line [NN], in run_task
+    result = self.handler(task)
+  File "/repo/app/handlers/charge.py", line [NN], in handle
+    resp = client.post("/v1/charges", json=payload)
+[... hidden internal library frames ...]
+    return self.request("POST", url, data=data, json=json, **kwargs)
+[... hidden internal library frames ...]
+    raise ConnectionError(err, request=request)
+requests.exceptions.ConnectionError: ("Connection aborted.", ConnectionResetError(104, 'Connection reset by peer'))
+[x2] [TIME] - app.worker - WARNING - Redis connection lost, retrying in 2s (attempt [5 | 6])
+[TIME] - app.worker - CRITICAL - Redis unavailable after 6 attempts, shutting down worker

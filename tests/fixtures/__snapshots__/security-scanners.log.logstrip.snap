@@ -13,10 +13,7 @@ CVE-2026-12345  openssl  CRITICAL  Fixed Version: 3.0.15-r2
   introduced via checkout-service@1.0.0 > lodash@4.17.20
   CVE-2026-44444: Prototype Pollution
   Fixed in: lodash@4.17.21
-[ERROR] ✗ High severity vulnerability found in lodash
-  introduced via checkout-service@1.0.0 > lodash@4.17.20
-  CVE-2026-44444: Prototype Pollution
-  Fixed in: lodash@4.17.21
+[... 4 lines repeated from above ...]
 [ERROR] ✗ Critical severity vulnerability found in follow-redirects
   introduced via checkout-service@1.0.0 > follow-redirects@1.15.4
   CVE-2026-55555: Server-Side Request Forgery
@@ -43,10 +40,7 @@ npm audit report
   File: src/api/discount.ts line 88
   User-controlled data in eval() can lead to code injection
   Severity: ERROR
-[ERROR] semgrep finding: javascript.react.security.audit.eval-detected
-  File: src/api/discount.ts line 88
-  User-controlled data in eval() can lead to code injection
-  Severity: ERROR
+[... 4 lines repeated from above ...]
 [ERROR] gitleaks: secret detected in .env line 42
   Rule: AWS Access Key ID
   Secret: [REDACTED]

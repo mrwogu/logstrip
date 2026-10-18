@@ -1,0 +1,9 @@
+=== RUN   TestRefund
+=== RUN   TestRefund/settled_order
+    refund_test.go:44: ledger entry already settled for order ord-88421
+--- FAIL: TestRefund (0.03s)
+    --- FAIL: TestRefund/settled_order (0.02s)
+=== RUN   TestInventoryReserve
+FAIL
+FAIL	github.com/acme/checkout/orders	0.412s
+FAIL

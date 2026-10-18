@@ -7,13 +7,15 @@ import {
 } from '../constants.js';
 import type { Aggressiveness } from '../types.js';
 import { isAccessLogNoiseLine } from '../formats/access-log-classifier.js';
-import { DIAGNOSTIC_BOOSTERS } from './diagnostic-boosters.js';
+import { DIAGNOSTIC_BOOSTERS, HTTP_5XX_FIELD_PATTERN } from './diagnostic-boosters.js';
+import { detectHeaderLogLevel } from './log-level.js';
 
+// "[INFO ]" with trailing padding comes from "[%-5p]" style layouts.
 const IGNORED_LOG_TAG_PATTERN =
-  /\[(?:INFO|DEBUG|TRACE|VERBOSE)\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
+  /\[(?:INFO|DEBUG|TRACE|VERBOSE)\s*\]|"level"\s*:\s*"(?:info|debug|trace|verbose)"/iu;
 const APACHE_ROUTINE_NOTICE_PATTERN =
   /^(?:\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\s+\d{4}\]|\[TIME\])\s+\[notice\]\s+(?:workerEnv\.init\(\) ok\b|jk2_init\(\) Found child \d+ in scoreboard slot \d+\b)/iu;
-const IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\]/iu;
+const IMPORTANT_LOG_TAG_PATTERN = /\[(?:ERROR|WARN|FATAL|CRITICAL|FAIL)\s*\]/iu;
 const EXPLICIT_LOG_TAG_PATTERN = /\[[A-Z]+\]/iu;
 // Frame patterns accept either raw digits or the [NN] placeholder that
 // normalizeStackFrameLineCol substitutes, so frames stay recognizable
@@ -44,9 +46,13 @@ const GITHUB_ACTIONS_ANNOTATION_PATTERN = /^::(?:error|warning|notice)\b/u;
 const GRADLE_FAILURE_PATTERN =
   /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/iu;
 const MAKE_ERROR_PATTERN = /^make[:\s*]+/u;
-const GO_TEST_FAIL_PATTERN = /---\s*FAIL:/u;
+// "--- FAIL: TestX" and the package summary "FAIL\tgithub.com/acme/pkg\t0.412s".
+const GO_TEST_FAIL_PATTERN = /---\s*FAIL:|^FAIL\s+\S+\s+[\d.]+s\b/u;
+// Exit status is only a failure when non-zero and followed by systemd's
+// uppercase result name ("status=1/FAILURE"); logfmt "status=200 duration=..."
+// is a request log, not a failure.
 const SYSTEMD_STATUS_PATTERN =
-  /\b(?:Failed to start|Failed to load|Failed to listen|Failed to mount|Failed to open|Failed to connect|status=\d+\s+\w+)\b/iu;
+  /\b(?:[Ff]ailed to (?:start|load|listen|mount|open|connect)|status=(?!0\b)\d+(?:\/|\s+)[A-Z][A-Z_]{2,})\b/u;
 const CIRCLECI_STEP_PATTERN = /\b(?:Spin Cancelled|Step failed|job was not approved)\b/iu;
 const JENKINS_MARKER_PATTERN = /\[(?:Pipeline|Checks|FCMaker)\]/u;
 const AZURE_PIPELINE_PATTERN = /^##vso\[task\.(?:LogIssue|Complete)\b/u;
@@ -67,14 +73,30 @@ const CONTAINER_FAILURE_PATTERN =
 const INTERNAL_STACK_PATTERN =
   /(?:node_modules[\\/]|node:internal|internal[\\/]modules|bootstrap_node|[\\/]usr[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]lib[\\/]|[\\/]usr[\\/]local[\\/]go[\\/]src[\\/]runtime[\\/]|site-packages[\\/]|dist-packages[\\/]|\.venv[\\/]|java\.base[\\/]|jdk\.internal|org\.springframework\.|[\\/]pkg[\\/]mod[\\/]|\.cargo[\\/]registry[\\/]|[\\/]gems[\\/]|vendor[\\/]bundle[\\/]|[\\/]rustc[\\/]|\bat System\.)/iu;
 
+// A non-zero exit code or signal is a failure report even when the line has
+// no error keyword ("INFO service exited with code 137").
+const NONZERO_EXIT_PATTERN =
+  /\bexit(?:ed|s)?\b.{0,24}?\b[1-9]\d{0,2}\b|\b(?:exit[ _]?code|exit[ _]?status|signal)[\s:=]+[1-9]\d{0,2}\b/iu;
+
 const LOW_EXTRA_TAG_PATTERN = /\[(?:NOTICE|STATUS)\]/iu;
-const AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\]/iu;
+const AGGRESSIVE_WARN_PATTERN = /\[(?:WARN|WARNING)\s*\]/iu;
 const AGGRESSIVE_WARNING_SIGNAL_PATTERN = DIAGNOSTIC_PATTERN;
 
+/**
+ * True for lines the pipeline drops before scoring: bracketed or JSON
+ * INFO/DEBUG/TRACE/VERBOSE tags, routine Apache notices, and unbracketed
+ * header levels (Spring, logback, Python logging, logfmt, glog). A line with
+ * an unbracketed noise level is kept when its text still reads as a
+ * diagnostic or reports a non-zero exit, so "INFO ... connection refused" and
+ * "INFO service exited with code 137" are never dropped.
+ */
 export function isIgnoredLogLine(line: string): boolean {
   return (
     IGNORED_LOG_TAG_PATTERN.test(line) ||
-    APACHE_ROUTINE_NOTICE_PATTERN.test(line)
+    APACHE_ROUTINE_NOTICE_PATTERN.test(line) ||
+    (detectHeaderLogLevel(line) === 'noise' &&
+      !looksLikeDiagnosticLine(line) &&
+      !NONZERO_EXIT_PATTERN.test(line))
   );
 }
 
@@ -87,7 +109,7 @@ export function shouldKeepLine(line: string): boolean {
     return false;
   }
 
-  if (IMPORTANT_LOG_TAG_PATTERN.test(line)) {
+  if (IMPORTANT_LOG_TAG_PATTERN.test(line) || isElevatedHeaderLevel(line)) {
     return true;
   }
 
@@ -96,6 +118,11 @@ export function shouldKeepLine(line: string): boolean {
   }
 
   return false;
+}
+
+function isElevatedHeaderLevel(line: string): boolean {
+  const level = detectHeaderLogLevel(line);
+  return level === 'warn' || level === 'severe';
 }
 
 /**
@@ -132,6 +159,8 @@ export function looksLikeDiagnosticLine(line: string): boolean {
     YARN_ERROR_PATTERN.test(line) ||
     SCANNER_FINDING_PATTERN.test(line) ||
     CONTAINER_FAILURE_PATTERN.test(line) ||
+    HTTP_5XX_PATTERN.test(line) ||
+    HTTP_5XX_FIELD_PATTERN.test(line) ||
     GITHUB_ACTIONS_ANNOTATION_PATTERN.test(line) ||
     GRADLE_FAILURE_PATTERN.test(line) ||
     MAKE_ERROR_PATTERN.test(line) ||
@@ -183,9 +212,18 @@ export function scoreLineRelevance(
     if (b.pattern.test(line)) score += b.score;
   }
 
+  // An unbracketed WARN/ERROR header level is enough to keep a line even when
+  // its text has no diagnostic keyword ("WARNING - redis connection lost").
+  // It is a floor, not a bonus: lines that already score higher keep their
+  // score, and repeated identical lines still fade under TF-IDF damping.
+  const headerLevel = detectHeaderLogLevel(line);
+  if (headerLevel === 'severe' || headerLevel === 'warn') {
+    score = Math.max(score, SCORE_KEEP_THRESHOLD);
+  }
+
   if (
     aggressiveness === 'aggressive' &&
-    AGGRESSIVE_WARN_PATTERN.test(line) &&
+    (AGGRESSIVE_WARN_PATTERN.test(line) || headerLevel === 'warn') &&
     !AGGRESSIVE_WARNING_SIGNAL_PATTERN.test(line) &&
     !COMPOUND_EXCEPTION_PATTERN.test(line)
   ) {
@@ -226,6 +264,14 @@ const PROGRESS_INDICATOR_PATTERN =
 
 const PROGRESS_BAR_VISUAL_PATTERN = /[|[]\s*[=#>-]{5,}[>\s]*[|\]]/u;
 
+// Package and artifact transfers that carry no percentage: a transfer rate
+// ("25 kB at 745 kB/s", "(15.2 MB/s)"), Maven/Gradle "Downloading from
+// central: https://...", apt "Get:1 http://... [123 kB]" and pip
+// "Downloading foo-1.0-py3-none-any.whl (12 kB)".
+const TRANSFER_RATE_PATTERN = /\b\d+(?:\.\d+)?\s?(?:[KMGT]i?)?B\/s\b/iu;
+const DOWNLOAD_LINE_PATTERN =
+  /^\s*(?:(?:Downloading|Downloaded|Download)\s+(?:from\s+\S+:\s+)?(?:https?|ftp):\/\/\S+|Downloading\s+\S+\.(?:whl|tar\.gz|zip|tgz)\b|(?:Get|Hit|Ign):\d+\s+https?:\/\/)/u;
+
 const K8S_NORMAL_EVENT_PATTERN =
   /\b(?:type:\s*'?Normal'?|Normal\s+\d+[smhd])\b/iu;
 
@@ -246,6 +292,10 @@ export function isProgressBarLine(line: string): boolean {
   if (PROGRESS_SEPARATOR_PATTERN.test(trimmed)) return true;
   if (PROGRESS_INDICATOR_PATTERN.test(line)) return true;
   if (PROGRESS_BAR_VISUAL_PATTERN.test(line)) return true;
+  if (TRANSFER_RATE_PATTERN.test(line) || DOWNLOAD_LINE_PATTERN.test(line)) {
+    // "Failed to download ... (12 kB/s)" is a failure report, not progress.
+    return !looksLikeDiagnosticLine(line);
+  }
   return false;
 }
 

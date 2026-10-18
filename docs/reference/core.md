@@ -286,6 +286,9 @@ const result = await processLogStream(input, output, {
   adaptiveContext: true,        // size the after-error context by error density
   templateMining: true,         // fold near-identical lines differing only in a
                                 //   number after a generic word label
+  collapseRepeatedBlocks: true, // replace a run of lines that repeats earlier
+                                //   output with a "[... N lines repeated ...]"
+                                //   marker
 
   // Numeric tuning / budget options:
   maxTokens: 8_000,             // trim to the highest-scoring lines within a
@@ -310,7 +313,8 @@ const result = await processLogStream(input, output, {
 | `dedupeWindow` | `number` | `1` | Collapses non-adjacent duplicate lines seen within the last _N_ distinct lines. `1` keeps adjacent-only deduplication. |
 | `collapseBlocks` | `number` | _(off)_ | Collapses consecutive repeats of a multi-line block (up to _N_ lines) into one copy plus a `[block xM]` marker. |
 | `formatDetectionSampleSize` | `number` | `50` | Number of leading non-blank lines sampled before the first-line format guess may be corrected by majority vote. After the vote locks, a sustained run of differently-formatted lines (20 consecutive) re-elects the format, so mixed streams that switch format mid-file stay correctly classified. |
-| `templateMining` | `boolean` | auto-on | Folds near-identical lines whose only difference is a number after a generic word label (`Retrying upload 17` / `… 18` → `[x2] Retrying upload [17 \| 18] …`). Numbers after diagnostic labels (`code`, `status`, `exit`, `signal`, `line`, `version`, `errno`, `error`) never merge. |
+| `templateMining` | `boolean` | auto-on | Folds near-identical lines whose only difference is a number after a generic word label (`Retrying upload 17` / `… 18` → `[x2] Retrying upload [17 \| 18] …`). Numbers with a duration or size unit (`took 120ms`, `12MB`, `45%`) and parenthesized counters (`(attempt 3)`) merge too, and the wrapping punctuation is kept. In access logs the response size after an HTTP status (`502 157`) merges as well, so a burst of 5xx lines that differ only in size and timing folds into one `[xN]` line. Numbers after diagnostic labels (`code`, `status`, `exit`, `signal`, `line`, `version`, `errno`, `error`) never merge. |
+| `collapseRepeatedBlocks` | `boolean` | auto-on | Replaces a run of at least 3 output lines (and 12 words, so the marker always pays for itself) that repeats an earlier run from the last 400 output lines with one `[... N lines repeated from above ...]` marker. Back-to-back copies of the same block share one marker, a different block gets its own, and the marker counts toward `stats.duplicateLines`. Lines that cannot start a repeat are written immediately; only lines that match an earlier run so far are held back, so memory stays bounded. Ignored when `dedupe` is `false`. A token budget (`maxTokens`) drops these markers before any other line. |
 | `maxStackFrames` | `number` | `10` | Keeps at most _N_ consecutive application stack frames per trace; the remainder collapses into a `[... K more application stack frames ...]` marker. `0` keeps every frame. Internal library frames are hidden separately by the internal-stack collapser. |
 
 ```ts
@@ -392,7 +396,7 @@ The sanitizer replaces:
 | Pattern | Replacement |
 | :--- | :--- |
 | UUID | `[ID]` |
-| ISO and UTC timestamps | `[TIME]` |
+| Timestamps (ISO with `.` or `,` fractions and zone, UTC/GMT, syslog `May 16 10:24:31`, `16-May-2026 10:24:31`, Go `log`, bare `10:24:31.044`, epoch values under `time`/`ts`/`timestamp` keys) | `[TIME]` |
 | IPv4 addresses | `[IP]` |
 | IPv4 address + port | `[IP]:[PORT]` |
 | GitHub tokens (`ghp_`, `gho_`, `ghu_`, etc.) | `[REDACTED]` |
@@ -405,7 +409,12 @@ The sanitizer replaces:
 | AWS ARN account IDs | `[ACCOUNT]` |
 | long hexadecimal or alphanumeric hashes | `[HASH]` |
 | HTTP status codes | `[2xx]`, `[4xx]`, `[5xx]`, etc. |
-| ANSI color escapes | removed |
+| Kubernetes ages (`38s`, `2m34s`, `5 (2m36s ago)`) | `[AGO]` |
+| ANSI escape sequences (colors, cursor movement, erase line, OSC hyperlinks) | removed |
+
+Durations that are measurements stay readable: `0.47s`, `timed out after 30s`,
+`retrying in 2s`, `timeout=30s` and `1m 12s` are kept, so a configured timeout
+or backoff is never replaced by `[AGO]`.
 
 Pass a second argument to keep a trailing slice of redacted UUIDs and hashes
 instead of fully masking them - the same behavior the CLI exposes as
@@ -447,6 +456,55 @@ The filter removes low-value log tags and keeps errors, warnings, fatal lines,
 critical lines, and diagnostic stack trace lines. The full streaming parser uses
 the hybrid scoring engine above, so direct `shouldKeepLine()` calls are best
 treated as a lightweight helper rather than a complete compression pass.
+
+## `detectHeaderLogLevel`
+
+```ts
+import { detectHeaderLogLevel } from 'logstrip';
+
+detectHeaderLogLevel('2026-05-16 10:24:31,044 - app.worker - INFO - started'); // 'noise'
+detectHeaderLogLevel('2026-05-16 10:24:31,044 - app.worker - WARNING - slow'); // 'warn'
+detectHeaderLogLevel('time=... level=error msg="boom"'); // 'severe'
+detectHeaderLogLevel('Server started with DEBUG flag enabled today'); // undefined
+```
+
+Classifies the severity word that logging frameworks print without brackets in
+the line header: `noise` for `INFO`/`DEBUG`/`TRACE`/`VERBOSE`/`FINE*`, `warn`
+for `WARN`/`WARNING` and `severe` for `ERROR`/`FATAL`/`CRITICAL`/`SEVERE`. It
+understands Spring Boot, logback/log4j, Python logging (default and custom
+formats), loguru, level-first lines (`INFO: ...`), logfmt (`level=info`) and
+glog/klog (`I0516 ...`). Position rules keep prose that merely contains an
+uppercase `INFO` word from being classified, and a bare `WARNING: ...` at the
+start of a line is left alone because CLI tools print boilerplate warnings that
+way.
+
+The streaming parser drops `noise` lines unless their text still reads as a
+diagnostic (`INFO ... connection refused` is kept), and floors `warn` and
+`severe` lines at the keep threshold so a level-only message such as
+`WARNING - redis connection lost` is not lost. Bracketed tags (`[INFO]`,
+`[INFO ]`) keep their existing, unconditional handling.
+
+## `isPassingTestLine`
+
+```ts
+import { isPassingTestLine } from 'logstrip';
+
+isPassingTestLine('tests/test_orders.py::test_create PASSED   [ 12%]'); // true
+isPassingTestLine('  ✔ returns an error for an empty cart (12ms)'); // true
+isPassingTestLine('--- PASS: TestCheckout (0.01s)'); // true
+isPassingTestLine('tests/test_orders.py::test_create FAILED'); // false
+```
+
+True for lines that only report a pass: pytest `PASSED` and unittest `... ok`,
+check-mark lines (`✓ ✔ √ ✅`), jest/vitest `PASS path` suite lines, Go
+`--- PASS:` / `PASS` / `ok pkg` / `[no test files]`, xUnit `Passed ...`, Gradle
+`... PASSED` and `UP-TO-DATE`/`NO-SOURCE`/`FROM-CACHE`/`SKIPPED` tasks, and TAP
+`ok N`. The streaming parser drops them as `ci-noise` before scoring, so a
+passing test named "returns an error for bad input" is not mistaken for a
+failure and passing lines next to a failure are no longer promoted as context.
+`=== RUN` lines are kept: when a test aborts the process, the last one is the
+only clue to which test it was. The Go package summary `FAIL<TAB>pkg<TAB>0.4s`
+is scored as a diagnostic.
 
 ## Tested log sources and tools
 

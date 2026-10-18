@@ -3,18 +3,48 @@ import { maskHighEntropyTokens } from './entropy-secret.js';
 
 const UUID_PATTERN =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
+// The fraction separator may be a comma (Python logging, log4j, logback) and
+// the zone may follow a space (PostgreSQL "... UTC", gunicorn "... +0000").
 const ISO_TIME_PATTERN =
-  /\b\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?)?\b/gu;
+  /\b\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}:\d{2}(?:[.,]\d{1,9})?(?:Z|\s?UTC|\s?GMT|\s?[+-]\d{2}:?\d{2})?)?\b/gu;
 const UTC_TIME_PATTERN =
   /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+(?:GMT|UTC)\b/giu;
 const APACHE_ERROR_TIME_PATTERN =
   /\[(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\s+\d{4}\]/giu;
 const COMMON_LOG_TIME_PATTERN =
   /\b\d{1,2}\/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}\b/giu;
-const NGINX_ERROR_TIME_PATTERN = /\b\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\b/gu;
+// Go's log package appends microseconds ("2026/05/16 10:24:31.044123").
+const NGINX_ERROR_TIME_PATTERN =
+  /\b\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}(?:[.,]\d{1,9})?\b/gu;
+// syslog / journald ("May 16 10:24:31", "May  6 10:24:31") and date(1)
+// output with a leading weekday.
+const SYSLOG_TIME_PATTERN =
+  /\b(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+)?(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2}(?:[.,]\d{1,9})?\b/gu;
+// Tomcat / PHP ("16-May-2026 10:24:31.011") and Redis ("16 May 2026 10:24:31.011").
+const DAY_MONTH_TIME_PATTERN =
+  /\b\d{1,2}[-\s](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\s]\d{4}\s\d{2}:\d{2}:\d{2}(?:[.,]\d{1,9})?(?:\s?(?:UTC|GMT|[+-]\d{4}))?\b/gu;
+// Bare time of day ("10:24:31.044"). The lookarounds keep it out of MAC
+// addresses, IPv6 groups and longer digit runs.
+const TIME_OF_DAY_PATTERN =
+  /(?<![\d:.])\d{2}:\d{2}:\d{2}(?:[.,]\d{1,9})?(?![\d:])/gu;
+// Numeric epoch timestamps under a time-like key: pino's default
+// "time":1715855071123 and logfmt ts=1715855071.
+const EPOCH_JSON_FIELD_PATTERN =
+  /("(?:time|timestamp|@timestamp|ts|datetime)"\s*:\s*)\d{10,13}(?:\.\d+)?(?=\s*[,}])/giu;
+const EPOCH_LOGFMT_FIELD_PATTERN =
+  /\b(time|timestamp|ts)=\d{10,13}(?:\.\d+)?\b/giu;
 const K8S_RELATIVE_DURATION_PATTERN =
   /\b(?:\d+d)?(?:\d+h)?(?:\d+m)?\d+s\b/gu;
-const ANSI_ESCAPE_PATTERN = /\u001b\[[0-9;]*m/gu;
+// Text right before a duration that marks it as a measurement worth keeping
+// ("timed out after 30s", "retrying in 2s", "retry=5s", "1m 12s") or as the
+// tail of a decimal ("0.47s"), not a Kubernetes age column.
+const MEASURED_DURATION_PREFIX_PATTERN =
+  /(?:[\d.=(]|\d[dhm]\s|\b(?:in|after|for|within|than|every|took|elapsed|timeout|ttl|delay|interval|wait|waiting|waited)[\s:=]+)$/iu;
+const AGO_SUFFIX_PATTERN = /^\s+ago\b/u;
+// Every CSI sequence (colors, cursor movement, erase line, cursor hide) and
+// OSC sequence (hyperlinks, window titles), not only SGR colors.
+const ANSI_ESCAPE_PATTERN =
+  /\u001b\[[0-?]*[ -/]*[@-~]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)/gu;
 const IPV4_WITH_PORT_PATTERN =
   /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})\b/gu;
 const IPV4_PATTERN =
@@ -79,6 +109,20 @@ const ALPHANUMERIC_HASH_PATTERN =
 const AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/gu;
 const AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
 
+/** Remove every ANSI CSI and OSC escape sequence from a line. */
+export function stripAnsi(line: string): string {
+  return line.includes('\u001b') ? line.replace(ANSI_ESCAPE_PATTERN, '') : line;
+}
+
+function maskAge(match: string, offset: number, whole: string): string {
+  const before = whole.slice(Math.max(0, offset - 16), offset);
+  // "(2m36s ago)" is an age even though it sits in parentheses; "(1s)" is
+  // a test runner's measurement.
+  const agoFollows = AGO_SUFFIX_PATTERN.test(whole.slice(offset + match.length, offset + match.length + 6));
+  if (agoFollows) return '[AGO]';
+  return MEASURED_DURATION_PREFIX_PATTERN.test(before) ? match : '[AGO]';
+}
+
 export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
   const uuidReplacement =
     preserveIdSuffix > 0
@@ -97,7 +141,7 @@ export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
   // pattern itself, so the common case (a plain log line) pays for a few
   // includes() calls instead of ~25 regex scans.
   let result = line;
-  if (result.includes('\u001b')) result = result.replace(ANSI_ESCAPE_PATTERN, '');
+  result = stripAnsi(result);
   if (result.includes('-')) {
     result = result
       .replace(UUID_PATTERN, uuidReplacement)
@@ -113,6 +157,18 @@ export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
     result = result
       .replace(COMMON_LOG_TIME_PATTERN, '[TIME]')
       .replace(NGINX_ERROR_TIME_PATTERN, '[TIME]');
+  }
+  if (result.includes(':')) {
+    result = result
+      .replace(SYSLOG_TIME_PATTERN, '[TIME]')
+      .replace(DAY_MONTH_TIME_PATTERN, '[TIME]')
+      .replace(TIME_OF_DAY_PATTERN, '[TIME]');
+  }
+  if (result.includes('"')) {
+    result = result.replace(EPOCH_JSON_FIELD_PATTERN, '$1"[TIME]"');
+  }
+  if (result.includes('=')) {
+    result = result.replace(EPOCH_LOGFMT_FIELD_PATTERN, '$1=[TIME]');
   }
   if (result.includes('.')) {
     result = result
@@ -149,7 +205,7 @@ export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
       const sepEnd = match.slice(sepIdx).match(/^[:=]\s*/u)![0].length;
       return `${match.slice(0, sepIdx + sepEnd)}[REDACTED]`;
     })
-    .replace(K8S_RELATIVE_DURATION_PATTERN, '[AGO]');
+    .replace(K8S_RELATIVE_DURATION_PATTERN, maskAge);
   if (result.includes('@')) result = result.replace(EMAIL_PATTERN, '[EMAIL]');
   result = result
     .replace(HEX_HASH_PATTERN, hexHashReplacement)

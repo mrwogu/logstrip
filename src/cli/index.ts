@@ -62,6 +62,10 @@ Options:
                            N non-blank lines. Default: 50.
       --collapse-blocks <N> Collapse consecutive repeats of a block of up to N
                            lines into one copy plus a [block xM] marker.
+      --no-collapse-repeated-blocks Disable replacing a block of lines that
+                           repeats earlier output (e.g. the same stack trace
+                           printed again) with a [... N lines repeated from
+                           above ...] marker.
       --no-collapse-stacks Disable auto-collapsing of repeated stack-trace
                            windows that differ only in addresses/offsets.
       --no-root-cause      Disable auto-pruning of downstream cascade
@@ -134,6 +138,7 @@ export interface CliOptions {
   adaptiveContext: boolean;
   maxStackFrames?: number;
   templateMining: boolean;
+  collapseRepeatedBlocks: boolean;
   jsonReport: boolean;
   telemetry: boolean;
   help: boolean;
@@ -201,6 +206,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
         'no-adaptive-context': { type: 'boolean', default: false },
         'max-stack-frames': { type: 'string' },
         'no-template-mining': { type: 'boolean', default: false },
+        'no-collapse-repeated-blocks': { type: 'boolean', default: false },
         'no-json-report': { type: 'boolean', default: false },
         'max-line-length': { type: 'string' },
         timeout: { type: 'string' },
@@ -382,6 +388,7 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     adaptiveContext: parsed.values['no-adaptive-context'] !== true,
     maxStackFrames,
     templateMining: parsed.values['no-template-mining'] !== true,
+    collapseRepeatedBlocks: parsed.values['no-collapse-repeated-blocks'] !== true,
     jsonReport: parsed.values['no-json-report'] !== true,
     telemetry: parsed.values.telemetry === true,
     help: parsed.values.help === true,
@@ -576,6 +583,7 @@ export async function runCli(
       adaptiveContext: options.adaptiveContext ? undefined : false,
       maxStackFrames: options.maxStackFrames,
       templateMining: options.templateMining,
+      collapseRepeatedBlocks: options.collapseRepeatedBlocks,
       jsonReport: options.jsonReport,
     };
     result = await processLogStreamWithTimeout(

@@ -1,0 +1,17 @@
+[ERROR] [TIME] failed to reserve inventory for order ord-88421
+TypeError: Cannot read properties of undefined (reading 'available')
+    at InventoryClient.reserve (/srv/app/src/inventory/client.ts:[NN]:[NN])
+    at CheckoutService.placeOrder (/srv/app/src/checkout/checkout-service.ts:[NN]:[NN])
+    at async checkoutHandler (/srv/app/src/http/routes/checkout.ts:[NN]:[NN])
+[... hidden internal library frames ...]
+[WARN] [TIME] order ord-88421 queued for manual review
+[ERROR] [TIME] failed to reserve inventory for order ord-88422
+[... 5 lines repeated from above ...]
+[WARN] [TIME] order ord-88422 queued for manual review
+[ERROR] [TIME] failed to reserve inventory for order ord-88423
+[... 5 lines repeated from above ...]
+[WARN] [TIME] order ord-88423 queued for manual review
+[FATAL] [TIME] inventory client unusable, shutting down
+Error: Cannot recover checkout worker after repeated reservation failures
+    at shutdown (/srv/app/src/runtime/shutdown.ts:[NN]:[NN])
+    at process.emit (node:events:[NN]:[NN])

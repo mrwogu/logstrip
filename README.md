@@ -213,19 +213,20 @@ Aho-Corasick automaton) and applies several cuts to every streamed line:
 
 | Cut | What it does |
 |:---|:---|
-| **Defoliation** | Drops `[INFO]`, `[DEBUG]`, `[TRACE]`, and `[VERBOSE]` lines. |
+| **Defoliation** | Drops `[INFO]`, `[DEBUG]`, `[TRACE]`, and `[VERBOSE]` lines, and the same levels printed without brackets (Spring Boot, logback, Python logging, loguru, logfmt `level=info`, glog) unless the line still reads as a diagnostic. Unbracketed `WARN`/`ERROR` levels are kept even when the message has no error keyword. |
 | **Sanitization** | Replaces UUIDs, timestamps, IPs, AWS keys, GitHub tokens, JWTs, Slack tokens, connection string passwords, `Authorization:` headers, and long hashes with compact placeholders. Groups HTTP status codes (`503` → `[5xx]`). |
 | **Context scoring** | Keeps high-signal diagnostics and nearby context while dampening repeated spam (TF-IDF). |
 | **Smart dedup** | Folds repeated sanitized lines, including same-shape variants, into `[xN] message` with only differing values listed. |
 | **Stack collapse** | Replaces internal `node_modules/` and runtime frames with one marker line. |
 | **Stack-window collapse** _(auto)_ | Folds repeated multi-line stack traces that differ only in addresses, Go offsets, or goroutine ids into a single `[xN]` group. |
+| **Repeated-block references** _(auto)_ | Replaces a run of lines that repeats an earlier run (the same stack trace printed again for the next failure) with one `[... N lines repeated from above ...]` marker. |
 | **Root-cause pruning** _(auto)_ | Drops downstream cascade restatements (`aborting due to previous errors`, `could not compile … due to previous error`, `skipped because the upstream job failed`) so the originating failure stands out. |
 | **Multilingual detection** _(auto)_ | Recognizes error/failure/exception keywords in 8+ languages plus CJK (`erreur`, `Fehler`, `fallo`, `ошибка`, `错误`, …). |
 | **Format voting** _(auto)_ | Locks the fast path onto the first recognizable line, then self-corrects the detected format with a majority vote over the first 50 non-blank lines. |
 | **Instance-counter folding** | Folds enumerated counters (`worker [1 \| 2 \| 3]`, `retry …`) into the repeat signature; labels whose numbers carry meaning (error/code/status/exit) are excluded. |
 | **Multiline joining** | Joins indented continuation lines (Python tracebacks, Node stack frames, Java `Caused by:` chains, Go goroutine dumps) with their parent into a single logical line. |
 | **Severity filtering** | Drops lines below a configurable minimum severity (`fatal` / `error` / `warn` / `info` / `debug` / `trace`). |
-| **CI noise filters** | Drops progress bars, timestamp-only lines, K8s `Normal` events, and rate-limited repetition messages. |
+| **CI noise filters** | Drops progress bars, timestamp-only lines, K8s `Normal` events, rate-limited repetition messages, package transfers (`Downloaded from central: ... (25 kB at 745 kB/s)`, apt `Get:1 ...`, pip `Downloading ... .whl`), and passing-test reports (`PASSED`, `✓`, `--- PASS:`, `ok pkg`, `PASS src/a.test.ts`, idle Gradle tasks) even when the test name mentions an error. |
 
 Cuts marked _(auto)_ are enabled by default in `auto` mode; disable any of them
 with the matching `--no-*` flag.
@@ -339,6 +340,7 @@ Options:
       --max-stack-frames <N> Keep at most N consecutive application stack frames per trace; the rest collapse into a marker. 0 keeps every frame. Default: 10.
       --no-template-mining Disable folding of near-identical lines that differ only in a number after a generic word label (auto on).
       --no-json-report     Disable auto-detection of structured JSON documents such as test reports and scanner exports (auto on).
+      --no-collapse-repeated-blocks Disable [... N lines repeated from above ...] back-references for repeated blocks (auto on).
       --preserve-id-suffix <N> Keep the last N chars of redacted UUIDs/hashes (0-16, default 0).
       --max-line-length <n> Truncate lines longer than n chars. Default: 100000.
       --timeout <s>        Stop processing after s seconds.
@@ -353,7 +355,7 @@ Options:
 
 In the default `auto` mode the detection and compression boosters
 (`--collapse-stacks`, `--root-cause`, `--multilingual`, adaptive context
-windows, and majority-vote format detection) are **on automatically** - the
+windows, repeated-block references, and majority-vote format detection) are **on automatically** - the
 `--no-*` flags above are opt-outs for when you want the raw, unboosted pass.
 
 ### Recipes

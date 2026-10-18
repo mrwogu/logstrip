@@ -84,6 +84,13 @@ export interface LogStripOptions {
    */
   templateMining?: boolean;
   /**
+   * Replace a run of lines that repeats an earlier run in the recent output
+   * (the same stack trace printed again later) with one
+   * "[... N lines repeated from above ...]" marker. Default: on; set false to
+   * keep every repeated line. Ignored when `dedupe` is false.
+   */
+  collapseRepeatedBlocks?: boolean;
+  /**
    * Keep at most N consecutive application stack frames per trace; the rest
    * collapse into a single "[... K more application stack frames ...]"
    * marker. Default: 10. Set 0 to keep every frame.

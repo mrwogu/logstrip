@@ -53,6 +53,10 @@ import {
 import { applyTokenBudget, type BudgetLine } from './budget/token-budget.js';
 import { planBlockDedupe } from './dedupe/block-deduper.js';
 import {
+  BlockReferenceCollapser,
+  type BlockReferenceItem,
+} from './dedupe/block-reference.js';
+import {
   accessBucketPush,
   flushAccessBucket,
   type AccessBucket,
@@ -84,6 +88,7 @@ import {
 } from './sanitize/pem-block.js';
 import { passesSeverityFilter } from './severity/severity-filter.js';
 import { isCascadeNoiseLine } from './scoring/cascade-filter.js';
+import { isPassingTestLine } from './scoring/passing-test.js';
 import { isMultilingualDiagnosticLine } from './scoring/multilingual-keywords.js';
 import type { SeverityLevel } from './severity/severity-filter.js';
 import {
@@ -161,6 +166,11 @@ export {
   resolveAdaptiveAfterWindow,
 } from './context/adaptive-window.js';
 export { isCascadeNoiseLine } from './scoring/cascade-filter.js';
+export { isPassingTestLine } from './scoring/passing-test.js';
+export {
+  type HeaderLogLevel,
+  detectHeaderLogLevel,
+} from './scoring/log-level.js';
 export { isMultilingualDiagnosticLine } from './scoring/multilingual-keywords.js';
 export {
   type BlockDedupeOp,
@@ -493,7 +503,15 @@ export async function processLogStream(
     recordLineDecision(dynamicAggressiveness, decision);
   };
 
-  const emitOutputLine = async (line: string, score = 0): Promise<boolean> => {
+  // Repeated multi-line blocks (the same stack trace printed again later)
+  // collapse into one back-reference marker. Needs the repeat grouper's
+  // output, so it is tied to deduplication.
+  const blockCollapser =
+    dedupeEnabled && options.collapseRepeatedBlocks !== false
+      ? new BlockReferenceCollapser()
+      : null;
+
+  const writeFinalLine = async (line: string, score: number): Promise<void> => {
     if (sampleSize !== undefined && outputLineCount >= sampleSize) {
       stats.droppedLines += line.split('\n').length;
       recordDecision({
@@ -504,18 +522,34 @@ export async function processLogStream(
         repeated: false,
         reason: 'sample-limit',
       });
-      return false;
+      return;
     }
     outputLineCount += 1;
     if (outputBuffer !== null) {
       outputBuffer.push({ text: line, score, tokens: estimateOutputLineTokens(line) });
-      return true;
+      return;
     }
     if (tokenEstimator !== undefined) {
       outputTokensFromEstimator += estimateLineTokens(tokenEstimator, `${line}\n`);
     }
     await writeOutputLine(output, line, stats);
-    return true;
+  };
+
+  const writeCollapsed = async (items: readonly BlockReferenceItem[]): Promise<void> => {
+    for (const item of items) {
+      if (item.elidedLines !== undefined) {
+        stats.duplicateLines += item.elidedLines;
+      }
+      await writeFinalLine(item.text, item.score);
+    }
+  };
+
+  const emitOutputLine = async (line: string, score = 0): Promise<void> => {
+    if (blockCollapser === null) {
+      await writeFinalLine(line, score);
+      return;
+    }
+    await writeCollapsed(blockCollapser.push(line, score));
   };
 
   const estimateOutputLineTokens = (line: string): number =>
@@ -682,6 +716,19 @@ export async function processLogStream(
     // errors; large gaps mean isolated errors that warrant more context.
     linesSinceError += 1;
 
+    // PEM private key blocks. The state machine must see every line before
+    // any filter below can drop one: a header or footer that a noise rule
+    // removes would otherwise leave the tracker out of sync and let the key
+    // body through. Body and footer lines are dropped right here; a header
+    // is replaced by its redaction marker only after the user filters and
+    // noise rules have judged the raw line.
+    const pemRedacted = maskPemBlock(line, pemState);
+    if (pemRedacted === null) {
+      dropLine(line, physicalLineCount, 'custom-ignore');
+      continue;
+    }
+    const isPemHeader = pemRedacted !== line;
+
     if (includePattern !== undefined && !testRegex(includePattern, line)) {
       dropLine(line, physicalLineCount, 'include-filter');
       continue;
@@ -721,6 +768,12 @@ export async function processLogStream(
       continue;
     }
 
+    // Passing-test reports ("PASSED", check marks, "--- PASS:", "ok pkg")
+    if (isPassingTestLine(line)) {
+      dropLine(line, physicalLineCount, 'ci-noise');
+      continue;
+    }
+
     // Access log noise: health checks, static assets, metrics with non-error status
     if (isAccessLogNoiseLine(line)) {
       dropLine(line, physicalLineCount, 'ci-noise');
@@ -730,7 +783,9 @@ export async function processLogStream(
     // Noise tags (INFO/DEBUG/TRACE/VERBOSE) are silently dropped without
     // disturbing afterContextRemaining so that sparse INFO lines between
     // errors do not close the context window prematurely.
-    if (isIgnoredLogLine(line)) {
+    // A redacted key header such as "DEBUG -----BEGIN PRIVATE KEY-----" is
+    // exempt: its marker is worth keeping whatever level prefix it carried.
+    if (!isPemHeader && isIgnoredLogLine(line)) {
       dropLine(line, physicalLineCount, 'ignored-tag');
       continue;
     }
@@ -742,13 +797,10 @@ export async function processLogStream(
       continue;
     }
 
-    // PEM block masking (before sanitizeLine so IPs inside PEM are not double-annotated)
-    const masked = maskPemBlock(line, pemState);
-    if (masked === null) {
-      dropLine(line, physicalLineCount, 'custom-ignore');
-      continue;
+    // PEM header masking (before sanitizeLine so IPs inside PEM are not double-annotated)
+    if (isPemHeader) {
+      line = pemRedacted;
     }
-    line = masked;
 
     let sanitized = sanitizeLine(line, options.preserveIdSuffix ?? 0);
 
@@ -998,6 +1050,10 @@ export async function processLogStream(
   }
 
   await flushPendingGroups();
+
+  if (blockCollapser !== null) {
+    await writeCollapsed(blockCollapser.flush());
+  }
 
   if (outputBuffer !== null) {
     let buffered: BudgetLine[] = outputBuffer;
@@ -1261,6 +1317,9 @@ export function explainLogLine(
   }
   if (isProgressBarLine(line)) {
     return createDecision(line, undefined, false, 'progress');
+  }
+  if (isPassingTestLine(line)) {
+    return createDecision(line, undefined, false, 'ci-noise');
   }
   if (isAccessLogNoiseLine(line)) {
     return createDecision(line, undefined, false, 'ci-noise');

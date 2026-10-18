@@ -30,7 +30,7 @@ interface SmokeCase {
 const cases: readonly SmokeCase[] = [
   {
     fixture: 'vitest-failure.log',
-    minSavingsPercent: 47,
+    minSavingsPercent: 64,
     expectDeduplication: true,
     expectInternalStackHidden: true,
     mustContain: [
@@ -43,7 +43,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'jest-noisy.log',
-    minSavingsPercent: 40,
+    minSavingsPercent: 77,
     expectDeduplication: true,
     expectInternalStackHidden: true,
     mustContain: [
@@ -69,7 +69,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'maven-failure.log',
-    minSavingsPercent: 35,
+    minSavingsPercent: 47,
     expectDeduplication: false,
     expectInternalStackHidden: false,
     mustContain: [
@@ -184,7 +184,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'java-spring-boot-realistic.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 68,
     expectDeduplication: true,
     expectInternalStackHidden: true,
     mustContain: [
@@ -266,7 +266,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'infra-cloud.log',
-    minSavingsPercent: 5,
+    minSavingsPercent: 31,
     expectDeduplication: false,
     expectInternalStackHidden: false,
     mustContain: [
@@ -279,7 +279,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'data-telemetry-scanners.log',
-    minSavingsPercent: 5,
+    minSavingsPercent: 41,
     expectDeduplication: false,
     expectInternalStackHidden: false,
     mustContain: [
@@ -393,7 +393,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'python-lint-async.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 39,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
@@ -410,7 +410,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'go-rust-ruby-frameworks.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 49,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
@@ -486,7 +486,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'realtime-graphql.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 38,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
@@ -543,7 +543,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'email-ci-infra.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 42,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
@@ -619,7 +619,7 @@ const cases: readonly SmokeCase[] = [
   },
   {
     fixture: 'security-scanners.log',
-    minSavingsPercent: 20,
+    minSavingsPercent: 36,
     expectDeduplication: true,
     expectInternalStackHidden: false,
     mustContain: [
@@ -777,6 +777,144 @@ const cases: readonly SmokeCase[] = [
     ],
     mustDetectSources: [],
   },
+  {
+    fixture: 'python-worker-logging.log',
+    minSavingsPercent: 59,
+    expectDeduplication: true,
+    expectInternalStackHidden: true,
+    mustContain: [
+      'WARNING - Redis connection lost, retrying in 2s',
+      'ERROR - Task charge-4823 failed: connection reset by peer',
+      '/repo/app/handlers/charge.py", line [NN], in handle',
+      'requests.exceptions.ConnectionError',
+      'CRITICAL - Redis unavailable after 6 attempts, shutting down worker',
+      INTERNAL_STACK_MARKER,
+    ],
+    mustNotContain: [
+      ' - INFO - ',
+      ' - DEBUG - ',
+      'urllib3.connectionpool',
+      'site-packages',
+      '10:24:',
+      ',044',
+    ],
+    mustDetectSources: [],
+  },
+  {
+    fixture: 'go-logfmt-service.log',
+    minSavingsPercent: 47,
+    expectDeduplication: true,
+    expectInternalStackHidden: false,
+    mustContain: [
+      'level=warn msg="slow query"',
+      'duration=2.4s',
+      'msg="payment provider unreachable" provider=stripe',
+      'i/o timeout',
+      'level=warn msg="cache miss rate high"',
+      'level=fatal msg="worker pool exhausted"',
+      'path=/api/checkout status=[HTTP 5xx] duration=2003ms',
+    ],
+    mustNotContain: [
+      'level=info msg="server starting"',
+      'level=debug',
+      'circuit opened',
+      'status=200',
+      'status=201',
+      'time=2026',
+    ],
+    mustDetectSources: [],
+  },
+  {
+    fixture: 'mocha-spec-failure.log',
+    minSavingsPercent: 42,
+    expectDeduplication: false,
+    expectInternalStackHidden: true,
+    mustContain: [
+      '1) fails closed when the pricing service is unavailable',
+      '2) refunds the payment when the order is cancelled',
+      'AssertionError: expected 200 to equal 503',
+      "TypeError: Cannot read properties of undefined (reading 'refundId')",
+      'test/orders.test.js:[NN]:[NN]',
+      '13 passing',
+      '2 failing',
+    ],
+    mustNotContain: [
+      '✔ creates an order',
+      'returns an error for an empty cart',
+      'retries after a timeout from the inventory service',
+      'handles a missing order with an error response',
+      'reports an error when the order already shipped',
+    ],
+    mustDetectSources: ['mocha'],
+  },
+  {
+    fixture: 'go-test-verbose.log',
+    minSavingsPercent: 52,
+    expectDeduplication: false,
+    expectInternalStackHidden: false,
+    mustContain: [
+      '=== RUN   TestRefund/settled_order',
+      'refund_test.go:44: ledger entry already settled for order ord-88421',
+      '--- FAIL: TestRefund/settled_order',
+      'FAIL\tgithub.com/acme/checkout/orders\t0.412s',
+    ],
+    mustNotContain: [
+      '--- PASS:',
+      'ok  \tgithub.com/acme/checkout/pricing',
+      '[no test files]',
+    ],
+    mustDetectSources: ['go-test'],
+  },
+  {
+    fixture: 'node-repeated-stack.log',
+    minSavingsPercent: 32,
+    expectDeduplication: false,
+    expectInternalStackHidden: true,
+    mustContain: [
+      '[ERROR] [TIME] failed to reserve inventory for order ord-88421',
+      '[ERROR] [TIME] failed to reserve inventory for order ord-88423',
+      "TypeError: Cannot read properties of undefined (reading 'available')",
+      'at InventoryClient.reserve (/srv/app/src/inventory/client.ts:[NN]:[NN])',
+      '[... 5 lines repeated from above ...]',
+      '[FATAL] [TIME] inventory client unusable, shutting down',
+      'Error: Cannot recover checkout worker after repeated reservation failures',
+    ],
+    mustNotContain: ['[INFO]', 'GET /healthz'],
+    mustDetectSources: [],
+  },
+  {
+    fixture: 'nginx-502-burst.log',
+    minSavingsPercent: 34,
+    expectDeduplication: true,
+    expectInternalStackHidden: false,
+    mustContain: [
+      '[x5] [IP] - - [[TIME]] "POST /api/checkout HTTP/1.1" 502 [157 | 159 | 161]',
+      '[x2] [IP] - - [[TIME]] "POST /api/checkout HTTP/1.1" 504 168',
+      'rt=[60.001 | 60.002]',
+      'upstream timed out (110: Connection timed out)',
+    ],
+    mustNotContain: ['10.40.1.', '16/May/2026'],
+    mustDetectSources: [],
+  },
+  {
+    fixture: 'maven-downloads-failure.log',
+    minSavingsPercent: 74,
+    expectDeduplication: false,
+    expectInternalStackHidden: false,
+    mustContain: [
+      '[ERROR] /repo/src/main/java/com/acme/checkout/CartService.java:[118,9] cannot find symbol',
+      '[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin',
+      'Failed to transfer https://repo.example.com/internal/acme-sdk-2.4.0.jar (12 kB/s), retrying',
+    ],
+    mustNotContain: [
+      'Downloading from central',
+      'Downloaded from central',
+      'Get:1 http://archive.ubuntu.com',
+      'Fetched 4210 kB',
+      'requests-2.31.0-py3-none-any.whl',
+    ],
+    mustDetectSources: ['maven'],
+  },
 ];
 
 let workDir: string;
@@ -878,6 +1016,16 @@ describe('smoke: realistic CI log fixtures', () => {
       }
     });
   }
+});
+
+describe('smoke: repeated stack traces', () => {
+  it('prints a stack trace that repeats later only once', async () => {
+    const { result, outputContent } = await compress('node-repeated-stack.log');
+
+    expect(outputContent.match(/TypeError: Cannot read properties/gu)).toHaveLength(1);
+    expect(outputContent.match(/repeated from above/gu)).toHaveLength(2);
+    expect(result.stats.duplicateLines).toBe(10);
+  });
 });
 
 describe('smoke: stream resilience', () => {
