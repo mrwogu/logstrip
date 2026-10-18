@@ -46,7 +46,8 @@ const GITHUB_ACTIONS_ANNOTATION_PATTERN = /^::(?:error|warning|notice)\b/u;
 const GRADLE_FAILURE_PATTERN =
   /\b(?:Execution failed|What went wrong|BUILD FAILED|Task failed with an exception)\b/iu;
 const MAKE_ERROR_PATTERN = /^make[:\s*]+/u;
-const GO_TEST_FAIL_PATTERN = /---\s*FAIL:/u;
+// "--- FAIL: TestX" and the package summary "FAIL\tgithub.com/acme/pkg\t0.412s".
+const GO_TEST_FAIL_PATTERN = /---\s*FAIL:|^FAIL\s+\S+\s+[\d.]+s\b/u;
 // Exit status is only a failure when non-zero and followed by systemd's
 // uppercase result name ("status=1/FAILURE"); logfmt "status=200 duration=..."
 // is a request log, not a failure.

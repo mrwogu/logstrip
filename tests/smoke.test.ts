@@ -824,6 +824,47 @@ const cases: readonly SmokeCase[] = [
     ],
     mustDetectSources: [],
   },
+  {
+    fixture: 'mocha-spec-failure.log',
+    minSavingsPercent: 42,
+    expectDeduplication: false,
+    expectInternalStackHidden: true,
+    mustContain: [
+      '1) fails closed when the pricing service is unavailable',
+      '2) refunds the payment when the order is cancelled',
+      'AssertionError: expected 200 to equal 503',
+      "TypeError: Cannot read properties of undefined (reading 'refundId')",
+      'test/orders.test.js:[NN]:[NN]',
+      '13 passing',
+      '2 failing',
+    ],
+    mustNotContain: [
+      '✔ creates an order',
+      'returns an error for an empty cart',
+      'retries after a timeout from the inventory service',
+      'handles a missing order with an error response',
+      'reports an error when the order already shipped',
+    ],
+    mustDetectSources: ['mocha'],
+  },
+  {
+    fixture: 'go-test-verbose.log',
+    minSavingsPercent: 52,
+    expectDeduplication: false,
+    expectInternalStackHidden: false,
+    mustContain: [
+      '=== RUN   TestRefund/settled_order',
+      'refund_test.go:44: ledger entry already settled for order ord-88421',
+      '--- FAIL: TestRefund/settled_order',
+      'FAIL\tgithub.com/acme/checkout/orders\t0.412s',
+    ],
+    mustNotContain: [
+      '--- PASS:',
+      'ok  \tgithub.com/acme/checkout/pricing',
+      '[no test files]',
+    ],
+    mustDetectSources: ['go-test'],
+  },
 ];
 
 let workDir: string;

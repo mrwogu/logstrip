@@ -109,6 +109,11 @@ const ALPHANUMERIC_HASH_PATTERN =
 const AWS_ACCESS_KEY_PATTERN = /\b(?:AKIA|ABIA|ASIA)[0-9A-Z]{16}\b/gu;
 const AWS_ARN_ACCOUNT_PATTERN = /arn:aws:[a-z0-9-]+:[a-z0-9-]+:(\d{12})/gu;
 
+/** Remove every ANSI CSI and OSC escape sequence from a line. */
+export function stripAnsi(line: string): string {
+  return line.includes('\u001b') ? line.replace(ANSI_ESCAPE_PATTERN, '') : line;
+}
+
 function maskAge(match: string, offset: number, whole: string): string {
   const before = whole.slice(Math.max(0, offset - 16), offset);
   // "(2m36s ago)" is an age even though it sits in parentheses; "(1s)" is
@@ -136,7 +141,7 @@ export function sanitizeLine(line: string, preserveIdSuffix = 0): string {
   // pattern itself, so the common case (a plain log line) pays for a few
   // includes() calls instead of ~25 regex scans.
   let result = line;
-  if (result.includes('\u001b')) result = result.replace(ANSI_ESCAPE_PATTERN, '');
+  result = stripAnsi(result);
   if (result.includes('-')) {
     result = result
       .replace(UUID_PATTERN, uuidReplacement)

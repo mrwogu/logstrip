@@ -84,6 +84,7 @@ import {
 } from './sanitize/pem-block.js';
 import { passesSeverityFilter } from './severity/severity-filter.js';
 import { isCascadeNoiseLine } from './scoring/cascade-filter.js';
+import { isPassingTestLine } from './scoring/passing-test.js';
 import { isMultilingualDiagnosticLine } from './scoring/multilingual-keywords.js';
 import type { SeverityLevel } from './severity/severity-filter.js';
 import {
@@ -161,6 +162,7 @@ export {
   resolveAdaptiveAfterWindow,
 } from './context/adaptive-window.js';
 export { isCascadeNoiseLine } from './scoring/cascade-filter.js';
+export { isPassingTestLine } from './scoring/passing-test.js';
 export {
   type HeaderLogLevel,
   detectHeaderLogLevel,
@@ -738,6 +740,12 @@ export async function processLogStream(
       continue;
     }
 
+    // Passing-test reports ("PASSED", check marks, "--- PASS:", "ok pkg")
+    if (isPassingTestLine(line)) {
+      dropLine(line, physicalLineCount, 'ci-noise');
+      continue;
+    }
+
     // Access log noise: health checks, static assets, metrics with non-error status
     if (isAccessLogNoiseLine(line)) {
       dropLine(line, physicalLineCount, 'ci-noise');
@@ -1277,6 +1285,9 @@ export function explainLogLine(
   }
   if (isProgressBarLine(line)) {
     return createDecision(line, undefined, false, 'progress');
+  }
+  if (isPassingTestLine(line)) {
+    return createDecision(line, undefined, false, 'ci-noise');
   }
   if (isAccessLogNoiseLine(line)) {
     return createDecision(line, undefined, false, 'ci-noise');

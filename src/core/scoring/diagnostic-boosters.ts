@@ -55,7 +55,7 @@ export const DIAGNOSTIC_BOOSTERS: readonly DiagnosticBooster[] = [
   { pattern: /^thread '[^']*' panicked at\b/u, score: 60, label: 'rust-panic' },
 
   // ── Go test failures ─────────────────────────────────────────────
-  { pattern: /---\s*FAIL:/u, score: 50, label: 'go-test-fail' },
+  { pattern: /---\s*FAIL:|^FAIL\s+\S+\s+[\d.]+s\b/u, score: 50, label: 'go-test-fail' },
 
   // ── Make errors ──────────────────────────────────────────────────
   { pattern: /^make[:\s*]+/u, score: 50, label: 'make-error' },

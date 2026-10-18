@@ -480,6 +480,28 @@ diagnostic (`INFO ... connection refused` is kept), and floors `warn` and
 `WARNING - redis connection lost` is not lost. Bracketed tags (`[INFO]`,
 `[INFO ]`) keep their existing, unconditional handling.
 
+## `isPassingTestLine`
+
+```ts
+import { isPassingTestLine } from 'logstrip';
+
+isPassingTestLine('tests/test_orders.py::test_create PASSED   [ 12%]'); // true
+isPassingTestLine('  ✔ returns an error for an empty cart (12ms)'); // true
+isPassingTestLine('--- PASS: TestCheckout (0.01s)'); // true
+isPassingTestLine('tests/test_orders.py::test_create FAILED'); // false
+```
+
+True for lines that only report a pass: pytest `PASSED` and unittest `... ok`,
+check-mark lines (`✓ ✔ √ ✅`), jest/vitest `PASS path` suite lines, Go
+`--- PASS:` / `PASS` / `ok pkg` / `[no test files]`, xUnit `Passed ...`, Gradle
+`... PASSED` and `UP-TO-DATE`/`NO-SOURCE`/`FROM-CACHE`/`SKIPPED` tasks, and TAP
+`ok N`. The streaming parser drops them as `ci-noise` before scoring, so a
+passing test named "returns an error for bad input" is not mistaken for a
+failure and passing lines next to a failure are no longer promoted as context.
+`=== RUN` lines are kept: when a test aborts the process, the last one is the
+only clue to which test it was. The Go package summary `FAIL<TAB>pkg<TAB>0.4s`
+is scored as a diagnostic.
+
 ## Tested log sources and tools
 
 The parser detects **705+ log ecosystems** across 30+ categories.
