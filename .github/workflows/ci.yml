@@ -29,6 +29,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/docs/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -59,17 +62,13 @@ jobs:
       - name: Security audit
         run: npm audit
 
-      - name: Setup Python for docs
-        if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-          cache: pip
-          cache-dependency-path: requirements-docs.txt
-
       - name: Install docs dependencies
         if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
-        run: pip install -r requirements-docs.txt
+        run: npm run docs:install
+
+      - name: Check docs
+        if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
+        run: npm run docs:check
 
       - name: Build docs
         if: ${{ matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' }}
