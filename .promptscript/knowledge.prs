@@ -33,7 +33,8 @@
   on the vX.Y.Z and vX tags only (never on main, which is protected), so
   `uses: mrwogu/logstrip@v2` finds dist/action/index.js. Publishing runs on the
   vX.Y.Z tag push (release-please creates the tag with RELEASE_PAT). To publish
-  an existing tag again, run the Release Please workflow with tag=vX.Y.Z.
+  an existing tag again, run the Release Please workflow with tag=vX.Y.Z: a
+  version already on npm is skipped, dist/ is rebuilt and the vN tag moved.
 
   ## CLI usage cheat sheet
 

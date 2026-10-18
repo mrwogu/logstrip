@@ -1,4 +1,4 @@
-<!-- PromptScript 2026-10-18T13:53:25.810Z | source: .promptscript/project.prs | target: codex - do not edit -->
+<!-- PromptScript 2026-10-18T14:05:18.284Z | source: .promptscript/project.prs | target: codex - do not edit -->
 
 ## Project
 
@@ -93,7 +93,7 @@ typescript, Node.js >= 22
 - Every uses: in .github/workflows is pinned to a full commit SHA with a # vX.Y.Z comment and Renovate keeps the SHAs fresh; mrwogu/logstrip@v1 stays floating on purpose because that step dogfoods the published action
 - npm run docs:check (scripts/check-cli-docs.js) fails CI when a --flag from HELP_TEXT is missing from docs/reference/cli.md or README.md - add the flag to both when you add it to the CLI
 - ci.yml also runs on a Monday cron so main is re-validated against the live registry; release-please uses RELEASE_PAT when the secret exists and falls back to GITHUB_TOKEN
-- release-please.yml has two paths: a main push lets release-please open the release PR and create the vX.Y.Z tag (RELEASE_PAT, so the tag push fires the workflow again); a vX.Y.Z tag push or a manual run with tag=vX.Y.Z checks out the tag, validates it, builds, commits dist/ on the tag, runs npm publish (trusted publishing, no token) and then moves the major tag; main is never pushed from a workflow because branch protection requires the CI checks
+- release-please.yml has two paths: a main push lets release-please open the release PR and create the vX.Y.Z tag (RELEASE_PAT, so the tag push fires the workflow again); a vX.Y.Z tag push or a manual run with tag=vX.Y.Z checks out the tag, validates it, builds, commits dist/ on the tag, runs npm publish (trusted publishing, no token; skipped when the version is already on the registry) and then moves the vN tag through the API with RELEASE_PAT (needs the workflow scope, the default token may not move a tag across workflow changes); main is never pushed from a workflow because branch protection requires the CI checks
 - The docs site is Astro + Starlight in apps/docs (own package.json and package-lock.json, Node >= 22); Markdown sources stay in docs/\** and are loaded from there, so every page must stay readable on GitHub
 - Build with npm run docs:install && npm run docs:build (output in site/); npm run docs:test runs astro check plus the apps/docs vitest specs; npm run docs:serve starts astro dev
 - apps/docs/src/site.mjs holds ORIGIN, BASE (/logstrip, a GitHub Pages project site), SITE and the sidebar - every internal URL goes through withBase and the compat plugin
@@ -179,7 +179,8 @@ job builds its own. The release workflow builds it once more and commits it
 on the vX.Y.Z and vX tags only (never on main, which is protected), so
 `uses: mrwogu/logstrip@v2` finds dist/action/index.js. Publishing runs on the
 vX.Y.Z tag push (release-please creates the tag with RELEASE_PAT). To publish
-an existing tag again, run the Release Please workflow with tag=vX.Y.Z.
+an existing tag again, run the Release Please workflow with tag=vX.Y.Z: a
+version already on npm is skipped, dist/ is rebuilt and the vN tag moved.
 
 ## CLI usage cheat sheet
 

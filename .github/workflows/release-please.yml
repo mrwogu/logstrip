@@ -148,16 +148,29 @@ jobs:
           git tag -f "${TAG_NAME}" HEAD
           git push origin "refs/tags/${TAG_NAME}" --force
 
+      # npm refuses to publish a version twice, so a run that publishes an
+      # existing tag again (to move the major tag, for example) skips it.
       - name: Publish to npm
         if: ${{ steps.plan.outputs.publish == 'true' }}
-        run: npm publish
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "logstrip@${VERSION}" version >/dev/null 2>&1; then
+            echo "logstrip@${VERSION} is already on the registry, publish skipped"
+          else
+            npm publish
+          fi
 
       # The floating vN tag follows the newest vN.x.y release only, so a
-      # re-publish of an older patch never rolls action users back.
+      # re-publish of an older patch never rolls action users back. The ref is
+      # moved through the API with RELEASE_PAT (workflow scope): the default
+      # token may not move a tag when the workflow files differ between its
+      # old and new target (or main, for a new tag), and the floating tag spans
+      # releases that change workflows.
       - name: Update major action tag
         if: ${{ steps.plan.outputs.publish == 'true' }}
         env:
           TAG_NAME: ${{ steps.plan.outputs.tag }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
         run: |
           MAJOR_TAG=$(node -e "const tag = process.env.TAG_NAME; const match = /^v(\\d+)\\./.exec(tag); if (!match) process.exit(1); console.log('v' + match[1]);")
           git fetch --quiet --tags origin
@@ -166,7 +179,10 @@ jobs:
             echo "$MAJOR_TAG stays on $NEWEST, $TAG_NAME is older"
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f "$MAJOR_TAG" HEAD
-          git push origin "refs/tags/$MAJOR_TAG" --force
+          SHA=$(git rev-parse HEAD)
+          if gh api --silent "repos/${GITHUB_REPOSITORY}/git/ref/tags/${MAJOR_TAG}" 2>/dev/null; then
+            gh api --silent -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/${MAJOR_TAG}" -f sha="$SHA" -F force=true
+          else
+            gh api --silent -X POST "repos/${GITHUB_REPOSITORY}/git/refs" -f ref="refs/tags/${MAJOR_TAG}" -f sha="$SHA"
+          fi
+          echo "$MAJOR_TAG -> $SHA"

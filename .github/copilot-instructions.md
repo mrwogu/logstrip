@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions
 
-<!-- PromptScript 2026-10-18T13:53:25.809Z | source: .promptscript/project.prs | target: github - do not edit -->
+<!-- PromptScript 2026-10-18T14:05:18.283Z | source: .promptscript/project.prs | target: github - do not edit -->
 
 ## project
 
@@ -125,7 +125,7 @@ parser, tests, fixtures and CI workflow before proposing code.
 - Every uses: in .github/workflows is pinned to a full commit SHA with a # vX.Y.Z comment and Renovate keeps the SHAs fresh; mrwogu/logstrip@v1 stays floating on purpose because that step dogfoods the published action
 - npm run docs:check (scripts/check-cli-docs.js) fails CI when a --flag from HELP_TEXT is missing from docs/reference/cli.md or README.md - add the flag to both when you add it to the CLI
 - ci.yml also runs on a Monday cron so main is re-validated against the live registry; release-please uses RELEASE_PAT when the secret exists and falls back to GITHUB_TOKEN
-- release-please.yml has two paths: a main push lets release-please open the release PR and create the vX.Y.Z tag (RELEASE_PAT, so the tag push fires the workflow again); a vX.Y.Z tag push or a manual run with tag=vX.Y.Z checks out the tag, validates it, builds, commits dist/ on the tag, runs npm publish (trusted publishing, no token) and then moves the major tag; main is never pushed from a workflow because branch protection requires the CI checks
+- release-please.yml has two paths: a main push lets release-please open the release PR and create the vX.Y.Z tag (RELEASE_PAT, so the tag push fires the workflow again); a vX.Y.Z tag push or a manual run with tag=vX.Y.Z checks out the tag, validates it, builds, commits dist/ on the tag, runs npm publish (trusted publishing, no token; skipped when the version is already on the registry) and then moves the vN tag through the API with RELEASE_PAT (needs the workflow scope, the default token may not move a tag across workflow changes); main is never pushed from a workflow because branch protection requires the CI checks
 
 ### docs
 
@@ -225,7 +225,8 @@ job builds its own. The release workflow builds it once more and commits it
 on the vX.Y.Z and vX tags only (never on main, which is protected), so
 `uses: mrwogu/logstrip@v2` finds dist/action/index.js. Publishing runs on the
 vX.Y.Z tag push (release-please creates the tag with RELEASE_PAT). To publish
-an existing tag again, run the Release Please workflow with tag=vX.Y.Z.
+an existing tag again, run the Release Please workflow with tag=vX.Y.Z: a
+version already on npm is skipped, dist/ is rebuilt and the vN tag moved.
 
 ## CLI usage cheat sheet
 
