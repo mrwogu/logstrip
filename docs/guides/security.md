@@ -35,7 +35,7 @@ LogStrip detects and redacts known credential patterns:
 | SendGrid keys (`SG.`) | `[REDACTED]` | `SG.Abcd...XyZ` |
 | Connection strings with credentials | `[REDACTED]` (password) | `postgres://user:pwd@host` |
 | Authorization headers | `Authorization: [REDACTED]` | `Authorization: Bearer xyz` |
-| Secret field values | key=`[REDACTED]` | `password=hunter2` |
+| Secret field values (any key ending in `password`, `secret`, `token`, `api_key`, `auth`, ...; `KEY=value`, `key: value` or a JSON property) | key=`[REDACTED]` | `DB_PASSWORD=hunter2`, `"client_secret": "abc"` |
 | AWS access keys (`AKIA`, `ABIA`, `ASIA`) | `[REDACTED]` | `AKIAIOSFODNN7...` |
 | AWS ARN account IDs | `[ACCOUNT]` | `arn:aws:s3:::123456789012:...` |
 | PEM private key blocks | `[PEM PRIVATE KEY REDACTED]` | `-----BEGIN RSA PRIVATE KEY-----` |

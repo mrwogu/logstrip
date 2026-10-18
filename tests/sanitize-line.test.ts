@@ -184,3 +184,40 @@ describe('sanitizeLine ANSI sequences', () => {
     expect(sanitizeLine('odd \u001b byte')).toBe('odd \u001b byte');
   });
 });
+
+describe('sanitizeLine secret fields', () => {
+  it.each([
+    [
+      'with the other masks in one line',
+      'DB_HOST=10.0.0.5 DB_PASSWORD=hunter2 at 10:24:31',
+      'DB_HOST=[IP] DB_PASSWORD=[REDACTED] at [TIME]',
+    ],
+    [
+      'in a pino line with an epoch time',
+      '{"level":50,"time":1715855071123,"client_secret":"abc123def"}',
+      '{"level":50,"time":"[TIME]","client_secret":"[REDACTED]"}',
+    ],
+    [
+      'in a request body that was logged as a string',
+      '{"msg":"body {\\"api_key\\":\\"abc123def\\"}"}',
+      '{"msg":"body {\\"api_key\\":\\"[REDACTED]\\"}"}',
+    ],
+    [
+      'after a vendor token that was already masked',
+      'NPM_TOKEN=npm_aB3dE6gH9jK2mN5pQ8sT1vW4yZ7bC0eF3hJ6',
+      'NPM_TOKEN=[REDACTED]',
+    ],
+  ])('masks the value %s', (_name, input, expected) => {
+    expect(sanitizeLine(input)).toBe(expected);
+  });
+
+  it('lets events that differ only in the secret fold', async () => {
+    const lines = [
+      '[ERROR] login failed {"user":"bob","password":"hunter2"}',
+      '[ERROR] login failed {"user":"bob","password":"letmein99"}',
+    ];
+    const result = await processLogString(`${lines.join('\n')}\n`);
+
+    expect(result.output).toBe('[x2] [ERROR] login failed {"user":"bob","password":"[REDACTED]"}\n');
+  });
+});

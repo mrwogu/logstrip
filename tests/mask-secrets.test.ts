@@ -57,6 +57,89 @@ const UNTOUCHED: ReadonlyArray<readonly [string, string]> = [
   ['empty line', ''],
 ];
 
+const AWS_SECRET = `${'wJalrXUtnFEMI/K7MDENG/'}${'bPxRfiCYEXAMPLEKEY'}`;
+
+// Secret fields: the key may carry a prefix, in any case style, and JSON or
+// dict properties are masked as well. Values are short and plain so that the
+// log sanitizer leaves them to the field rule.
+const FIELD_MASKED: ReadonlyArray<readonly [string, string, string]> = [
+  ['an env-style key with a prefix', 'DB_PASSWORD=hunter2', 'DB_PASSWORD=[REDACTED]'],
+  ['an API token variable', 'API_TOKEN=abc123', 'API_TOKEN=[REDACTED]'],
+  [
+    'an AWS secret access key',
+    `AWS_SECRET_ACCESS_KEY=${AWS_SECRET}`,
+    'AWS_SECRET_ACCESS_KEY=[REDACTED]',
+  ],
+  ['an npm token variable', 'NPM_TOKEN=abc123', 'NPM_TOKEN=[REDACTED]'],
+  ['a camelCase key', 'dbPassword=hunter2', 'dbPassword=[REDACTED]'],
+  ['a camelCase key with a colon', 'apiKey: abc12345', 'apiKey: [REDACTED]'],
+  ['a kebab-case header', 'X-Api-Key: abc123', 'X-Api-Key: [REDACTED]'],
+  ['a kebab-case auth token header', 'x-auth-token: abc123', 'x-auth-token: [REDACTED]'],
+  ['a dotted property key', 'spring.datasource.password=hunter2', 'spring.datasource.password=[REDACTED]'],
+  ['passwd', 'DB_PASSWD=hunter2', 'DB_PASSWD=[REDACTED]'],
+  ['pwd in a connection string', 'Pwd=s3cret;Uid=sa', 'Pwd=[REDACTED];Uid=sa'],
+  ['pwd with a value that is not a path', 'DB_PWD=hunter2', 'DB_PWD=[REDACTED]'],
+  ['access_key', 'access-key=abc123xyz', 'access-key=[REDACTED]'],
+  ['private_key', 'privateKey: abc123xyz', 'privateKey: [REDACTED]'],
+  ['apikey without a separator', 'APIKEY=abc123xyz', 'APIKEY=[REDACTED]'],
+  ['credentials with an = separator', 'AWS_CREDENTIALS=abc123xyz', 'AWS_CREDENTIALS=[REDACTED]'],
+  ['auth at the end of a longer key', 'proxy-auth: dXNlcjpwYXNz', 'proxy-auth: [REDACTED]'],
+  ['auth with an = separator', 'AUTH=abc123xyz', 'AUTH=[REDACTED]'],
+  ['a := separator', 'secret := hunter2', 'secret := [REDACTED]'],
+  ['spaces around the separator', 'password   =   hunter2', 'password   =   [REDACTED]'],
+  ['a bare number of four digits', 'pin_token: 1234', 'pin_token: [REDACTED]'],
+  ['a JSON property', '{"password": "hunter2"}', '{"password": "[REDACTED]"}'],
+  ['a JSON property without spaces', '{"client_secret":"abcd1234"}', '{"client_secret":"[REDACTED]"}'],
+  [
+    'a JSON property with punctuation in the value',
+    '{"a":1,"password":"p@ss, word","b":2}',
+    '{"a":1,"password":"[REDACTED]","b":2}',
+  ],
+  ['a JSON property with an escaped quote', '{"password":"pa\\"ss","b":2}', '{"password":"[REDACTED]","b":2}'],
+  ['a JSON number', '{"token": 123456}', '{"token": "[REDACTED]"}'],
+  ['a JSON number that ends the object', '{"a":{"token":123456}}', '{"a":{"token":"[REDACTED]"}}'],
+  ['a dict repr', "{'password': None}", "{'password': '[REDACTED]'}"],
+  [
+    'JSON that was logged inside a string',
+    'body {\\"password\\":\\"hunter2\\",\\"user\\":\\"bob\\"}',
+    'body {\\"password\\":\\"[REDACTED]\\",\\"user\\":\\"bob\\"}',
+  ],
+  ['a quoted value after an env-style key', 'password="pa\\"ss word"', 'password=[REDACTED]'],
+];
+
+// What the field rule has to leave alone: values that carry no secret, keys
+// that merely contain a name, and look-alikes in prose and code.
+const FIELD_KEPT: ReadonlyArray<readonly [string, string]> = [
+  ['an empty value', 'password='],
+  ['an empty value after a space', 'password: '],
+  ['a quoted empty value', '{"password": ""}'],
+  ['a single-quoted empty value', "password: ''"],
+  ['an escaped empty value', 'body {\\"password\\":\\"\\"}'],
+  ['null', '{"password": null}'],
+  ['NULL in another case', 'password: NULL'],
+  ['true', 'token=true'],
+  ['false at the end of an object', '{"auth":false}'],
+  ['a one digit number', 'secret=1'],
+  ['a three digit number', 'token: 999'],
+  ['a GitHub expression', 'token: ${{ secrets.NPM_TOKEN }}'],
+  ['a GitHub expression behind a prefixed key', 'NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}'],
+  ['a variable reference', 'DB_PASSWORD=${DB_PASSWORD}'],
+  ['a quoted variable reference', 'password: "${DB_PASSWORD}"'],
+  ['a command substitution', 'token=$(cat /run/secrets/token)'],
+  ['a JSON object', '{"auth": {"type":"basic"}}'],
+  ['a JSON array', '{"credentials": [1,2]}'],
+  ['the PWD variable', 'PWD=/home/runner/work/app'],
+  ['the OLDPWD variable', 'OLDPWD=/tmp'],
+  ['a bare auth label', '[INFO] supabase auth: gotrue service started'],
+  ['a bare credentials label', 'passed through unchanged except for credentials: tokens'],
+  ['a comparison', 'if (token === expected) return'],
+  ['an arrow function', 'const check = token => token.length'],
+  ['a key that only starts with a name', 'author: John Smith'],
+  ['a plural name', 'tokens: 5000'],
+  ['a name followed by a suffix', 'PRIVATE_KEY_PATH=/etc/ssl/private/app.key'],
+  ['a name inside a longer word', 'passwords are rotated weekly'],
+];
+
 describe('maskSecrets', () => {
   it.each(MASKED)('masks %s', (_name, input, expected) => {
     expect(maskSecrets(input)).toBe(expected);
@@ -90,5 +173,38 @@ describe('maskSecrets', () => {
       }
     }
     expect(sanitizeLine(`blob ${RANDOM_TOKEN} end`)).toBe('blob [HASH]+AbC12 end');
+  });
+});
+
+describe('maskSecrets secret fields', () => {
+  it.each(FIELD_MASKED)('masks %s', (_name, input, expected) => {
+    expect(maskSecrets(input)).toBe(expected);
+  });
+
+  it.each(FIELD_KEPT)('leaves %s alone', (_name, input) => {
+    expect(maskSecrets(input)).toBe(input);
+  });
+
+  it('masks the same fields in log lines and leaves the same ones alone', () => {
+    for (const [, input, expected] of FIELD_MASKED) {
+      expect(sanitizeLine(input)).toBe(expected);
+    }
+    for (const [, input] of FIELD_KEPT) {
+      // The log sanitizer also trims trailing whitespace.
+      expect(sanitizeLine(input)).toBe(input.trimEnd());
+    }
+  });
+
+  it('is idempotent on masked fields', () => {
+    for (const [, input] of FIELD_MASKED) {
+      const once = maskSecrets(input);
+      expect(maskSecrets(once)).toBe(once);
+    }
+  });
+
+  it('masks every field in a line, not only the first', () => {
+    expect(maskSecrets('DB_PASSWORD=hunter2 API_TOKEN=abc123 DB_USER=app')).toBe(
+      'DB_PASSWORD=[REDACTED] API_TOKEN=[REDACTED] DB_USER=app',
+    );
   });
 });

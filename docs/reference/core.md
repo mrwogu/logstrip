@@ -509,13 +509,32 @@ The sanitizer replaces:
 | Slack tokens (`xoxb-...`, `xoxp-...`) | `[REDACTED]` |
 | Connection strings (`postgres://user:pass@`) | password → `[REDACTED]` |
 | `Authorization:` headers | `Authorization: [REDACTED]` |
-| Secret field values (`password=`, `token=`, `api_key=`, etc.) | value → `[REDACTED]` |
+| Secret fields (`password=`, `DB_PASSWORD=`, `apiKey:`, `"client_secret": "..."`, see below) | value → `[REDACTED]` |
 | AWS access keys (`AKIA...`) | `[REDACTED]` |
 | AWS ARN account IDs | `[ACCOUNT]` |
 | long hexadecimal or alphanumeric hashes | `[HASH]` |
 | HTTP status codes | `[2xx]`, `[4xx]`, `[5xx]`, etc. |
 | Kubernetes ages (`38s`, `2m34s`, `5 (2m36s ago)`) | `[AGO]` |
 | ANSI escape sequences (colors, cursor movement, erase line, OSC hyperlinks) | removed |
+
+A secret field is any key whose last part is `password`, `passwd`, `pwd`,
+`secret`, `token`, `api_key`, `access_key`, `private_key`, `auth`,
+`credentials` or `bearer`, in any case style (`DB_PASSWORD`, `dbPassword`,
+`x-api-key`, `spring.datasource.password`, `AWS_SECRET_ACCESS_KEY`). Its value
+is masked whether it is written as `KEY=value`, `key: value`, `key := value` or
+as a quoted JSON or dict property, including JSON that was logged inside a
+string. A JSON property keeps its quotes, so `"password": "hunter2"` becomes
+`"password": "[REDACTED]"` and the line still parses. These are left alone:
+
+- values that carry no secret: an empty or quoted-empty value, `null`, `true`,
+  `false`, a bare number under four digits and a `${...}` or `$(...)` reference
+  such as `token: ${{ secrets.NPM_TOKEN }}` or `DB_PASSWORD=${DB_PASSWORD}`
+- a JSON object or array under a quoted key (`"auth": {...}`), whose own fields
+  are masked on their own
+- a path under `PWD` and `OLDPWD`
+- a bare `auth:` or `credentials:` label such as `supabase auth: gotrue started`;
+  `auth` and `credentials` count at the end of a longer key (`basic_auth`,
+  `x-auth`), as a quoted key or with `=`
 
 Durations that are measurements stay readable: `0.47s`, `timed out after 30s`,
 `retrying in 2s`, `timeout=30s` and `1m 12s` are kept, so a configured timeout
@@ -551,8 +570,8 @@ or document does not carry credentials along. `sanitizeLine` applies the same
 rules in the same order as before, so the compressed log output is unchanged.
 The rules recognise common credential shapes; they are a safety net, not a
 guarantee that a file holds no secrets. They also favour masking over fidelity:
-`token: ${{ secrets.NPM_TOKEN }}`, `id-token: write` and a sentence that
-mentions an `Authorization:` header (the rest of the line is masked) are
+`id-token: write`, a type annotation such as `previousToken: string` and a
+sentence that mentions an `Authorization:` header (the rest of the line is masked) are
 masked as well.
 
 Text passthrough also handles PEM private key blocks, with

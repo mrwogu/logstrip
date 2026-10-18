@@ -620,6 +620,41 @@ describe('text passthrough: credentials', () => {
     expect(result.output).not.toContain('END RSA PRIVATE KEY');
   });
 
+  it('masks prefixed env keys and JSON properties but keeps references and flags', async () => {
+    const doc = [
+      '# Service configuration',
+      '',
+      'The service reads its settings from the environment when it starts.',
+      '',
+      '```env',
+      'DB_PASSWORD=hunter2',
+      'NPM_TOKEN=abc123def456',
+      'NODE_AUTH_TOKEN=${NPM_TOKEN}',
+      'PWD=/srv/app',
+      'DEBUG=false',
+      '```',
+      '',
+      '```json',
+      '{',
+      '  "client_secret": "abc123def456",',
+      '  "retries": 3,',
+      '  "auth": { "type": "basic" },',
+      '  "password": null',
+      '}',
+      '```',
+      '',
+    ];
+    const masked = [...doc];
+    masked[5] = 'DB_PASSWORD=[REDACTED]';
+    masked[6] = 'NPM_TOKEN=[REDACTED]';
+    masked[14] = '  "client_secret": "[REDACTED]",';
+
+    const result = await processLogString(doc.join('\n'));
+
+    expect(result.contentKind).toBe('text');
+    expect(result.output).toBe(masked.join('\n'));
+  });
+
   it('leaves identifiers, timestamps, addresses and emails alone', async () => {
     const result = await processLogString(SECRET_DOC.join('\n'));
 

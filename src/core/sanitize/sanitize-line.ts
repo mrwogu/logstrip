@@ -78,11 +78,34 @@ const SLACK_TOKEN_PATTERN =
 const AUTHORIZATION_HEADER_PATTERN =
   /\bAuthorization\s*:\s*\S+(?:\s+\S+)*/giu;
 
-// Generic secret field values in key=value or key: value format. The value
-// is either a quoted string or a bare token that stops at quotes/commas so
-// surrounding syntax (JSON string delimiters, list separators) survives.
-const SECRET_FIELD_PATTERN =
-  /\b(?:password|secret|token|api[_-]?key|api[_-]?secret|private[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token|auth[_-]?token|bearer)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s"',;]+)/giu;
+// Generic secret fields: KEY=value, key: value, key := value and quoted JSON /
+// dict properties ("key": "value"). The pieces are joined into one pattern
+// with three groups: 1 the name, 2 the quote around the key (if any) and 3 the
+// value.
+const SECRET_FIELD_PATTERN = new RegExp(
+  [
+    // A key that ENDS in a name matches (DB_PASSWORD, apiKey, x-api-key,
+    // spring.datasource.password), so there is no word boundary in front.
+    String.raw`(password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|bearer|`,
+    // auth and credentials are also plain words in logs and prose
+    // ("supabase auth: gotrue service started"). They count as the end of a
+    // longer key (basic_auth, x-auth), as a quoted key, or with an = style
+    // separator, but not as a bare "auth:" label.
+    String.raw`(?:auth|credentials)(?:(?<=[\w.-]auth|[\w.-]credentials)|(?![ \t]*:(?!=))))`,
+    // The (?![=>]) keeps "token === x" and "token => x" (comparisons and arrow
+    // functions) out, and stops the separator from backing off into the value.
+    String.raw`(\\?["'])?[ \t]*(?::=|=|:)(?![=>])[ \t]*`,
+    // Values that carry no secret: empty or quoted-empty, a ${...} or $(...)
+    // reference (also inside quotes), null / true / false and a bare number
+    // under four digits.
+    String.raw`(?!(?:\\?["'])?\$[({]|""|''|\\"\\"|(?:null|true|false|\d{1,3})(?![^\s"',;)}\]]))`,
+    // A quoted string (also the backslash-escaped form of JSON that was logged
+    // inside a string) or a bare token that stops at quotes and commas so the
+    // surrounding syntax survives.
+    String.raw`(\\"(?:(?!\\").)*\\"|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"',;]+)`,
+  ].join(''),
+  'giu',
+);
 
 // Stripe API keys (sk_live_, pk_live_, rk_live_, sk_test_, etc.)
 const STRIPE_KEY_PATTERN =
@@ -132,6 +155,24 @@ function maskAge(match: string, offset: number, whole: string): string {
 // consume them, while the AWS keys and the entropy fallback run on whatever
 // the hash rules left behind. maskSecrets applies both halves in that order.
 
+function maskSecretField(
+  match: string,
+  name: string,
+  keyQuote: string | undefined,
+  value: string,
+): string {
+  // PWD and OLDPWD hold a directory in every environment dump, not a password.
+  if (name.toLowerCase() === 'pwd' && value.startsWith('/')) return match;
+  const head = match.slice(0, match.length - value.length);
+  if (keyQuote === undefined) return `${head}[REDACTED]`;
+  // "auth": {...} is an object; its own fields are masked on their own.
+  if (value.startsWith('{') || value.startsWith('[')) return match;
+  // A quoted key marks JSON or a dict: keep the value a string and keep the
+  // brace or bracket that closed the pair, so the line stays parseable.
+  const closing = /[}\]]*$/u.exec(value)![0];
+  return `${head}${keyQuote}[REDACTED]${keyQuote}${closing}`;
+}
+
 function maskVendorSecrets(line: string): string {
   let result = line;
   if (result.includes('://')) {
@@ -154,11 +195,7 @@ function maskVendorSecrets(line: string): string {
   if (result.includes('uthorization')) {
     result = result.replace(AUTHORIZATION_HEADER_PATTERN, 'Authorization: [REDACTED]');
   }
-  result = result.replace(SECRET_FIELD_PATTERN, (match) => {
-    const sepIdx = match.search(/[:=]\s*/u);
-    const sepEnd = match.slice(sepIdx).match(/^[:=]\s*/u)![0].length;
-    return `${match.slice(0, sepIdx + sepEnd)}[REDACTED]`;
-  });
+  result = result.replace(SECRET_FIELD_PATTERN, maskSecretField);
   return result;
 }
 
