@@ -67,7 +67,7 @@ For people who compare token optimizers. The row below is written in the shape o
 
 ## Install
 
-Node.js 22 or newer.
+Requires Node.js 22 or newer.
 
 ```bash
 npm install --global logstrip
