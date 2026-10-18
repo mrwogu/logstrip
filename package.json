@@ -75,16 +75,12 @@
     "verify": "npm run typecheck && npm run test:coverage && npm run build && npm audit && npm run docs:build"
   },
   "devDependencies": {
-    "@actions/core": "^1.11.1",
+    "@actions/core": "^2.0.3",
     "@actions/github": "^9.1.1",
-    "@types/node": "^25.9.1",
-    "@vitest/coverage-v8": "^4.1.6",
-    "esbuild": "^0.28.0",
-    "typescript": "^5.7.2",
-    "vitest": "^4.1.6"
-  },
-  "overrides": {
-    "@actions/http-client": "^3.0.2",
-    "undici": "^6.25.0"
+    "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "^5.0.5",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
   }
 }
