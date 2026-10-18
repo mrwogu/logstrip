@@ -198,73 +198,76 @@ use the `/logstrip` command to compress a named log and summarize token savings.
 Most users only need the install steps above. If you are packaging or auditing
 the plugin bundle, these are the shipped integration files:
 
-??? info "Repository layout"
+<details>
+<summary>Repository layout</summary>
 
-    ```text
-    .agents/
-      plugins/
-        marketplace.json
+```text
+.agents/
+  plugins/
+    marketplace.json
+.claude-plugin/
+  marketplace.json
+.cursor-plugin/
+  marketplace.json
+.factory-plugin/
+  marketplace.json
+.github/
+  plugin/
+    marketplace.json
+plugins/
+  logstrip/
     .claude-plugin/
-      marketplace.json
+      plugin.json
+    .codex-plugin/
+      plugin.json
     .cursor-plugin/
-      marketplace.json
+      plugin.json
     .factory-plugin/
-      marketplace.json
+      plugin.json
     .github/
       plugin/
-        marketplace.json
-    plugins/
-      logstrip/
-        .claude-plugin/
-          plugin.json
-        .codex-plugin/
-          plugin.json
-        .cursor-plugin/
-          plugin.json
-        .factory-plugin/
-          plugin.json
-        .github/
-          plugin/
-            plugin.json
+        plugin.json
+    rules/
+      logstrip.mdc
+    copilot/
+      .github/
+        copilot-instructions.md
+        instructions/
+          logstrip.instructions.md
+        prompts/
+          logstrip.prompt.md
+    cursor/
+      .cursor/
         rules/
           logstrip.mdc
-        copilot/
-          .github/
-            copilot-instructions.md
-            instructions/
-              logstrip.instructions.md
-            prompts/
-              logstrip.prompt.md
-        cursor/
-          .cursor/
-            rules/
-              logstrip.mdc
-        codex/
-          AGENTS.md
-          .codex/
-            skills/
-              logstrip/
-                SKILL.md
-        opencode/
-          AGENTS.md
-          .opencode/
-            commands/
-              logstrip.md
-            skills/
-              logstrip/
-                SKILL.md
+    codex/
+      AGENTS.md
+      .codex/
+        skills/
+          logstrip/
+            SKILL.md
+    opencode/
+      AGENTS.md
+      .opencode/
         commands/
           logstrip.md
         skills/
           logstrip/
             SKILL.md
-        agents/
-          logstrip-reviewer.md
-          logstrip-fixture-author.md
-        droids/
-          logstrip-reviewer.md
-          logstrip-fixture-author.md
-    ```
+    commands/
+      logstrip.md
+    skills/
+      logstrip/
+        SKILL.md
+    agents/
+      logstrip-reviewer.md
+      logstrip-fixture-author.md
+    droids/
+      logstrip-reviewer.md
+      logstrip-fixture-author.md
+```
+
+</details>
 
 ## Aggressiveness reference
 

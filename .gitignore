@@ -19,3 +19,6 @@ logstrip-hero-*.png
 /logstrip.log
 /logstrip-stdin.log
 /raw.logstrip.log
+
+# Docs site (Astro)
+apps/docs/.astro/

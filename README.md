@@ -481,6 +481,14 @@ npm run test:coverage    # 100/100/100/100 gate
 npm run build
 ```
 
+Documentation site (Astro Starlight in `apps/docs`, sources in `docs/`):
+
+```bash
+npm run docs:install     # once
+npm run docs:serve       # preview at http://localhost:4321/logstrip/
+npm run docs:build       # static site in site/
+```
+
 <div align="center">
   <sub>Built for engineers who want smaller logs, cheaper prompts, and cleaner AI diagnostics.</sub>
 </div>

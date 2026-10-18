@@ -1,0 +1,37 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+// Raw HTML on purpose: Markdown would split the <pre> code windows on blank
+// lines and turn quotes into smart quotes.
+import home from '../components/home.html?raw';
+import pkg from '../../../../package.json';
+import '../styles/home.css';
+import { ECOSYSTEM_PILLS, marqueeHtml } from '../home-marquee';
+import { homeJsonLd } from '../seo';
+import { BASE, SITE_DESCRIPTION } from '../site.mjs';
+
+// The page is plain HTML, so links and images get the base path here.
+const html = home
+  .replaceAll('{{base}}', BASE)
+  .replace('<!-- marquee -->', marqueeHtml(ECOSYSTEM_PILLS));
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Log Compression CLI for AI Agents',
+    description: `${SITE_DESCRIPTION} Install with npm.`,
+    template: 'splash',
+    tableOfContents: false,
+    editUrl: false,
+    lastUpdated: false,
+    head: [
+      { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
+      homeJsonLd(pkg.version),
+    ],
+  }}
+>
+  <Fragment set:html={html} />
+  <script>
+    import { initHeroDemo } from '../scripts/home-demo';
+    initHeroDemo(import.meta.env.BASE_URL);
+  </script>
+</StarlightPage>

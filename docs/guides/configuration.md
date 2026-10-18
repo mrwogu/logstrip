@@ -69,6 +69,7 @@ filtering when you need it.
 npm run typecheck
 npm run test:coverage
 npm run build
+npm run docs:install   # once, installs the docs site dependencies
 npm run docs:build
 ```
 
