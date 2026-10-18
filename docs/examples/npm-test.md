@@ -112,7 +112,7 @@ Same engine, one fewer line:
   run: npm test > raw_logs.txt 2>&1 || true
 
 - name: Compress logs
-  uses: mrwogu/logstrip@v1
+  uses: mrwogu/logstrip@v2
   id: logstrip
   with:
     log-path: raw_logs.txt
