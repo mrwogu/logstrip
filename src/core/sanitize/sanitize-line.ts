@@ -116,12 +116,14 @@ const SECRET_FIELD_PATTERN = new RegExp(
     // A ${...} or $(...) body, or the arguments of a call, may hold spaces and
     // quotes, so they are taken whole (bounded so that a crafted line cannot
     // make the scan quadratic). An environment read is taken whole only when
-    // it ends there; otherwise the bare token takes it and it is judged as it
-    // is.
+    // it ends there: before white space, a comma, a semicolon or the end of
+    // the line, or before one closing bracket or backtick that is followed by
+    // one of those. Otherwise ("process.env.X)hunter2") the bare token takes
+    // the whole run and it is masked.
     String.raw`(\\"(?:(?!\\").)*(?:\\")?`,
     String.raw`|"(?:[^"\\]|\\[\s\S]|\\$)*"?`,
     String.raw`|'(?:[^'\\]|\\[\s\S]|\\$)*'?`,
-    `|${ENV_READ_SOURCE}(?=[\\s,;)}\\]\\x60]|$)`,
+    `|${ENV_READ_SOURCE}(?=[\\s,;]|$|[)}\\]\\x60](?:[\\s,;]|$))`,
     String.raw`|[A-Za-z_][\w.]*\((?:[^()]|\([^()]*\)){0,200}\)[^\s"',;]*`,
     String.raw`|\$(?:\((?:[^()]|\([^()]*\)){0,200}\)|\{[^}]{0,200}\})[^\s"',;]*`,
     String.raw`|[^\s"',;]+)`,
@@ -138,10 +140,13 @@ const SECRET_PLAIN_VALUE_PATTERN = /^(?:null|true|false|\d{1,3})$/iu;
 // Also a type, as in "previousToken: string" or "password: Optional[str]", and
 // an environment read as the entire value. A bare identifier followed by a call
 // (load(), readSecret()) is neither.
-const TYPE_NAMES =
-  'string|number|boolean|bigint|symbol|unknown|any|never|undefined|void|str|int|float|bool|bytes|None|nil|String|Integer|Boolean|Buffer|Secret|SecretStr';
+// Alone, "String", "Secret" and "any" are plausible passwords, so they count
+// as types only inside Optional[...], Option<...> and Promise<...>.
+const BARE_TYPE_NAMES =
+  'string|number|boolean|bigint|symbol|unknown|never|undefined|void|str|int|float|bool|bytes|None|nil|Integer|Boolean|Buffer|SecretStr';
+const WRAPPED_TYPE_NAMES = `${BARE_TYPE_NAMES}|any|String|Secret`;
 const TYPE_ANNOTATION_PATTERN = new RegExp(
-  `^(?:${TYPE_NAMES}|(?:Optional\\[|Option<|Promise<)(?:${TYPE_NAMES})[\\]>])(?:\\[\\])?(?:\\|(?:null|undefined))*[)}\\]:]*$`,
+  `^(?:${BARE_TYPE_NAMES}|(?:Optional\\[|Option<|Promise<)(?:${WRAPPED_TYPE_NAMES})[\\]>])(?:\\[\\])?(?:\\|(?:null|undefined))*[)}\\]:]*$`,
   'u',
 );
 const ENV_READ_PATTERN = new RegExp(`^${ENV_READ_SOURCE}$`, 'u');
@@ -203,11 +208,17 @@ function maskAge(match: string, offset: number, whole: string): string {
 // the hash rules left behind. maskSecrets applies both halves in that order.
 
 function isHarmlessValue(value: string, name: string): boolean {
-  const inner = QUOTED_VALUE_PATTERN.exec(value)?.[2] ?? value;
-  return (
+  const quoted = QUOTED_VALUE_PATTERN.exec(value)?.[2];
+  const inner = quoted ?? value;
+  const plain =
     inner === '' ||
     SECRET_PLAIN_VALUE_PATTERN.test(inner) ||
-    SECRET_REFERENCE_PATTERN.test(inner) ||
+    SECRET_REFERENCE_PATTERN.test(inner);
+  // A quoted value is a literal: "string", "process.env.X" and "none" are
+  // strings someone typed, not a type, a read or a permission.
+  if (quoted !== undefined) return plain;
+  return (
+    plain ||
     TYPE_ANNOTATION_PATTERN.test(inner) ||
     ENV_READ_PATTERN.test(inner) ||
     (TOKEN_NAME_PATTERN.test(name) && PERMISSION_WORD_PATTERN.test(inner))

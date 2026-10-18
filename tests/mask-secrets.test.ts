@@ -189,6 +189,23 @@ a secrets reference that is a path | password = secrets.X.Y ==> password = [REDA
 a word that starts with a type | password: stringy ==> password: [REDACTED]
 a word that starts with a capitalised type | password: Strings ==> password: [REDACTED]
 a type followed by more text | token: string)hunter2 ==> token: [REDACTED]
+a quoted type name | password: "string" ==> password: [REDACTED]
+a single-quoted type name | password: 'string' ==> password: [REDACTED]
+a JSON string that names a type | {"token": "string"} ==> {"token": "[REDACTED]"}
+a quoted wrapped type | token: "Optional[str]" ==> token: [REDACTED]
+a quoted environment read | token: "process.env.X" ==> token: [REDACTED]
+a quoted environment call | password = "os.getenv('X')" ==> password = [REDACTED]
+a quoted permission word | secret: "none" ==> secret: [REDACTED]
+a quoted permission word on id-token | id-token: "write" ==> id-token: [REDACTED]
+String alone | password: String ==> password: [REDACTED]
+Secret alone | password: Secret ==> password: [REDACTED]
+any alone | password: any ==> password: [REDACTED]
+an environment read and text behind a parenthesis | password=process.env.X)hunter2 ==> password=[REDACTED]
+an environment read and text behind a bracket | password=process.env.X]hunter2 ==> password=[REDACTED]
+an environment read and text behind a brace | password=process.env.X}hunter2 ==> password=[REDACTED]
+an environment read and text behind a backtick | password=process.env.X\`hunter2 ==> password=[REDACTED]
+an environment read behind two closers | password=process.env.X)) ==> password=[REDACTED]
+an environment read with a path after it | password=process.env.X.Y ==> password=[REDACTED]
 `),
 ];
 
@@ -248,7 +265,6 @@ a secret type | apiKey: SecretStr
 Python None | password: None
 nil | password = nil
 a type with a default | token: str = ""
-a JSON string that names a type | {"token": "string"}
 process.env | token: process.env.NPM_TOKEN
 a process.env subscript | token = process.env["NPM_TOKEN"]
 os.environ | password = os.environ["DB_PASSWORD"]
@@ -266,6 +282,17 @@ the GitHub permission id-token | id-token: write
 a read permission on id_token | id_token: read
 a none permission on token | token: none
 a read permission on refresh_token | refresh_token: read
+a wrapped any | token: Promise<any>
+a wrapped Secret | token: Optional[Secret]
+an environment read before a closing parenthesis | connect(password=process.env.X)
+an environment read in a call followed by text | connect(password=process.env.X) more
+an environment read before a comma | password=process.env.X, next
+an environment read before a semicolon | password=process.env.X;
+an environment read before a closing brace | token: process.env.X}
+an environment read in Markdown inline code | set \`token: process.env.X\` now
+a quoted variable reference without a colon | password="\${PASS}"
+a quoted plain variable | password="$PASS"
+a quoted GitHub expression | password: "\${{ secrets.X }}"
 `),
 ];
 
