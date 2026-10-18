@@ -82,7 +82,8 @@ export function pageMarkdown(page: DocPage): string {
       const match = /^\/([^#]*)(#.*)?$/.exec(target);
       if (!match) return `](${target})`;
       const id = match[1].replace(/\/$/, '');
-      return `](${id ? markdownUrl(id) : `${SITE}/`}${match[2] ?? ''})`;
+      const docUrl = id ? markdownUrl(id) : `${SITE}/`;
+      return `](${docUrl}${match[2] ?? ''})`;
     }
   );
   const trimmed = body.trimStart();

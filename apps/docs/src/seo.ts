@@ -36,7 +36,7 @@ export function jsonLdTag(graph: readonly object[]): HeadTag {
     content: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': graph,
-    }).replaceAll('<', '\\u003c'),
+    }).replaceAll('<', String.raw`\u003c`),
   };
 }
 

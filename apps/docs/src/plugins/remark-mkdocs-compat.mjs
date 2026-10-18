@@ -22,7 +22,8 @@ export function rewriteDocLinkFrom(url, pagePath) {
   const hash = match[2] ?? '';
   if (rel.startsWith('..')) return REPO_BLOB + posix.normalize(`docs/${rel}`) + hash;
   const id = docIdFromEntry(rel);
-  return `${BASE}${id === 'index' ? '/' : `/${id}/`}${hash}`;
+  const path = id === 'index' ? '/' : `/${id}/`;
+  return `${BASE}${path}${hash}`;
 }
 
 export function rewriteDocLink(url, filePath) {
