@@ -29,12 +29,12 @@ rewrites events as prose.
 
 ## What it takes to run
 
-| | `tail` / `grep` | Model-based compressors | Shippers and platforms | LogStrip |
+| | LogStrip | `tail` / `grep` | Model-based compressors | Shippers and platforms |
 | :--- | :--- | :--- | :--- | :--- |
-| **Needs a model** | No | Yes | No. Some products add model features. | No |
-| **Needs network** | No | Depends: a local model needs none, a hosted API does | Depends: hosted needs it, self-hosted needs your own network | No for compression. See the note below. |
-| **Works in CI without setup** | Yes | Depends: needs a model download, a GPU or an API key | Depends: needs an account or an agent | Yes: `npx -y logstrip` on Node.js 22+ |
-| **Cost per run** | None | Compute or API calls, plus the tokens you still send | Depends on the plan, often priced on ingest | CPU time. No fee, MIT licensed. |
+| **Needs a model** | No | No | Yes | No. Some products add model features. |
+| **Needs network** | No for compression. See the note below. | No | Depends: a local model needs none, a hosted API does | Depends: hosted needs it, self-hosted needs your own network |
+| **Works in CI without setup** | Yes: `npx -y logstrip` on Node.js 22+ | Yes | Depends: needs a model download, a GPU or an API key | Depends: needs an account or an agent |
+| **Cost per run** | CPU time. No fee, MIT licensed. | None | Compute or API calls, plus the tokens you still send | Depends on the plan, often priced on ingest |
 
 Network note: compression never uses the network. In an interactive terminal
 the CLI checks npm once a day for a newer version. It does not run when stderr
@@ -43,25 +43,25 @@ statistics stay on your machine. See the [CLI reference](reference/cli.md).
 
 ## What the output looks like
 
-| | `tail` / `grep` | Model-based compressors | Shippers and platforms | LogStrip |
+| | LogStrip | `tail` / `grep` | Model-based compressors | Shippers and platforms |
 | :--- | :--- | :--- | :--- | :--- |
-| **Same input, same output** | Yes | Depends: model version, hardware and settings can change it | Yes for a stored query | Yes, pinned by snapshot tests |
-| **Lines stay whole** | Yes | No guarantee: tokens are removed inside lines | Yes: events come back as stored | Yes: kept, folded or hidden behind a marker |
-| **Stack frames** | Depends on the pattern: `grep ERROR` drops the frames below the error | No rule keeps a frame whole | Depends: multi-line traces need parsing at ingest | Your frames kept, internal library frames hidden |
-| **Identifiers and line numbers** | Exact | Depends: no rule keeps them | Exact | Masked by rule. `--preserve-id-suffix` keeps an id tail. |
-| **Repeats** | Only adjacent identical lines fold, with `uniq -c` | Removed as predictable, no count | Yes, as an aggregation query | Folded into `[xN]` with the values that differed |
-| **Secrets** | Left in | Not a design goal | Depends: scrubbing rules you configure | Masked in every mode. Not a secret scanner, see [Security](guides/security.md). |
-| **Who decides what matters** | Your pattern | A language model's token scores | Your queries and alerts | Line scoring rules: level, keywords, frames, findings |
+| **Same input, same output** | Yes, pinned by snapshot tests | Yes | Depends: model version, hardware and settings can change it | Yes for a stored query |
+| **Lines stay whole** | Yes: kept, folded or hidden behind a marker | Yes | No guarantee: tokens are removed inside lines | Yes: events come back as stored |
+| **Stack frames** | Your frames kept, internal library frames hidden | Depends on the pattern: `grep ERROR` drops the frames below the error | No rule keeps a frame whole | Depends: multi-line traces need parsing at ingest |
+| **Identifiers and line numbers** | Masked by rule. `--preserve-id-suffix` keeps an id tail. | Exact | Depends: no rule keeps them | Exact |
+| **Repeats** | Folded into `[xN]` with the values that differed | Only adjacent identical lines fold, with `uniq -c` | Removed as predictable, no count | Yes, as an aggregation query |
+| **Secrets** | Masked in every mode. Not a secret scanner, see [Security](guides/security.md). | Left in | Not a design goal | Depends: scrubbing rules you configure |
+| **Who decides what matters** | Line scoring rules: level, keywords, frames, findings | Your pattern | A language model's token scores | Your queries and alerts |
 
 For `tail` and `grep`, timestamps and ids defeat `uniq -c` because the lines are
 never identical.
 
 ## Scale
 
-| | `tail` / `grep` | Model-based compressors | Shippers and platforms | LogStrip |
+| | LogStrip | `tail` / `grep` | Model-based compressors | Shippers and platforms |
 | :--- | :--- | :--- | :--- | :--- |
-| **Streams with bounded memory** | Yes | Depends: bounded by the compressor model's context window or by chunking | Yes | Yes, line by line |
-| **Output size** | Whatever matches | A target ratio you choose | Whatever the query returns | Follows the log. A log that is all failure comes back mostly whole. `--max-tokens` sets a hard cap. |
+| **Streams with bounded memory** | Yes, line by line | Yes | Depends: bounded by the compressor model's context window or by chunking | Yes |
+| **Output size** | Follows the log. A log that is all failure comes back mostly whole. `--max-tokens` sets a hard cap. | Whatever matches | A target ratio you choose | Whatever the query returns |
 
 ## How to choose
 
