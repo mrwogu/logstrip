@@ -20,7 +20,7 @@ concurrency:
 jobs:
   build:
     # The commit this workflow pushes must not start another build.
-    if: ${{ !startsWith(github.event.head_commit.message, 'chore: build dist/') }}
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore: build dist/') }}"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
