@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/mrwogu/logstrip/compare/v2.0.0...v2.1.0) (2026-10-18)
+
+
+### Features
+
+* **docs:** autoplay hero, SEO/GEO pass and a README that compares ([#91](https://github.com/mrwogu/logstrip/issues/91)) ([88b2079](https://github.com/mrwogu/logstrip/commit/88b20792bbde868d0cdb41404b1a4de8ca7deeba))
+
 ## [2.0.0](https://github.com/mrwogu/logstrip/compare/v1.12.0...v2.0.0) (2026-10-18)
 
 
