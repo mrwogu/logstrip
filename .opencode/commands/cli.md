@@ -1,5 +1,4 @@
 ---
-# promptscript-generated: 2026-05-30T18:14:56.501Z | source: .promptscript/project.prs | target: opencode
-description: 'Walk through src/cli/index.ts: parseCliOptions (flags + aggressiveness), runCli (stdin/stdout/file routing, error mapping), formatStats. Mention the canonical I/O contract: stats on stderr, JSON on stdout, content on stdout-or-output.'
+# promptscript-generated: 2026-10-18T11:39:38.221Z | source: .promptscript/project.prs | target: opencode
+description: "Walk through src/cli/index.ts: parseCliOptions (flags + aggressiveness), runCli (stdin/stdout/file routing, error mapping), formatStats. Mention the canonical I/O contract: stats on stderr, JSON on stdout, content on stdout-or-output."
 ---
-

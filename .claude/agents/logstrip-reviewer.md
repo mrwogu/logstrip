@@ -1,8 +1,8 @@
 ---
-# promptscript-generated: 2026-05-30T18:14:56.498Z | source: .promptscript/project.prs | target: claude
+# promptscript-generated: 2026-10-18T11:39:38.220Z | source: .promptscript/project.prs | target: claude
 name: logstrip-reviewer
 description: Reviews diffs against LogStrip standards and restrictions, with a focus on CLI Unix correctness, parser streaming, and the 100% coverage gate.
-tools: ['Read', 'Grep', 'Glob']
+tools: ["Read", "Grep", "Glob"]
 model: inherit
 ---
 
